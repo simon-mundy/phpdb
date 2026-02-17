@@ -686,7 +686,7 @@ class Select extends AbstractPreparableSql
             return [$driver->formatParameterName($paramPrefix . 'limit')];
         }
 
-        return [$platform->quoteValue($this->limit)];
+        return [$platform->quoteValue((string) $this->limit)];
     }
 
     protected function processOffset(
@@ -704,7 +704,7 @@ class Select extends AbstractPreparableSql
             return [$driver->formatParameterName($paramPrefix . 'offset')];
         }
 
-        return [$platform->quoteValue($this->offset)];
+        return [$platform->quoteValue((string) $this->offset)];
     }
 
     protected function processCombine(
