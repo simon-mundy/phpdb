@@ -74,12 +74,12 @@ class Table extends AbstractPart
 
         if ($this->ref->alias !== null) {
             return $processor->platform->quoteIdentifier($this->ref->alias)
-                . $processor->platform->getIdentifierSeparator();
+                . $processor->identifierSeparator;
         }
 
         $resolved = $processor->resolveTable($this->ref->table);
         if ($resolved) {
-            return $resolved . $processor->platform->getIdentifierSeparator();
+            return $resolved . $processor->identifierSeparator;
         }
 
         return '';

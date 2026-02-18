@@ -46,21 +46,25 @@ abstract class AbstractPlatform implements PlatformInterface
             return $identifier;
         }
 
-        if ($additionalSafeWords === []) {
-            if (isset($this->identifierCache[$identifier])) {
-                return $this->identifierCache[$identifier];
-            }
-            $pattern = self::KEYWORDS_PATTERN;
-        } else {
+        $cacheKey = $identifier;
+        $pattern  = self::KEYWORDS_PATTERN;
+
+        if ($additionalSafeWords !== []) {
             $extra = [];
             foreach ($additionalSafeWords as $word) {
                 if (ctype_alpha($word)) {
                     $extra[] = $word;
                 }
             }
-            $pattern = $extra !== []
-                ? self::KEYWORDS_PATTERN . '|' . implode('|', $extra)
-                : self::KEYWORDS_PATTERN;
+            if ($extra !== []) {
+                $extraPattern = implode('|', $extra);
+                $pattern     .= '|' . $extraPattern;
+                $cacheKey    .= "\0" . $extraPattern;
+            }
+        }
+
+        if (isset($this->identifierCache[$cacheKey])) {
+            return $this->identifierCache[$cacheKey];
         }
 
         /** @var string $result */
@@ -70,11 +74,7 @@ abstract class AbstractPlatform implements PlatformInterface
             $identifier
         );
 
-        if ($additionalSafeWords === []) {
-            $this->identifierCache[$identifier] = $result;
-        }
-
-        return $result;
+        return $this->identifierCache[$cacheKey] = $result;
     }
 
     /**

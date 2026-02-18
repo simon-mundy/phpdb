@@ -59,7 +59,7 @@ class Columns extends AbstractPart
         }
 
         if ($this->joinColumnGroups !== []) {
-            $separator = $processor->platform->getIdentifierSeparator();
+            $separator = $processor->identifierSeparator;
             foreach ($this->joinColumnGroups as $group) {
                 $joinPrefix = $group['prefix'] . $separator;
                 foreach ($group['columnRefs'] as $ref) {

@@ -33,12 +33,15 @@ class SqlProcessor
 
     private static int $runtimeExpressionPrefix = 0;
 
+    public readonly string $identifierSeparator;
+
     public function __construct(
         public readonly PlatformInterface $platform,
         public readonly ?DriverInterface $driver = null,
         public readonly ?ParameterContainer $parameterContainer = null,
         private ?PlatformDecoratorInterface $decorator = null,
     ) {
+        $this->identifierSeparator = $platform->getIdentifierSeparator();
     }
 
     public function getParamPrefix(): string
@@ -118,7 +121,7 @@ class SqlProcessor
         }
 
         if ($schema && $table) {
-            $table = $this->platform->quoteIdentifier($schema) . $this->platform->getIdentifierSeparator() . $table;
+            $table = $this->platform->quoteIdentifier($schema) . $this->identifierSeparator . $table;
         }
 
         return $table;
