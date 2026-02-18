@@ -50,10 +50,8 @@ use TypeError;
 #[CoversMethod(Update::class, '__get')]
 #[CoversMethod(Update::class, '__clone')]
 #[CoversMethod(Update::class, 'join')]
-#[CoversMethod(Update::class, 'processUpdate')]
-#[CoversMethod(Update::class, 'processSet')]
-#[CoversMethod(Update::class, 'processWhere')]
-#[CoversMethod(Update::class, 'processJoins')]
+#[CoversMethod(Update::class, 'buildSqlString')]
+#[CoversMethod(Update::class, 'getStatementKeyword')]
 final class UpdateTest extends TestCase
 {
     use AdapterTestTrait;
@@ -77,11 +75,11 @@ final class UpdateTest extends TestCase
     public function testTable(): void
     {
         $this->update->table('foo');
-        self::assertEquals('foo', $this->readAttribute($this->update, 'table'));
+        self::assertEquals('foo', $this->update->getRawState('table'));
 
         $tableIdentifier = new TableIdentifier('foo', 'bar');
         $this->update->table($tableIdentifier);
-        self::assertEquals($tableIdentifier, $this->readAttribute($this->update, 'table'));
+        self::assertEquals($tableIdentifier, $this->update->getRawState('table'));
     }
 
     /**
@@ -90,7 +88,7 @@ final class UpdateTest extends TestCase
     public function testConstruct(): void
     {
         $update = new Update('foo');
-        self::assertEquals('foo', $this->readAttribute($update, 'table'));
+        self::assertEquals('foo', $update->getRawState('table'));
     }
 
     public function testSet(): void

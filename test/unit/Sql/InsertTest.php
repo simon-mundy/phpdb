@@ -35,8 +35,8 @@ use TypeError;
 #[CoversMethod(Insert::class, 'values')]
 #[CoversMethod(Insert::class, 'select')]
 #[CoversMethod(Insert::class, 'getRawState')]
-#[CoversMethod(Insert::class, 'processInsert')]
-#[CoversMethod(Insert::class, 'processSelect')]
+#[CoversMethod(Insert::class, 'buildSqlString')]
+#[CoversMethod(Insert::class, 'getStatementKeyword')]
 #[CoversMethod(Insert::class, 'prepareStatement')]
 #[CoversMethod(Insert::class, 'getSqlString')]
 #[CoversMethod(Insert::class, '__set')]
@@ -129,7 +129,7 @@ final class InsertTest extends TestCase
     public function testEmptyArrayValues(): void
     {
         $this->insert->values([]);
-        self::assertEquals([], $this->readAttribute($this->insert, 'columns'));
+        self::assertEquals([], $this->insert->getRawState('columns'));
     }
 
     public function testPrepareStatement(): void

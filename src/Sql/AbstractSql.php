@@ -19,19 +19,13 @@ use PhpDb\Sql\Platform\PlatformDecoratorInterface;
 use ValueError;
 
 use function count;
-use function current;
 use function get_object_vars;
-use function gettype;
 use function implode;
 use function is_array;
-use function is_callable;
-use function is_object;
 use function is_string;
-use function key;
 use function rtrim;
 use function sprintf;
 use function str_replace;
-use function strtoupper;
 use function vsprintf;
 
 abstract class AbstractSql implements SqlInterface
@@ -50,7 +44,7 @@ abstract class AbstractSql implements SqlInterface
      *
      * @var array{paramPrefix: string, subselectCount: int}
      */
-    protected array $processInfo = ['paramPrefix' => '', 'subselectCount' => 0];
+    public array $processInfo = ['paramPrefix' => '', 'subselectCount' => 0];
 
     protected array $instanceParameterIndex = [];
 
@@ -65,7 +59,7 @@ abstract class AbstractSql implements SqlInterface
         return $this->buildSqlString($adapterPlatform);
     }
 
-    protected function buildSqlString(
+    public function buildSqlString(
         PlatformInterface $platform,
         ?DriverInterface $driver = null,
         ?ParameterContainer $parameterContainer = null
@@ -89,16 +83,6 @@ abstract class AbstractSql implements SqlInterface
         }
 
         return rtrim(implode(' ', $sqls), "\n ,");
-    }
-
-    /**
-     * Render table with alias in from/join parts
-     *
-     * @todo move TableIdentifier concatenation here
-     */
-    protected function renderTable(string $table, ?string $alias = null): string
-    {
-        return $alias ? "{$table} AS {$alias}" : $table;
     }
 
     /**
@@ -384,107 +368,6 @@ abstract class AbstractSql implements SqlInterface
         }
 
         return $decorator->buildSqlString($platform, $driver, $parameterContainer);
-    }
-
-    /**
-     * @return null|string[][][] Null if no joins present, array of JOIN statements otherwise
-     */
-    protected function processJoin(
-        ?Join $joins,
-        PlatformInterface $platform,
-        ?DriverInterface $driver = null,
-        ?ParameterContainer $parameterContainer = null
-    ): array|null {
-        if ($joins === null || $joins->count() === 0) {
-            return null;
-        }
-
-        $joinSpecArgArray = [];
-        foreach ($joins->getJoins() as $j => $join) {
-            $joinAs        = null;
-            $joinNameValue = $join['name'];
-            if (is_array($joinNameValue)) {
-                $joinName = current($joinNameValue);
-                $joinAs   = $platform->quoteIdentifier(key($joinNameValue));
-            } else {
-                $joinName = $joinNameValue;
-            }
-
-            if ($joinName instanceof Expression) {
-                $joinName = $joinName->getExpression();
-            } elseif ($joinName instanceof TableIdentifier) {
-                $joinName = $joinName->getTableAndSchema();
-                $joinName = ($joinName[1]
-                        ? $platform->quoteIdentifier($joinName[1]) . $platform->getIdentifierSeparator()
-                        : '') . $platform->quoteIdentifier($joinName[0]);
-            } elseif ($joinName instanceof Select) {
-                $joinName = '(' . $this->processSubSelect($joinName, $platform, $driver, $parameterContainer) . ')';
-            } elseif (is_string($joinName) || (is_object($joinName) && is_callable([$joinName, '__toString']))) {
-                $joinName = $platform->quoteIdentifier($joinName);
-            } else {
-                throw new Exception\InvalidArgumentException(sprintf(
-                    'Join name expected to be Expression|TableIdentifier|Select|string, "%s" given',
-                    gettype($joinName)
-                ));
-            }
-
-            $joinSpecArgArray[$j] = [
-                strtoupper($join['type']),
-                $this->renderTable($joinName, $joinAs),
-            ];
-
-            if ($join['on'] instanceof ExpressionInterface) {
-                $joinSpecArgArray[$j][] = $this->processExpression(
-                    $join['on'],
-                    $platform,
-                    $driver,
-                    $parameterContainer,
-                    'join' . ($j + 1) . 'part'
-                );
-            } else {
-                $joinSpecArgArray[$j][] = $platform->quoteIdentifierInFragment(
-                    $join['on'],
-                    ['=', 'AND', 'OR', '(', ')', 'BETWEEN', '<', '>']
-                );
-            }
-        }
-
-        return [$joinSpecArgArray];
-    }
-
-    protected function resolveColumnValue(
-        Select|array|string|int|bool|ExpressionInterface|null $column,
-        PlatformInterface $platform,
-        ?DriverInterface $driver = null,
-        ?ParameterContainer $parameterContainer = null,
-        ?string $namedParameterPrefix = null
-    ): string {
-        $namedParameterPrefix = $namedParameterPrefix
-            ? $this->processInfo['paramPrefix'] . $namedParameterPrefix
-            : $namedParameterPrefix;
-        $isIdentifier         = false;
-        $fromTable            = '';
-        if (is_array($column)) {
-            $isIdentifier = (bool) ($column['isIdentifier'] ?? false);
-            $fromTable    = $column['fromTable'] ?? '';
-            $column       = $column['column'];
-        }
-
-        if ($column instanceof ExpressionInterface) {
-            return $this->processExpression($column, $platform, $driver, $parameterContainer, $namedParameterPrefix);
-        }
-
-        if ($column instanceof Select) {
-            return '(' . $this->processSubSelect($column, $platform, $driver, $parameterContainer) . ')';
-        }
-
-        if ($column === null) {
-            return 'NULL';
-        }
-
-        return $isIdentifier
-            ? $fromTable . $platform->quoteIdentifierInFragment($column)
-            : $platform->quoteValue($column);
     }
 
     protected function resolveTable(

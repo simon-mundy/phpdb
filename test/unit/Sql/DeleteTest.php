@@ -37,8 +37,8 @@ use ReflectionException;
 #[CoversMethod(Delete::class, 'from')]
 #[CoversMethod(Delete::class, 'getRawState')]
 #[CoversMethod(Delete::class, 'where')]
-#[CoversMethod(Delete::class, 'processDelete')]
-#[CoversMethod(Delete::class, 'processWhere')]
+#[CoversMethod(Delete::class, 'buildSqlString')]
+#[CoversMethod(Delete::class, 'getStatementKeyword')]
 #[CoversMethod(Delete::class, '__get')]
 final class DeleteTest extends TestCase
 {
@@ -72,12 +72,12 @@ final class DeleteTest extends TestCase
     {
         // Set table with string
         $this->delete->from('foo');
-        self::assertEquals('foo', $this->readAttribute($this->delete, 'table'));
+        self::assertEquals('foo', $this->delete->getRawState('table'));
 
         // Set table with TableIdentifier
         $tableIdentifier = new TableIdentifier('foo', 'bar');
         $this->delete->from($tableIdentifier);
-        self::assertEquals($tableIdentifier, $this->readAttribute($this->delete, 'table'));
+        self::assertEquals($tableIdentifier, $this->delete->getRawState('table'));
     }
 
     /**

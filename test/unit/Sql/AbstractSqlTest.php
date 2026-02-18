@@ -37,15 +37,11 @@ use function uniqid;
 #[RequiresPhp('<= 8.6')]
 #[CoversMethod(AbstractSql::class, 'getSqlString')]
 #[CoversMethod(AbstractSql::class, 'buildSqlString')]
-#[CoversMethod(AbstractSql::class, 'renderTable')]
 #[CoversMethod(AbstractSql::class, 'processExpression')]
-#[CoversMethod(AbstractSql::class, 'processExpressionValue')]
 #[CoversMethod(AbstractSql::class, 'processExpressionOrSelect')]
 #[CoversMethod(AbstractSql::class, 'processExpressionParameterName')]
 #[CoversMethod(AbstractSql::class, 'createSqlFromSpecificationAndParameters')]
 #[CoversMethod(AbstractSql::class, 'processSubSelect')]
-#[CoversMethod(AbstractSql::class, 'processJoin')]
-#[CoversMethod(AbstractSql::class, 'resolveColumnValue')]
 #[CoversMethod(AbstractSql::class, 'resolveTable')]
 #[CoversMethod(AbstractSql::class, 'localizeVariables')]
 final class AbstractSqlTest extends TestCase
@@ -200,71 +196,6 @@ final class AbstractSqlTest extends TestCase
         $this->invokeProcessExpressionMethod($expression, $parameterContainer, $namedParameterPrefix);
 
         self::assertSame('string__containing__white__space1', key($parameterContainer->getNamedArray()));
-    }
-
-    /**
-     * @throws ReflectionException
-     */
-    public function testResolveColumnValueWithNull(): void
-    {
-        $method = new ReflectionMethod($this->abstractSql, 'resolveColumnValue');
-
-        $result = $method->invoke(
-            $this->abstractSql,
-            null,
-            new TrustingSql92Platform(),
-            $this->mockDriver,
-            null,
-            null
-        );
-
-        self::assertEquals('NULL', $result);
-    }
-
-    /**
-     * @throws ReflectionException
-     */
-    public function testResolveColumnValueWithSelect(): void
-    {
-        $select = new Select('foo');
-        $method = new ReflectionMethod($this->abstractSql, 'resolveColumnValue');
-
-        $result = $method->invoke(
-            $this->abstractSql,
-            $select,
-            new TrustingSql92Platform(),
-            $this->mockDriver,
-            null,
-            null
-        );
-
-        self::assertStringContainsString('SELECT', $result);
-        self::assertStringStartsWith('(', $result);
-        self::assertStringEndsWith(')', $result);
-    }
-
-    /**
-     * @throws ReflectionException
-     */
-    public function testResolveColumnValueWithArrayAndFromTable(): void
-    {
-        $method = new ReflectionMethod($this->abstractSql, 'resolveColumnValue');
-
-        $result = $method->invoke(
-            $this->abstractSql,
-            [
-                'column'       => 'id',
-                'isIdentifier' => true,
-                'fromTable'    => 'table.',
-            ],
-            new TrustingSql92Platform(),
-            $this->mockDriver,
-            null,
-            null
-        );
-
-        self::assertStringContainsString('table.', $result);
-        self::assertStringContainsString('id', $result);
     }
 
     /**

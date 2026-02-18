@@ -33,8 +33,6 @@ use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 use PHPUnit\Framework\Attributes\RequiresPhp;
 use PHPUnit\Framework\Attributes\TestDox;
 use PHPUnit\Framework\TestCase;
-use ReflectionException;
-use ReflectionObject;
 use TypeError;
 
 #[IgnoreDeprecations]
@@ -52,22 +50,15 @@ use TypeError;
 #[CoversMethod(Select::class, 'offset')]
 #[CoversMethod(Select::class, 'combine')]
 #[CoversMethod(Select::class, 'reset')]
-#[CoversMethod(Select::class, 'setSpecification')]
 #[CoversMethod(Select::class, 'getRawState')]
 #[CoversMethod(Select::class, 'isTableReadOnly')]
 #[CoversMethod(Select::class, 'prepareStatement')]
 #[CoversMethod(Select::class, 'getSqlString')]
 #[CoversMethod(Select::class, '__get')]
 #[CoversMethod(Select::class, '__clone')]
-#[CoversMethod(Select::class, 'processJoins')]
-#[CoversMethod(Select::class, 'processSelect')]
-#[CoversMethod(Select::class, 'processWhere')]
-#[CoversMethod(Select::class, 'processGroup')]
-#[CoversMethod(Select::class, 'processHaving')]
-#[CoversMethod(Select::class, 'processOrder')]
-#[CoversMethod(Select::class, 'processLimit')]
-#[CoversMethod(Select::class, 'processOffset')]
-#[CoversMethod(Select::class, 'processCombine')]
+#[CoversMethod(Select::class, 'buildSqlString')]
+#[CoversMethod(Select::class, 'getParts')]
+#[CoversMethod(Select::class, 'preparePartsForBuild')]
 final class SelectTest extends TestCase
 {
     use AdapterTestTrait;
@@ -208,27 +199,17 @@ final class SelectTest extends TestCase
         $select->join(['foo'], 'x = y');
     }
 
-    /**
-     * @throws ReflectionException
-     */
-    #[TestDox('unit test: Test processJoins() exception with bad join name')]
+    #[TestDox('unit test: Test buildSqlString() exception with bad join name')]
     public function testBadJoinName(): void
     {
         $mockExpression = $this->getMockBuilder(ExpressionInterface::class)
             ->getMock();
-        $mockDriver     = $this->getMockBuilder(DriverInterface::class)->getMock();
-        $mockDriver->expects($this->any())->method('formatParameterName')->willReturn('?');
-        $parameterContainer = new ParameterContainer();
 
         $select = new Select();
         $select->join(['foo' => $mockExpression], 'x = y');
 
-        $sr = new ReflectionObject($select);
-
-        $mr = $sr->getMethod('processJoins');
-
         $this->expectException(InvalidArgumentException::class);
-        $mr->invokeArgs($select, [new Sql92(), $mockDriver, $parameterContainer]);
+        $select->getSqlString(new Sql92());
     }
 
     #[TestDox('unit test: Test where() returns Select object (is chainable)')]
@@ -407,9 +388,6 @@ final class SelectTest extends TestCase
         self::assertSame($newWhere, $select->getRawState('where'));
     }
 
-    /**
-     * @throws ReflectionException
-     */
     #[TestDox('unit test: Test order()')]
     public function testOrder(): void
     {
@@ -427,16 +405,15 @@ final class SelectTest extends TestCase
         $select->order(['name ASC', 'age DESC']);
         self::assertEquals(['name ASC', 'age DESC'], $select->getRawState('order'));
 
+        // Expression in order
         $select = new Select();
         $select->order(new Expression('RAND()'));
-
-        $sr     = new ReflectionObject($select);
-        $method = $sr->getMethod('processOrder');
         self::assertEquals(
-            [[['RAND()']]],
-            $method->invokeArgs($select, [new TrustingSql92Platform()])
+            'SELECT * ORDER BY RAND()',
+            $select->getSqlString(new TrustingSql92Platform())
         );
 
+        // Operator expression in order
         $select = new Select();
         /** @psalm-suppress InvalidArgument - mocked Operator */
         $select->order(
@@ -445,11 +422,9 @@ final class SelectTest extends TestCase
                 ->setConstructorArgs(['rating', '<', '10'])
                 ->getMock()
         );
-        $sr     = new ReflectionObject($select);
-        $method = $sr->getMethod('processOrder');
         self::assertEquals(
-            [[['"rating" < \'10\'']]],
-            $method->invokeArgs($select, [new TrustingSql92Platform()])
+            'SELECT * ORDER BY "rating" < \'10\'',
+            $select->getSqlString(new TrustingSql92Platform())
         );
     }
 
@@ -727,7 +702,6 @@ final class SelectTest extends TestCase
         string $expectedSqlString,
         array $expectedParameters,
         mixed $unused1,
-        mixed $unused2,
         bool $useNamedParameters = false
     ): void {
         $mockDriver = $this->getMockBuilder(DriverInterface::class)->getMock();
@@ -798,50 +772,12 @@ final class SelectTest extends TestCase
     }
 
     /**
-     * @throws ReflectionException
-     * @noinspection PhpUnusedParameterInspection
-     */
-    #[DataProvider('providerData')]
-    #[TestDox('unit test: Text process*() methods will return proper array when internally called,
-                    part of extension API')]
-    public function testProcessMethods(
-        Select $select,
-        mixed $unused,
-        mixed $unused2,
-        mixed $unused3,
-        array $internalTests
-    ): void {
-        if ($internalTests === []) {
-            $this->expectNotToPerformAssertions();
-            return;
-        }
-
-        $mockDriver = $this->getMockBuilder(DriverInterface::class)->getMock();
-        $mockDriver->expects($this->any())->method('formatParameterName')->willReturn('?');
-        $parameterContainer = new ParameterContainer();
-
-        $sr = new ReflectionObject($select);
-
-        /**
-         * @var string $method
-         * @var array $expected
-         */
-        foreach ($internalTests as $method => $expected) {
-            $mr = $sr->getMethod($method);
-            /** @psalm-suppress MixedAssignment */
-            $return = $mr->invokeArgs($select, [new Sql92(), $mockDriver, $parameterContainer]);
-            self::assertEquals($expected, $return);
-        }
-    }
-
-    /**
      * @psalm-return array<array-key, array{
      *     0: Select,
      *     1: string,
      *     2: array<string, mixed>,
      *     3: string,
-     *     4: array,
-     *     5: bool,
+     *     4: bool,
      * }>
      */
     public static function providerData(): array
@@ -851,86 +787,59 @@ final class SelectTest extends TestCase
         $select0 = new Select();
         $select0->from('foo');
 
-        $sqlPrep0       = 'SELECT "foo".* FROM "foo"';
-        $sqlStr0        = 'SELECT "foo".* FROM "foo"';
-        $internalTests0 = [
-            'processSelect' => [[['"foo".*']], '"foo"'],
-        ];
+        $sqlPrep0 = 'SELECT "foo".* FROM "foo"';
+        $sqlStr0  = 'SELECT "foo".* FROM "foo"';
 
         // table as TableIdentifier
         $select1 = new Select();
         $select1->from(new TableIdentifier('foo', 'bar'));
 
-        $sqlPrep1       = 'SELECT "bar"."foo".* FROM "bar"."foo"';
-        $sqlStr1        = 'SELECT "bar"."foo".* FROM "bar"."foo"';
-        $internalTests1 = [
-            'processSelect' => [[['"bar"."foo".*']], '"bar"."foo"'],
-        ];
+        $sqlPrep1 = 'SELECT "bar"."foo".* FROM "bar"."foo"';
+        $sqlStr1  = 'SELECT "bar"."foo".* FROM "bar"."foo"';
 
         // table with alias
         $select2 = new Select();
         $select2->from(['f' => 'foo']);
 
-        $sqlPrep2       = 'SELECT "f".* FROM "foo" AS "f"';
-        $sqlStr2        = 'SELECT "f".* FROM "foo" AS "f"';
-        $internalTests2 = [
-            'processSelect' => [[['"f".*']], '"foo" AS "f"'],
-        ];
+        $sqlPrep2 = 'SELECT "f".* FROM "foo" AS "f"';
+        $sqlStr2  = 'SELECT "f".* FROM "foo" AS "f"';
 
         // table with alias with table as TableIdentifier
         $select3 = new Select();
         $select3->from(['f' => new TableIdentifier('foo')]);
 
-        $sqlPrep3       = 'SELECT "f".* FROM "foo" AS "f"';
-        $sqlStr3        = 'SELECT "f".* FROM "foo" AS "f"';
-        $internalTests3 = [
-            'processSelect' => [[['"f".*']], '"foo" AS "f"'],
-        ];
+        $sqlPrep3 = 'SELECT "f".* FROM "foo" AS "f"';
+        $sqlStr3  = 'SELECT "f".* FROM "foo" AS "f"';
 
         // columns
         $select4 = new Select();
         $select4->from('foo')->columns(['bar', 'baz']);
-        $sqlPrep4       = 'SELECT "foo"."bar" AS "bar", "foo"."baz" AS "baz" FROM "foo"';
-        $sqlStr4        = 'SELECT "foo"."bar" AS "bar", "foo"."baz" AS "baz" FROM "foo"';
-        $internalTests4 = [
-            'processSelect' => [[['"foo"."bar"', '"bar"'], ['"foo"."baz"', '"baz"']], '"foo"'],
-        ];
+        $sqlPrep4 = 'SELECT "foo"."bar" AS "bar", "foo"."baz" AS "baz" FROM "foo"';
+        $sqlStr4  = 'SELECT "foo"."bar" AS "bar", "foo"."baz" AS "baz" FROM "foo"';
 
         // columns with AS associative array
         $select5 = new Select();
         $select5->from('foo')->columns(['bar' => 'baz']);
-        $sqlPrep5       = 'SELECT "foo"."baz" AS "bar" FROM "foo"';
-        $sqlStr5        = 'SELECT "foo"."baz" AS "bar" FROM "foo"';
-        $internalTests5 = [
-            'processSelect' => [[['"foo"."baz"', '"bar"']], '"foo"'],
-        ];
+        $sqlPrep5 = 'SELECT "foo"."baz" AS "bar" FROM "foo"';
+        $sqlStr5  = 'SELECT "foo"."baz" AS "bar" FROM "foo"';
 
         // columns with AS associative array mixed
         $select6 = new Select();
         $select6->from('foo')->columns(['bar' => 'baz', 'bam']);
-        $sqlPrep6       = 'SELECT "foo"."baz" AS "bar", "foo"."bam" AS "bam" FROM "foo"';
-        $sqlStr6        = 'SELECT "foo"."baz" AS "bar", "foo"."bam" AS "bam" FROM "foo"';
-        $internalTests6 = [
-            'processSelect' => [[['"foo"."baz"', '"bar"'], ['"foo"."bam"', '"bam"']], '"foo"'],
-        ];
+        $sqlPrep6 = 'SELECT "foo"."baz" AS "bar", "foo"."bam" AS "bam" FROM "foo"';
+        $sqlStr6  = 'SELECT "foo"."baz" AS "bar", "foo"."bam" AS "bam" FROM "foo"';
 
         // columns where value is Expression, with AS
         $select7 = new Select();
         $select7->from('foo')->columns(['bar' => new Expression('COUNT(some_column)')]);
-        $sqlPrep7       = 'SELECT COUNT(some_column) AS "bar" FROM "foo"';
-        $sqlStr7        = 'SELECT COUNT(some_column) AS "bar" FROM "foo"';
-        $internalTests7 = [
-            'processSelect' => [[['COUNT(some_column)', '"bar"']], '"foo"'],
-        ];
+        $sqlPrep7 = 'SELECT COUNT(some_column) AS "bar" FROM "foo"';
+        $sqlStr7  = 'SELECT COUNT(some_column) AS "bar" FROM "foo"';
 
         // columns where value is Expression
         $select8 = new Select();
         $select8->from('foo')->columns([new Expression('COUNT(some_column) AS bar')]);
-        $sqlPrep8       = 'SELECT COUNT(some_column) AS bar FROM "foo"';
-        $sqlStr8        = 'SELECT COUNT(some_column) AS bar FROM "foo"';
-        $internalTests8 = [
-            'processSelect' => [[['COUNT(some_column) AS bar']], '"foo"'],
-        ];
+        $sqlPrep8 = 'SELECT COUNT(some_column) AS bar FROM "foo"';
+        $sqlStr8  = 'SELECT COUNT(some_column) AS bar FROM "foo"';
 
         // columns where value is Expression with parameters
         $select9 = new Select();
@@ -946,245 +855,150 @@ final class SelectTest extends TestCase
                 ),
             ]
         );
-        $sqlPrep9       = 'SELECT (COUNT("some_column") + ?) AS "bar" FROM "foo"';
-        $sqlStr9        = 'SELECT (COUNT("some_column") + \'5\') AS "bar" FROM "foo"';
-        $params9        = ['column1' => 5];
-        $internalTests9 = [
-            'processSelect' => [[['(COUNT("some_column") + ?) AS "bar"']], '"foo"'],
-        ];
+        $sqlPrep9 = 'SELECT (COUNT("some_column") + ?) AS "bar" FROM "foo"';
+        $sqlStr9  = 'SELECT (COUNT("some_column") + \'5\') AS "bar" FROM "foo"';
+        $params9  = ['column1' => 5];
 
         // joins (plain)
         $select10 = new Select();
         $select10->from('foo')->join('zac', 'm = n');
-        $sqlPrep10       = 'SELECT "foo".*, "zac".* FROM "foo" INNER JOIN "zac" ON "m" = "n"';
-        $sqlStr10        = 'SELECT "foo".*, "zac".* FROM "foo" INNER JOIN "zac" ON "m" = "n"';
-        $internalTests10 = [
-            'processSelect' => [[['"foo".*'], ['"zac".*']], '"foo"'],
-            'processJoins'  => [[['INNER', '"zac"', '"m" = "n"']]],
-        ];
+        $sqlPrep10 = 'SELECT "foo".*, "zac".* FROM "foo" INNER JOIN "zac" ON "m" = "n"';
+        $sqlStr10  = 'SELECT "foo".*, "zac".* FROM "foo" INNER JOIN "zac" ON "m" = "n"';
 
         // join with columns
         $select11 = new Select();
         $select11->from('foo')->join('zac', 'm = n', ['bar', 'baz']);
-        $sqlPrep11       = 'SELECT "foo".*, "zac"."bar" AS "bar", "zac"."baz" AS "baz" FROM "foo" INNER JOIN "zac" ON "m" = "n"';
-        $sqlStr11        = 'SELECT "foo".*, "zac"."bar" AS "bar", "zac"."baz" AS "baz" FROM "foo" INNER JOIN "zac" ON "m" = "n"';
-        $internalTests11 = [
-            'processSelect' => [[['"foo".*'], ['"zac"."bar"', '"bar"'], ['"zac"."baz"', '"baz"']], '"foo"'],
-            'processJoins'  => [[['INNER', '"zac"', '"m" = "n"']]],
-        ];
+        $sqlPrep11 = 'SELECT "foo".*, "zac"."bar" AS "bar", "zac"."baz" AS "baz" FROM "foo" INNER JOIN "zac" ON "m" = "n"';
+        $sqlStr11  = 'SELECT "foo".*, "zac"."bar" AS "bar", "zac"."baz" AS "baz" FROM "foo" INNER JOIN "zac" ON "m" = "n"';
 
         // join with alternate type
         $select12 = new Select();
         $select12->from('foo')->join('zac', 'm = n', ['bar', 'baz'], Select::JOIN_OUTER);
-        $sqlPrep12       = 'SELECT "foo".*, "zac"."bar" AS "bar", "zac"."baz" AS "baz" FROM "foo" OUTER JOIN "zac" ON "m" = "n"';
-        $sqlStr12        = 'SELECT "foo".*, "zac"."bar" AS "bar", "zac"."baz" AS "baz" FROM "foo" OUTER JOIN "zac" ON "m" = "n"';
-        $internalTests12 = [
-            'processSelect' => [[['"foo".*'], ['"zac"."bar"', '"bar"'], ['"zac"."baz"', '"baz"']], '"foo"'],
-            'processJoins'  => [[['OUTER', '"zac"', '"m" = "n"']]],
-        ];
+        $sqlPrep12 = 'SELECT "foo".*, "zac"."bar" AS "bar", "zac"."baz" AS "baz" FROM "foo" OUTER JOIN "zac" ON "m" = "n"';
+        $sqlStr12  = 'SELECT "foo".*, "zac"."bar" AS "bar", "zac"."baz" AS "baz" FROM "foo" OUTER JOIN "zac" ON "m" = "n"';
 
         // join with column aliases
         $select13 = new Select();
         $select13->from('foo')->join('zac', 'm = n', ['BAR' => 'bar', 'BAZ' => 'baz']);
-        $sqlPrep13       = 'SELECT "foo".*, "zac"."bar" AS "BAR", "zac"."baz" AS "BAZ" FROM "foo" INNER JOIN "zac" ON "m" = "n"';
-        $sqlStr13        = 'SELECT "foo".*, "zac"."bar" AS "BAR", "zac"."baz" AS "BAZ" FROM "foo" INNER JOIN "zac" ON "m" = "n"';
-        $internalTests13 = [
-            'processSelect' => [[['"foo".*'], ['"zac"."bar"', '"BAR"'], ['"zac"."baz"', '"BAZ"']], '"foo"'],
-            'processJoins'  => [[['INNER', '"zac"', '"m" = "n"']]],
-        ];
+        $sqlPrep13 = 'SELECT "foo".*, "zac"."bar" AS "BAR", "zac"."baz" AS "BAZ" FROM "foo" INNER JOIN "zac" ON "m" = "n"';
+        $sqlStr13  = 'SELECT "foo".*, "zac"."bar" AS "BAR", "zac"."baz" AS "BAZ" FROM "foo" INNER JOIN "zac" ON "m" = "n"';
 
         // join with table aliases
         $select14 = new Select();
         $select14->from('foo')->join(['b' => 'bar'], 'b.foo_id = foo.foo_id');
-        $sqlPrep14       = 'SELECT "foo".*, "b".* FROM "foo" INNER JOIN "bar" AS "b" ON "b"."foo_id" = "foo"."foo_id"';
-        $sqlStr14        = 'SELECT "foo".*, "b".* FROM "foo" INNER JOIN "bar" AS "b" ON "b"."foo_id" = "foo"."foo_id"';
-        $internalTests14 = [
-            'processSelect' => [[['"foo".*'], ['"b".*']], '"foo"'],
-            'processJoins'  => [[['INNER', '"bar" AS "b"', '"b"."foo_id" = "foo"."foo_id"']]],
-        ];
+        $sqlPrep14 = 'SELECT "foo".*, "b".* FROM "foo" INNER JOIN "bar" AS "b" ON "b"."foo_id" = "foo"."foo_id"';
+        $sqlStr14  = 'SELECT "foo".*, "b".* FROM "foo" INNER JOIN "bar" AS "b" ON "b"."foo_id" = "foo"."foo_id"';
 
         // where (simple string)
         $select15 = new Select();
         $select15->from('foo')->where('x = 5');
-        $sqlPrep15       = 'SELECT "foo".* FROM "foo" WHERE x = 5';
-        $sqlStr15        = 'SELECT "foo".* FROM "foo" WHERE x = 5';
-        $internalTests15 = [
-            'processSelect' => [[['"foo".*']], '"foo"'],
-            'processWhere'  => ['x = 5'],
-        ];
+        $sqlPrep15 = 'SELECT "foo".* FROM "foo" WHERE x = 5';
+        $sqlStr15  = 'SELECT "foo".* FROM "foo" WHERE x = 5';
 
         // where (returning parameters)
         $select16 = new Select();
         $select16->from('foo')->where(['x = ?' => 5]);
-        $sqlPrep16       = 'SELECT "foo".* FROM "foo" WHERE x = ?';
-        $sqlStr16        = 'SELECT "foo".* FROM "foo" WHERE x = \'5\'';
-        $params16        = ['where1' => 5];
-        $internalTests16 = [
-            'processSelect' => [[['"foo".*']], '"foo"'],
-            'processWhere'  => ['x = ?'],
-        ];
+        $sqlPrep16 = 'SELECT "foo".* FROM "foo" WHERE x = ?';
+        $sqlStr16  = 'SELECT "foo".* FROM "foo" WHERE x = \'5\'';
+        $params16  = ['where1' => 5];
 
         // group
         $select17 = new Select();
         $select17->from('foo')->group(['col1', 'col2']);
-        $sqlPrep17       = 'SELECT "foo".* FROM "foo" GROUP BY "col1", "col2"';
-        $sqlStr17        = 'SELECT "foo".* FROM "foo" GROUP BY "col1", "col2"';
-        $internalTests17 = [
-            'processSelect' => [[['"foo".*']], '"foo"'],
-            'processGroup'  => [['"col1"', '"col2"']],
-        ];
+        $sqlPrep17 = 'SELECT "foo".* FROM "foo" GROUP BY "col1", "col2"';
+        $sqlStr17  = 'SELECT "foo".* FROM "foo" GROUP BY "col1", "col2"';
 
         $select18 = new Select();
         $select18->from('foo')->group('col1')->group('col2');
-        $sqlPrep18       = 'SELECT "foo".* FROM "foo" GROUP BY "col1", "col2"';
-        $sqlStr18        = 'SELECT "foo".* FROM "foo" GROUP BY "col1", "col2"';
-        $internalTests18 = [
-            'processSelect' => [[['"foo".*']], '"foo"'],
-            'processGroup'  => [['"col1"', '"col2"']],
-        ];
+        $sqlPrep18 = 'SELECT "foo".* FROM "foo" GROUP BY "col1", "col2"';
+        $sqlStr18  = 'SELECT "foo".* FROM "foo" GROUP BY "col1", "col2"';
 
         $select19 = new Select();
         $select19->from('foo')->group(new Expression('DAY(?)', [new Argument\Identifier('col1')]));
-        $sqlPrep19       = 'SELECT "foo".* FROM "foo" GROUP BY DAY("col1")';
-        $sqlStr19        = 'SELECT "foo".* FROM "foo" GROUP BY DAY("col1")';
-        $internalTests19 = [
-            'processSelect' => [[['"foo".*']], '"foo"'],
-            'processGroup'  => [['DAY("col1")']],
-        ];
+        $sqlPrep19 = 'SELECT "foo".* FROM "foo" GROUP BY DAY("col1")';
+        $sqlStr19  = 'SELECT "foo".* FROM "foo" GROUP BY DAY("col1")';
 
         // having (simple string)
         $select20 = new Select();
         $select20->from('foo')->having('x = 5');
-        $sqlPrep20       = 'SELECT "foo".* FROM "foo" HAVING x = 5';
-        $sqlStr20        = 'SELECT "foo".* FROM "foo" HAVING x = 5';
-        $internalTests20 = [
-            'processSelect' => [[['"foo".*']], '"foo"'],
-            'processHaving' => ['x = 5'],
-        ];
+        $sqlPrep20 = 'SELECT "foo".* FROM "foo" HAVING x = 5';
+        $sqlStr20  = 'SELECT "foo".* FROM "foo" HAVING x = 5';
 
         // having (returning parameters)
         $select21 = new Select();
         $select21->from('foo')->having(['x = ?' => 5]);
-        $sqlPrep21       = 'SELECT "foo".* FROM "foo" HAVING x = ?';
-        $sqlStr21        = 'SELECT "foo".* FROM "foo" HAVING x = \'5\'';
-        $params21        = ['having1' => 5];
-        $internalTests21 = [
-            'processSelect' => [[['"foo".*']], '"foo"'],
-            'processHaving' => ['x = ?'],
-        ];
+        $sqlPrep21 = 'SELECT "foo".* FROM "foo" HAVING x = ?';
+        $sqlStr21  = 'SELECT "foo".* FROM "foo" HAVING x = \'5\'';
+        $params21  = ['having1' => 5];
 
         // order
         $select22 = new Select();
         $select22->from('foo')->order('c1');
-        $sqlPrep22       = 'SELECT "foo".* FROM "foo" ORDER BY "c1" ASC';
-        $sqlStr22        = 'SELECT "foo".* FROM "foo" ORDER BY "c1" ASC';
-        $internalTests22 = [
-            'processSelect' => [[['"foo".*']], '"foo"'],
-            'processOrder'  => [[['"c1"', Select::ORDER_ASCENDING]]],
-        ];
+        $sqlPrep22 = 'SELECT "foo".* FROM "foo" ORDER BY "c1" ASC';
+        $sqlStr22  = 'SELECT "foo".* FROM "foo" ORDER BY "c1" ASC';
 
         $select23 = new Select();
         $select23->from('foo')->order(['c1', 'c2']);
-        $sqlPrep23       = 'SELECT "foo".* FROM "foo" ORDER BY "c1" ASC, "c2" ASC';
-        $sqlStr23        = 'SELECT "foo".* FROM "foo" ORDER BY "c1" ASC, "c2" ASC';
-        $internalTests23 = [
-            'processSelect' => [[['"foo".*']], '"foo"'],
-            'processOrder'  => [[['"c1"', Select::ORDER_ASCENDING], ['"c2"', Select::ORDER_ASCENDING]]],
-        ];
+        $sqlPrep23 = 'SELECT "foo".* FROM "foo" ORDER BY "c1" ASC, "c2" ASC';
+        $sqlStr23  = 'SELECT "foo".* FROM "foo" ORDER BY "c1" ASC, "c2" ASC';
 
         $select24 = new Select();
         $select24->from('foo')->order(['c1' => 'DESC', 'c2' => 'Asc']);
         // notice partially lower case ASC
-        $sqlPrep24       = 'SELECT "foo".* FROM "foo" ORDER BY "c1" DESC, "c2" ASC';
-        $sqlStr24        = 'SELECT "foo".* FROM "foo" ORDER BY "c1" DESC, "c2" ASC';
-        $internalTests24 = [
-            'processSelect' => [[['"foo".*']], '"foo"'],
-            'processOrder'  => [[['"c1"', Select::ORDER_DESCENDING], ['"c2"', Select::ORDER_ASCENDING]]],
-        ];
+        $sqlPrep24 = 'SELECT "foo".* FROM "foo" ORDER BY "c1" DESC, "c2" ASC';
+        $sqlStr24  = 'SELECT "foo".* FROM "foo" ORDER BY "c1" DESC, "c2" ASC';
 
         $select25 = new Select();
         $select25->from('foo')->order(['c1' => 'asc'])->order('c2 desc');
         // notice partially lower case ASC
-        $sqlPrep25       = 'SELECT "foo".* FROM "foo" ORDER BY "c1" ASC, "c2" DESC';
-        $sqlStr25        = 'SELECT "foo".* FROM "foo" ORDER BY "c1" ASC, "c2" DESC';
-        $internalTests25 = [
-            'processSelect' => [[['"foo".*']], '"foo"'],
-            'processOrder'  => [[['"c1"', Select::ORDER_ASCENDING], ['"c2"', Select::ORDER_DESCENDING]]],
-        ];
+        $sqlPrep25 = 'SELECT "foo".* FROM "foo" ORDER BY "c1" ASC, "c2" DESC';
+        $sqlStr25  = 'SELECT "foo".* FROM "foo" ORDER BY "c1" ASC, "c2" DESC';
 
         // limit
         $select26 = new Select();
         $select26->from('foo')->limit(5);
-        $sqlPrep26       = 'SELECT "foo".* FROM "foo" LIMIT ?';
-        $sqlStr26        = 'SELECT "foo".* FROM "foo" LIMIT \'5\'';
-        $params26        = ['limit' => 5];
-        $internalTests26 = [
-            'processSelect' => [[['"foo".*']], '"foo"'],
-            'processLimit'  => ['?'],
-        ];
+        $sqlPrep26 = 'SELECT "foo".* FROM "foo" LIMIT ?';
+        $sqlStr26  = 'SELECT "foo".* FROM "foo" LIMIT \'5\'';
+        $params26  = ['limit' => 5];
 
         // limit with offset
         $select27 = new Select();
         $select27->from('foo')->limit(5)->offset(10);
-        $sqlPrep27       = 'SELECT "foo".* FROM "foo" LIMIT ? OFFSET ?';
-        $sqlStr27        = 'SELECT "foo".* FROM "foo" LIMIT \'5\' OFFSET \'10\'';
-        $params27        = ['limit' => 5, 'offset' => 10];
-        $internalTests27 = [
-            'processSelect' => [[['"foo".*']], '"foo"'],
-            'processLimit'  => ['?'],
-            'processOffset' => ['?'],
-        ];
+        $sqlPrep27 = 'SELECT "foo".* FROM "foo" LIMIT ? OFFSET ?';
+        $sqlStr27  = 'SELECT "foo".* FROM "foo" LIMIT \'5\' OFFSET \'10\'';
+        $params27  = ['limit' => 5, 'offset' => 10];
 
         // joins with a few keywords in the on clause
         $select28 = new Select();
         $select28->from('foo')->join('zac', '(m = n AND c.x) BETWEEN x AND y.z OR (c.x < y.z AND c.x <= y.z AND c.x > y.z AND c.x >= y.z)');
-        $sqlPrep28       = 'SELECT "foo".*, "zac".* FROM "foo" INNER JOIN "zac" ON ("m" = "n" AND "c"."x") BETWEEN "x" AND "y"."z" OR ("c"."x" < "y"."z" AND "c"."x" <= "y"."z" AND "c"."x" > "y"."z" AND "c"."x" >= "y"."z")';
-        $sqlStr28        = 'SELECT "foo".*, "zac".* FROM "foo" INNER JOIN "zac" ON ("m" = "n" AND "c"."x") BETWEEN "x" AND "y"."z" OR ("c"."x" < "y"."z" AND "c"."x" <= "y"."z" AND "c"."x" > "y"."z" AND "c"."x" >= "y"."z")';
-        $internalTests28 = [
-            'processSelect' => [[['"foo".*'], ['"zac".*']], '"foo"'],
-            'processJoins'  => [[['INNER', '"zac"', '("m" = "n" AND "c"."x") BETWEEN "x" AND "y"."z" OR ("c"."x" < "y"."z" AND "c"."x" <= "y"."z" AND "c"."x" > "y"."z" AND "c"."x" >= "y"."z")']]],
-        ];
+        $sqlPrep28 = 'SELECT "foo".*, "zac".* FROM "foo" INNER JOIN "zac" ON ("m" = "n" AND "c"."x") BETWEEN "x" AND "y"."z" OR ("c"."x" < "y"."z" AND "c"."x" <= "y"."z" AND "c"."x" > "y"."z" AND "c"."x" >= "y"."z")';
+        $sqlStr28  = 'SELECT "foo".*, "zac".* FROM "foo" INNER JOIN "zac" ON ("m" = "n" AND "c"."x") BETWEEN "x" AND "y"."z" OR ("c"."x" < "y"."z" AND "c"."x" <= "y"."z" AND "c"."x" > "y"."z" AND "c"."x" >= "y"."z")';
 
         // order with compound name
         $select29 = new Select();
         $select29->from('foo')->order('c1.d2');
-        $sqlPrep29       = 'SELECT "foo".* FROM "foo" ORDER BY "c1"."d2" ASC';
-        $sqlStr29        = 'SELECT "foo".* FROM "foo" ORDER BY "c1"."d2" ASC';
-        $internalTests29 = [
-            'processSelect' => [[['"foo".*']], '"foo"'],
-            'processOrder'  => [[['"c1"."d2"', Select::ORDER_ASCENDING]]],
-        ];
+        $sqlPrep29 = 'SELECT "foo".* FROM "foo" ORDER BY "c1"."d2" ASC';
+        $sqlStr29  = 'SELECT "foo".* FROM "foo" ORDER BY "c1"."d2" ASC';
 
         // group with compound name
         $select30 = new Select();
         $select30->from('foo')->group('c1.d2');
-        $sqlPrep30       = 'SELECT "foo".* FROM "foo" GROUP BY "c1"."d2"';
-        $sqlStr30        = 'SELECT "foo".* FROM "foo" GROUP BY "c1"."d2"';
-        $internalTests30 = [
-            'processSelect' => [[['"foo".*']], '"foo"'],
-            'processGroup'  => [['"c1"."d2"']],
-        ];
+        $sqlPrep30 = 'SELECT "foo".* FROM "foo" GROUP BY "c1"."d2"';
+        $sqlStr30  = 'SELECT "foo".* FROM "foo" GROUP BY "c1"."d2"';
 
         // join with expression in ON part
         $select31 = new Select();
         $select31->from('foo')->join('zac', new Predicate\Expression('(m = n AND c.x) BETWEEN x AND y.z'));
-        $sqlPrep31       = 'SELECT "foo".*, "zac".* FROM "foo" INNER JOIN "zac" ON (m = n AND c.x) BETWEEN x AND y.z';
-        $sqlStr31        = 'SELECT "foo".*, "zac".* FROM "foo" INNER JOIN "zac" ON (m = n AND c.x) BETWEEN x AND y.z';
-        $internalTests31 = [
-            'processSelect' => [[['"foo".*'], ['"zac".*']], '"foo"'],
-            'processJoins'  => [[['INNER', '"zac"', '(m = n AND c.x) BETWEEN x AND y.z']]],
-        ];
+        $sqlPrep31 = 'SELECT "foo".*, "zac".* FROM "foo" INNER JOIN "zac" ON (m = n AND c.x) BETWEEN x AND y.z';
+        $sqlStr31  = 'SELECT "foo".*, "zac".* FROM "foo" INNER JOIN "zac" ON (m = n AND c.x) BETWEEN x AND y.z';
 
         $select32subselect = new Select();
         $select32subselect->from('bar')->where->like('y', '%Foo%');
         $select32 = new Select();
         $select32->from(['x' => $select32subselect]);
 
-        $sqlPrep32       = 'SELECT "x".* FROM (SELECT "bar".* FROM "bar" WHERE "y" LIKE ?) AS "x"';
-        $sqlStr32        = 'SELECT "x".* FROM (SELECT "bar".* FROM "bar" WHERE "y" LIKE \'%Foo%\') AS "x"';
-        $internalTests32 = [
-            'processSelect' => [[['"x".*']], '(SELECT "bar".* FROM "bar" WHERE "y" LIKE ?) AS "x"'],
-        ];
+        $sqlPrep32 = 'SELECT "x".* FROM (SELECT "bar".* FROM "bar" WHERE "y" LIKE ?) AS "x"';
+        $sqlStr32  = 'SELECT "x".* FROM (SELECT "bar".* FROM "bar" WHERE "y" LIKE \'%Foo%\') AS "x"';
 
         $select33 = new Select();
         $select33->from('table')->columns(['*'])->where([
@@ -1192,12 +1006,8 @@ final class SelectTest extends TestCase
             'c2' => [1, 2, 3],
             new IsNotNull('c3'),
         ]);
-        $sqlPrep33       = 'SELECT "table".* FROM "table" WHERE "c1" IS NULL AND "c2" IN (?, ?, ?) AND "c3" IS NOT NULL';
-        $sqlStr33        = 'SELECT "table".* FROM "table" WHERE "c1" IS NULL AND "c2" IN (\'1\', \'2\', \'3\') AND "c3" IS NOT NULL';
-        $internalTests33 = [
-            'processSelect' => [[['"table".*']], '"table"'],
-            'processWhere'  => ['"c1" IS NULL AND "c2" IN (?, ?, ?) AND "c3" IS NOT NULL'],
-        ];
+        $sqlPrep33 = 'SELECT "table".* FROM "table" WHERE "c1" IS NULL AND "c2" IN (?, ?, ?) AND "c3" IS NOT NULL';
+        $sqlStr33  = 'SELECT "table".* FROM "table" WHERE "c1" IS NULL AND "c2" IN (\'1\', \'2\', \'3\') AND "c3" IS NOT NULL';
 
         // @author Demian Katz
         $select34 = new Select();
@@ -1205,22 +1015,15 @@ final class SelectTest extends TestCase
             new Expression('isnull(?) DESC', [new Argument\Identifier('name')]),
             'name',
         ]);
-        $sqlPrep34       = 'SELECT "table".* FROM "table" ORDER BY isnull("name") DESC, "name" ASC';
-        $sqlStr34        = 'SELECT "table".* FROM "table" ORDER BY isnull("name") DESC, "name" ASC';
-        $internalTests34 = [
-            'processOrder' => [[['isnull("name") DESC'], ['"name"', Select::ORDER_ASCENDING]]],
-        ];
+        $sqlPrep34 = 'SELECT "table".* FROM "table" ORDER BY isnull("name") DESC, "name" ASC';
+        $sqlStr34  = 'SELECT "table".* FROM "table" ORDER BY isnull("name") DESC, "name" ASC';
 
         // join with Expression object in COLUMNS part (Laminas-514)
         // @co-author Koen Pieters (kpieters)
         $select35 = new Select();
         $select35->from('foo')->columns([])->join('bar', 'm = n', ['thecount' => new Expression("COUNT(*)")]);
-        $sqlPrep35       = 'SELECT COUNT(*) AS "thecount" FROM "foo" INNER JOIN "bar" ON "m" = "n"';
-        $sqlStr35        = 'SELECT COUNT(*) AS "thecount" FROM "foo" INNER JOIN "bar" ON "m" = "n"';
-        $internalTests35 = [
-            'processSelect' => [[['COUNT(*)', '"thecount"']], '"foo"'],
-            'processJoins'  => [[['INNER', '"bar"', '"m" = "n"']]],
-        ];
+        $sqlPrep35 = 'SELECT COUNT(*) AS "thecount" FROM "foo" INNER JOIN "bar" ON "m" = "n"';
+        $sqlStr35  = 'SELECT COUNT(*) AS "thecount" FROM "foo" INNER JOIN "bar" ON "m" = "n"';
 
         // multiple joins with expressions
         // reported by @jdolieslager
@@ -1232,49 +1035,36 @@ final class SelectTest extends TestCase
                 new Predicate\Operator('id', '=', 3),
                 new Predicate\Operator('number', '>', 20),
             ]));
-        $sqlPrep36       = 'SELECT "foo".*, "tableA".*, "tableB".*, "tableC".* FROM "foo"'
+        $sqlPrep36 = 'SELECT "foo".*, "tableA".*, "tableB".*, "tableC".* FROM "foo"'
             . ' INNER JOIN "tableA" ON "id" = :join1part1 INNER JOIN "tableB" ON "id" = :join2part1 '
             . 'INNER JOIN "tableC" ON "id" = :join3part1 AND "number" > :join3part2';
-        $sqlStr36        = 'SELECT "foo".*, "tableA".*, "tableB".*, "tableC".* FROM "foo" '
+        $sqlStr36  = 'SELECT "foo".*, "tableA".*, "tableB".*, "tableC".* FROM "foo" '
             . 'INNER JOIN "tableA" ON "id" = \'1\' INNER JOIN "tableB" ON "id" = \'2\' '
             . 'INNER JOIN "tableC" ON "id" = \'3\' AND "number" > \'20\'';
-        $internalTests36 = [];
 
         /**
          * @link https://github.com/zendframework/zf2/pull/2714
          */
         $select37 = new Select();
         $select37->from('foo')->columns(['bar'], false);
-        $sqlPrep37       = 'SELECT "bar" AS "bar" FROM "foo"';
-        $sqlStr37        = 'SELECT "bar" AS "bar" FROM "foo"';
-        $internalTests37 = [
-            'processSelect' => [[['"bar"', '"bar"']], '"foo"'],
-        ];
+        $sqlPrep37 = 'SELECT "bar" AS "bar" FROM "foo"';
+        $sqlStr37  = 'SELECT "bar" AS "bar" FROM "foo"';
 
         // @link https://github.com/zendframework/zf2/issues/3294
         // Test TableIdentifier In Joins
         $select38 = new Select();
         $select38->from('foo')->columns([])
             ->join(new TableIdentifier('bar', 'baz'), 'm = n', ['thecount' => new Expression("COUNT(*)")]);
-        $sqlPrep38       = 'SELECT COUNT(*) AS "thecount" FROM "foo" INNER JOIN "baz"."bar" ON "m" = "n"';
-        $sqlStr38        = 'SELECT COUNT(*) AS "thecount" FROM "foo" INNER JOIN "baz"."bar" ON "m" = "n"';
-        $internalTests38 = [
-            'processSelect' => [[['COUNT(*)', '"thecount"']], '"foo"'],
-            'processJoins'  => [[['INNER', '"baz"."bar"', '"m" = "n"']]],
-        ];
+        $sqlPrep38 = 'SELECT COUNT(*) AS "thecount" FROM "foo" INNER JOIN "baz"."bar" ON "m" = "n"';
+        $sqlStr38  = 'SELECT COUNT(*) AS "thecount" FROM "foo" INNER JOIN "baz"."bar" ON "m" = "n"';
 
         // subselect in join
         $select39subselect = new Select();
         $select39subselect->from('bar')->where->like('y', '%Foo%');
         $select39 = new Select();
         $select39->from('foo')->join(['z' => $select39subselect], 'z.foo = bar.id');
-        $sqlPrep39       = 'SELECT "foo".*, "z".* FROM "foo" INNER JOIN (SELECT "bar".* FROM "bar" WHERE "y" LIKE ?) AS "z" ON "z"."foo" = "bar"."id"';
-        $sqlStr39        = 'SELECT "foo".*, "z".* FROM "foo" INNER JOIN (SELECT "bar".* FROM "bar" WHERE "y" LIKE \'%Foo%\') AS "z" ON "z"."foo" = "bar"."id"';
-        $internalTests39 = [
-            'processJoins' => [
-                [['INNER', '(SELECT "bar".* FROM "bar" WHERE "y" LIKE ?) AS "z"', '"z"."foo" = "bar"."id"']],
-            ],
-        ];
+        $sqlPrep39 = 'SELECT "foo".*, "z".* FROM "foo" INNER JOIN (SELECT "bar".* FROM "bar" WHERE "y" LIKE ?) AS "z" ON "z"."foo" = "bar"."id"';
+        $sqlStr39  = 'SELECT "foo".*, "z".* FROM "foo" INNER JOIN (SELECT "bar".* FROM "bar" WHERE "y" LIKE \'%Foo%\') AS "z" ON "z"."foo" = "bar"."id"';
 
         // @link https://github.com/zendframework/zf2/issues/3294
         // Test TableIdentifier In Joins, with multiple joins
@@ -1282,68 +1072,42 @@ final class SelectTest extends TestCase
         $select40->from('foo')
             ->join(['a' => new TableIdentifier('another_foo', 'another_schema')], 'a.x = foo.foo_column')
             ->join('bar', 'foo.colx = bar.colx');
-        $sqlPrep40       = 'SELECT "foo".*, "a".*, "bar".* FROM "foo"'
+        $sqlPrep40 = 'SELECT "foo".*, "a".*, "bar".* FROM "foo"'
         . ' INNER JOIN "another_schema"."another_foo" AS "a" ON "a"."x" = "foo"."foo_column"'
         . ' INNER JOIN "bar" ON "foo"."colx" = "bar"."colx"';
-        $sqlStr40        = 'SELECT "foo".*, "a".*, "bar".* FROM "foo"'
+        $sqlStr40  = 'SELECT "foo".*, "a".*, "bar".* FROM "foo"'
         . ' INNER JOIN "another_schema"."another_foo" AS "a" ON "a"."x" = "foo"."foo_column"'
         . ' INNER JOIN "bar" ON "foo"."colx" = "bar"."colx"';
-        $internalTests40 = [
-            'processSelect' => [[['"foo".*'], ['"a".*'], ['"bar".*']], '"foo"'],
-            'processJoins'  => [
-                [
-                    ['INNER', '"another_schema"."another_foo" AS "a"', '"a"."x" = "foo"."foo_column"'],
-                    ['INNER', '"bar"', '"foo"."colx" = "bar"."colx"'],
-                ],
-            ],
-        ];
 
         $select41 = new Select();
         $select41->from('foo')->quantifier(Select::QUANTIFIER_DISTINCT);
-        $sqlPrep41       = 'SELECT DISTINCT "foo".* FROM "foo"';
-        $sqlStr41        = 'SELECT DISTINCT "foo".* FROM "foo"';
-        $internalTests41 = [
-            'processSelect' => [Select::QUANTIFIER_DISTINCT, [['"foo".*']], '"foo"'],
-        ];
+        $sqlPrep41 = 'SELECT DISTINCT "foo".* FROM "foo"';
+        $sqlStr41  = 'SELECT DISTINCT "foo".* FROM "foo"';
 
         $select42 = new Select();
         $select42->from('foo')->quantifier(new Expression('TOP ?', [10]));
-        $sqlPrep42       = 'SELECT TOP ? "foo".* FROM "foo"';
-        $sqlStr42        = 'SELECT TOP \'10\' "foo".* FROM "foo"';
-        $internalTests42 = [
-            'processSelect' => ['TOP ?', [['"foo".*']], '"foo"'],
-        ];
+        $sqlPrep42 = 'SELECT TOP ? "foo".* FROM "foo"';
+        $sqlStr42  = 'SELECT TOP \'10\' "foo".* FROM "foo"';
 
         $select43 = new Select();
         $select43->from(['x' => 'foo'])->columns(['bar' => 'foo.bar'], false);
-        $sqlPrep43       = 'SELECT "foo"."bar" AS "bar" FROM "foo" AS "x"';
-        $sqlStr43        = 'SELECT "foo"."bar" AS "bar" FROM "foo" AS "x"';
-        $internalTests43 = [
-            'processSelect' => [[['"foo"."bar"', '"bar"']], '"foo" AS "x"'],
-        ];
+        $sqlPrep43 = 'SELECT "foo"."bar" AS "bar" FROM "foo" AS "x"';
+        $sqlStr43  = 'SELECT "foo"."bar" AS "bar" FROM "foo" AS "x"';
 
         $select44 = new Select();
         $select44->from('foo')->where('a = b');
         $select44b = new Select();
         $select44b->from('bar')->where('c = d');
         $select44->combine($select44b, Select::COMBINE_UNION, 'ALL');
-        $sqlPrep44       = '( SELECT "foo".* FROM "foo" WHERE a = b ) UNION ALL ( SELECT "bar".* FROM "bar" WHERE c = d )';
-        $sqlStr44        = '( SELECT "foo".* FROM "foo" WHERE a = b ) UNION ALL ( SELECT "bar".* FROM "bar" WHERE c = d )';
-        $internalTests44 = [
-            'processCombine' => ['UNION ALL', 'SELECT "bar".* FROM "bar" WHERE c = d'],
-        ];
+        $sqlPrep44 = '( SELECT "foo".* FROM "foo" WHERE a = b ) UNION ALL ( SELECT "bar".* FROM "bar" WHERE c = d )';
+        $sqlStr44  = '( SELECT "foo".* FROM "foo" WHERE a = b ) UNION ALL ( SELECT "bar".* FROM "bar" WHERE c = d )';
 
         // limit with offset
         $select45 = new Select();
         $select45->from('foo')->limit("5")->offset("10");
-        $sqlPrep45       = 'SELECT "foo".* FROM "foo" LIMIT ? OFFSET ?';
-        $sqlStr45        = 'SELECT "foo".* FROM "foo" LIMIT \'5\' OFFSET \'10\'';
-        $params45        = ['limit' => 5, 'offset' => 10];
-        $internalTests45 = [
-            'processSelect' => [[['"foo".*']], '"foo"'],
-            'processLimit'  => ['?'],
-            'processOffset' => ['?'],
-        ];
+        $sqlPrep45 = 'SELECT "foo".* FROM "foo" LIMIT ? OFFSET ?';
+        $sqlStr45  = 'SELECT "foo".* FROM "foo" LIMIT \'5\' OFFSET \'10\'';
+        $params45  = ['limit' => 5, 'offset' => 10];
 
         // functions without table
         $select46 = new Select();
@@ -1351,22 +1115,16 @@ final class SelectTest extends TestCase
             new Expression('SOME_DB_FUNCTION_ONE()'),
             'foo' => new Expression('SOME_DB_FUNCTION_TWO()'),
         ]);
-        $sqlPrep46       = 'SELECT SOME_DB_FUNCTION_ONE() AS Expression1, SOME_DB_FUNCTION_TWO() AS "foo"';
-        $sqlStr46        = 'SELECT SOME_DB_FUNCTION_ONE() AS Expression1, SOME_DB_FUNCTION_TWO() AS "foo"';
-        $params46        = [];
-        $internalTests46 = [];
+        $sqlPrep46 = 'SELECT SOME_DB_FUNCTION_ONE() AS Expression1, SOME_DB_FUNCTION_TWO() AS "foo"';
+        $sqlStr46  = 'SELECT SOME_DB_FUNCTION_ONE() AS Expression1, SOME_DB_FUNCTION_TWO() AS "foo"';
+        $params46  = [];
 
         // limit with big offset and limit
         $select47 = new Select();
         $select47->from('foo')->limit("10000000000000000000")->offset("10000000000000000000");
-        $sqlPrep47       = 'SELECT "foo".* FROM "foo" LIMIT ? OFFSET ?';
-        $sqlStr47        = 'SELECT "foo".* FROM "foo" LIMIT \'10000000000000000000\' OFFSET \'10000000000000000000\'';
-        $params47        = ['limit' => 10000000000000000000, 'offset' => 10000000000000000000];
-        $internalTests47 = [
-            'processSelect' => [[['"foo".*']], '"foo"'],
-            'processLimit'  => ['?'],
-            'processOffset' => ['?'],
-        ];
+        $sqlPrep47 = 'SELECT "foo".* FROM "foo" LIMIT ? OFFSET ?';
+        $sqlStr47  = 'SELECT "foo".* FROM "foo" LIMIT \'10000000000000000000\' OFFSET \'10000000000000000000\'';
+        $params47  = ['limit' => 10000000000000000000, 'offset' => 10000000000000000000];
 
         //combine and union with order at the end
         $select48 = new Select();
@@ -1377,22 +1135,15 @@ final class SelectTest extends TestCase
 
         $select48combined = new Select();
         $select48         = $select48combined->from(['sub' => $select48])->order('id DESC');
-        $sqlPrep48        = 'SELECT "sub".* FROM (( SELECT "foo".* FROM "foo" WHERE a = b ) UNION ( SELECT "bar".* FROM "bar" WHERE c = d )) AS "sub" ORDER BY "id" DESC';
-        $sqlStr48         = 'SELECT "sub".* FROM (( SELECT "foo".* FROM "foo" WHERE a = b ) UNION ( SELECT "bar".* FROM "bar" WHERE c = d )) AS "sub" ORDER BY "id" DESC';
-        $internalTests48  = [
-            'processCombine' => null,
-        ];
+        $sqlPrep48 = 'SELECT "sub".* FROM (( SELECT "foo".* FROM "foo" WHERE a = b ) UNION ( SELECT "bar".* FROM "bar" WHERE c = d )) AS "sub" ORDER BY "id" DESC';
+        $sqlStr48  = 'SELECT "sub".* FROM (( SELECT "foo".* FROM "foo" WHERE a = b ) UNION ( SELECT "bar".* FROM "bar" WHERE c = d )) AS "sub" ORDER BY "id" DESC';
 
         //Expression as joinName
         $select49 = new Select();
         $select49->from(new TableIdentifier('foo'))
             ->join(['bar' => new Expression('psql_function_which_returns_table')], 'foo.id = bar.fooid');
-        $sqlPrep49       = 'SELECT "foo".*, "bar".* FROM "foo" INNER JOIN psql_function_which_returns_table AS "bar" ON "foo"."id" = "bar"."fooid"';
-        $sqlStr49        = 'SELECT "foo".*, "bar".* FROM "foo" INNER JOIN psql_function_which_returns_table AS "bar" ON "foo"."id" = "bar"."fooid"';
-        $internalTests49 = [
-            'processSelect' => [[['"foo".*'], ['"bar".*']], '"foo"'],
-            'processJoins'  => [[['INNER', 'psql_function_which_returns_table AS "bar"', '"foo"."id" = "bar"."fooid"']]],
-        ];
+        $sqlPrep49 = 'SELECT "foo".*, "bar".* FROM "foo" INNER JOIN psql_function_which_returns_table AS "bar" ON "foo"."id" = "bar"."fooid"';
+        $sqlStr49  = 'SELECT "foo".*, "bar".* FROM "foo" INNER JOIN psql_function_which_returns_table AS "bar" ON "foo"."id" = "bar"."fooid"';
 
         // Test generic predicate is appended with AND
         $select50 = new Select();
@@ -1402,9 +1153,8 @@ final class SelectTest extends TestCase
             ->isNull('bar')
             ->and
             ->predicate(new Predicate\Literal('1=1'));
-        $sqlPrep50       = 'SELECT "foo".* FROM "foo" WHERE ("bar" IS NULL AND 1=1)';
-        $sqlStr50        = 'SELECT "foo".* FROM "foo" WHERE ("bar" IS NULL AND 1=1)';
-        $internalTests50 = [];
+        $sqlPrep50 = 'SELECT "foo".* FROM "foo" WHERE ("bar" IS NULL AND 1=1)';
+        $sqlStr50  = 'SELECT "foo".* FROM "foo" WHERE ("bar" IS NULL AND 1=1)';
 
         // Test generic predicate is appended with OR
         $select51 = new Select();
@@ -1414,115 +1164,96 @@ final class SelectTest extends TestCase
             ->isNull('bar')
             ->or
             ->predicate(new Predicate\Literal('1=1'));
-        $sqlPrep51       = 'SELECT "foo".* FROM "foo" WHERE ("bar" IS NULL OR 1=1)';
-        $sqlStr51        = 'SELECT "foo".* FROM "foo" WHERE ("bar" IS NULL OR 1=1)';
-        $internalTests51 = [];
+        $sqlPrep51 = 'SELECT "foo".* FROM "foo" WHERE ("bar" IS NULL OR 1=1)';
+        $sqlStr51  = 'SELECT "foo".* FROM "foo" WHERE ("bar" IS NULL OR 1=1)';
 
         /**
          * @link https://github.com/zendframework/zf2/issues/7222
          */
         $select52 = new Select();
         $select52->from('foo')->join('zac', '(catalog_category_website.category_id = catalog_category.category_id)');
-        $sqlPrep52       = 'SELECT "foo".*, "zac".* FROM "foo" INNER JOIN "zac" ON ("catalog_category_website"."category_id" = "catalog_category"."category_id")';
-        $sqlStr52        = 'SELECT "foo".*, "zac".* FROM "foo" INNER JOIN "zac" ON ("catalog_category_website"."category_id" = "catalog_category"."category_id")';
-        $internalTests52 = [
-            'processSelect' => [[['"foo".*'], ['"zac".*']], '"foo"'],
-            'processJoins'  => [
-                [
-                    ['INNER', '"zac"', '("catalog_category_website"."category_id" = "catalog_category"."category_id")'],
-                ],
-            ],
-        ];
+        $sqlPrep52 = 'SELECT "foo".*, "zac".* FROM "foo" INNER JOIN "zac" ON ("catalog_category_website"."category_id" = "catalog_category"."category_id")';
+        $sqlStr52  = 'SELECT "foo".*, "zac".* FROM "foo" INNER JOIN "zac" ON ("catalog_category_website"."category_id" = "catalog_category"."category_id")';
 
         $subSelect53 = new Select();
         $subSelect53->from('bar')->columns(['id'])->limit(10)->offset(9);
         $select53 = new Select();
         $select53->from('foo')->where(new In('bar_id', $subSelect53))->limit(11)->offset(12);
-        $params53        = ['limit' => 11, 'offset' => 12, 'subselect1limit' => 10, 'subselect1offset' => 9];
-        $sqlPrep53       = 'SELECT "foo".* FROM "foo" WHERE "bar_id" IN (SELECT "bar"."id" AS "id" FROM "bar" LIMIT :subselect1limit OFFSET :subselect1offset) LIMIT :limit OFFSET :offset';
-        $sqlStr53        = 'SELECT "foo".* FROM "foo" WHERE "bar_id" IN (SELECT "bar"."id" AS "id" FROM "bar" LIMIT \'10\' OFFSET \'9\') LIMIT \'11\' OFFSET \'12\'';
-        $internalTests53 = [
-            'processSelect' => [[['"foo".*']], '"foo"'],
-            'processWhere'  => ['"bar_id" IN (SELECT "bar"."id" AS "id" FROM "bar" LIMIT ? OFFSET ?)'],
-            'processLimit'  => ['?'],
-            'processOffset' => ['?'],
-        ];
+        $params53 = ['limit' => 11, 'offset' => 12, 'subselect1limit' => 10, 'subselect1offset' => 9];
+        $sqlPrep53 = 'SELECT "foo".* FROM "foo" WHERE "bar_id" IN (SELECT "bar"."id" AS "id" FROM "bar" LIMIT :subselect1limit OFFSET :subselect1offset) LIMIT :limit OFFSET :offset';
+        $sqlStr53  = 'SELECT "foo".* FROM "foo" WHERE "bar_id" IN (SELECT "bar"."id" AS "id" FROM "bar" LIMIT \'10\' OFFSET \'9\') LIMIT \'11\' OFFSET \'12\'';
 
         // join with alternate type full outer
         $select54 = new Select();
         $select54->from('foo')->join('zac', 'm = n', ['bar', 'baz'], Select::JOIN_FULL_OUTER);
-        $sqlPrep54       = 'SELECT "foo".*, "zac"."bar" AS "bar", "zac"."baz" AS "baz" FROM "foo" FULL OUTER JOIN "zac" ON "m" = "n"';
-        $sqlStr54        = 'SELECT "foo".*, "zac"."bar" AS "bar", "zac"."baz" AS "baz" FROM "foo" FULL OUTER JOIN "zac" ON "m" = "n"';
-        $internalTests54 = [
-            'processSelect' => [[['"foo".*'], ['"zac"."bar"', '"bar"'], ['"zac"."baz"', '"baz"']], '"foo"'],
-            'processJoins'  => [[['FULL OUTER', '"zac"', '"m" = "n"']]],
-        ];
+        $sqlPrep54 = 'SELECT "foo".*, "zac"."bar" AS "bar", "zac"."baz" AS "baz" FROM "foo" FULL OUTER JOIN "zac" ON "m" = "n"';
+        $sqlStr54  = 'SELECT "foo".*, "zac"."bar" AS "bar", "zac"."baz" AS "baz" FROM "foo" FULL OUTER JOIN "zac" ON "m" = "n"';
 
         /**
          * $select = the select object
          * $sqlPrep = the sql as a result of preparation
          * $params = the param container contents result of preparation
          * $sqlStr = the sql as a result of getting a string back
-         * $internalTests what the internal functions should return (safe-guarding extension)
+         * use named param
          */
 
         return [
-            //    $select    $sqlPrep    $params     $sqlStr    $internalTests    use named param
-            [$select0, $sqlPrep0, [], $sqlStr0, $internalTests0, false],
-            [$select1, $sqlPrep1, [], $sqlStr1, $internalTests1, false],
-            [$select2, $sqlPrep2, [], $sqlStr2, $internalTests2, false],
-            [$select3, $sqlPrep3, [], $sqlStr3, $internalTests3, false],
-            [$select4, $sqlPrep4, [], $sqlStr4, $internalTests4, false],
-            [$select5, $sqlPrep5, [], $sqlStr5, $internalTests5, false],
-            [$select6, $sqlPrep6, [], $sqlStr6, $internalTests6, false],
-            [$select7, $sqlPrep7, [], $sqlStr7, $internalTests7, false],
-            [$select8, $sqlPrep8, [], $sqlStr8, $internalTests8, false],
-            [$select9,  $sqlPrep9,  $params9,   $sqlStr9,  $internalTests9, false],
-            [$select10, $sqlPrep10, [], $sqlStr10, $internalTests10, false],
-            [$select11, $sqlPrep11, [], $sqlStr11, $internalTests11, false],
-            [$select12, $sqlPrep12, [], $sqlStr12, $internalTests12, false],
-            [$select13, $sqlPrep13, [], $sqlStr13, $internalTests13, false],
-            [$select14, $sqlPrep14, [], $sqlStr14, $internalTests14, false],
-            [$select15, $sqlPrep15, [], $sqlStr15, $internalTests15, false],
-            [$select16, $sqlPrep16, $params16,  $sqlStr16, $internalTests16, false],
-            [$select17, $sqlPrep17, [], $sqlStr17, $internalTests17, false],
-            [$select18, $sqlPrep18, [], $sqlStr18, $internalTests18, false],
-            [$select19, $sqlPrep19, [], $sqlStr19, $internalTests19, false],
-            [$select20, $sqlPrep20, [], $sqlStr20, $internalTests20, false],
-            [$select21, $sqlPrep21, $params21,  $sqlStr21, $internalTests21, false],
-            [$select22, $sqlPrep22, [], $sqlStr22, $internalTests22, false],
-            [$select23, $sqlPrep23, [], $sqlStr23, $internalTests23, false],
-            [$select24, $sqlPrep24, [], $sqlStr24, $internalTests24, false],
-            [$select25, $sqlPrep25, [], $sqlStr25, $internalTests25, false],
-            [$select26, $sqlPrep26, $params26,  $sqlStr26, $internalTests26, false],
-            [$select27, $sqlPrep27, $params27,  $sqlStr27, $internalTests27, false],
-            [$select28, $sqlPrep28, [], $sqlStr28, $internalTests28, false],
-            [$select29, $sqlPrep29, [], $sqlStr29, $internalTests29, false],
-            [$select30, $sqlPrep30, [], $sqlStr30, $internalTests30, false],
-            [$select31, $sqlPrep31, [], $sqlStr31, $internalTests31, false],
-            [$select32, $sqlPrep32, [], $sqlStr32, $internalTests32, false],
-            [$select33, $sqlPrep33, [], $sqlStr33, $internalTests33, false],
-            [$select34, $sqlPrep34, [], $sqlStr34, $internalTests34, false],
-            [$select35, $sqlPrep35, [], $sqlStr35, $internalTests35, false],
-            [$select36, $sqlPrep36, [], $sqlStr36, $internalTests36, true],
-            [$select37, $sqlPrep37, [], $sqlStr37, $internalTests37, false],
-            [$select38, $sqlPrep38, [], $sqlStr38, $internalTests38, false],
-            [$select39, $sqlPrep39, [], $sqlStr39, $internalTests39, false],
-            [$select40, $sqlPrep40, [], $sqlStr40, $internalTests40, false],
-            [$select41, $sqlPrep41, [], $sqlStr41, $internalTests41, false],
-            [$select42, $sqlPrep42, [], $sqlStr42, $internalTests42, false],
-            [$select43, $sqlPrep43, [], $sqlStr43, $internalTests43, false],
-            [$select44, $sqlPrep44, [], $sqlStr44, $internalTests44, false],
-            [$select45, $sqlPrep45, $params45,  $sqlStr45, $internalTests45, false],
-            [$select46, $sqlPrep46, $params46,  $sqlStr46, $internalTests46, false],
-            [$select47, $sqlPrep47, $params47,  $sqlStr47, $internalTests47, false],
-            [$select48, $sqlPrep48, [], $sqlStr48, $internalTests48, false],
-            [$select49, $sqlPrep49, [], $sqlStr49, $internalTests49, false],
-            [$select50, $sqlPrep50, [], $sqlStr50, $internalTests50, false],
-            [$select51, $sqlPrep51, [], $sqlStr51, $internalTests51, false],
-            [$select52, $sqlPrep52, [], $sqlStr52, $internalTests52, false],
-            [$select53, $sqlPrep53, $params53, $sqlStr53, $internalTests53, true],
-            [$select54, $sqlPrep54, [], $sqlStr54, $internalTests54, false],
+            //    $select    $sqlPrep    $params     $sqlStr    use named param
+            [$select0, $sqlPrep0, [], $sqlStr0, false],
+            [$select1, $sqlPrep1, [], $sqlStr1, false],
+            [$select2, $sqlPrep2, [], $sqlStr2, false],
+            [$select3, $sqlPrep3, [], $sqlStr3, false],
+            [$select4, $sqlPrep4, [], $sqlStr4, false],
+            [$select5, $sqlPrep5, [], $sqlStr5, false],
+            [$select6, $sqlPrep6, [], $sqlStr6, false],
+            [$select7, $sqlPrep7, [], $sqlStr7, false],
+            [$select8, $sqlPrep8, [], $sqlStr8, false],
+            [$select9,  $sqlPrep9,  $params9,  $sqlStr9, false],
+            [$select10, $sqlPrep10, [], $sqlStr10, false],
+            [$select11, $sqlPrep11, [], $sqlStr11, false],
+            [$select12, $sqlPrep12, [], $sqlStr12, false],
+            [$select13, $sqlPrep13, [], $sqlStr13, false],
+            [$select14, $sqlPrep14, [], $sqlStr14, false],
+            [$select15, $sqlPrep15, [], $sqlStr15, false],
+            [$select16, $sqlPrep16, $params16,  $sqlStr16, false],
+            [$select17, $sqlPrep17, [], $sqlStr17, false],
+            [$select18, $sqlPrep18, [], $sqlStr18, false],
+            [$select19, $sqlPrep19, [], $sqlStr19, false],
+            [$select20, $sqlPrep20, [], $sqlStr20, false],
+            [$select21, $sqlPrep21, $params21,  $sqlStr21, false],
+            [$select22, $sqlPrep22, [], $sqlStr22, false],
+            [$select23, $sqlPrep23, [], $sqlStr23, false],
+            [$select24, $sqlPrep24, [], $sqlStr24, false],
+            [$select25, $sqlPrep25, [], $sqlStr25, false],
+            [$select26, $sqlPrep26, $params26,  $sqlStr26, false],
+            [$select27, $sqlPrep27, $params27,  $sqlStr27, false],
+            [$select28, $sqlPrep28, [], $sqlStr28, false],
+            [$select29, $sqlPrep29, [], $sqlStr29, false],
+            [$select30, $sqlPrep30, [], $sqlStr30, false],
+            [$select31, $sqlPrep31, [], $sqlStr31, false],
+            [$select32, $sqlPrep32, [], $sqlStr32, false],
+            [$select33, $sqlPrep33, [], $sqlStr33, false],
+            [$select34, $sqlPrep34, [], $sqlStr34, false],
+            [$select35, $sqlPrep35, [], $sqlStr35, false],
+            [$select36, $sqlPrep36, [], $sqlStr36, true],
+            [$select37, $sqlPrep37, [], $sqlStr37, false],
+            [$select38, $sqlPrep38, [], $sqlStr38, false],
+            [$select39, $sqlPrep39, [], $sqlStr39, false],
+            [$select40, $sqlPrep40, [], $sqlStr40, false],
+            [$select41, $sqlPrep41, [], $sqlStr41, false],
+            [$select42, $sqlPrep42, [], $sqlStr42, false],
+            [$select43, $sqlPrep43, [], $sqlStr43, false],
+            [$select44, $sqlPrep44, [], $sqlStr44, false],
+            [$select45, $sqlPrep45, $params45,  $sqlStr45, false],
+            [$select46, $sqlPrep46, $params46,  $sqlStr46, false],
+            [$select47, $sqlPrep47, $params47,  $sqlStr47, false],
+            [$select48, $sqlPrep48, [], $sqlStr48, false],
+            [$select49, $sqlPrep49, [], $sqlStr49, false],
+            [$select50, $sqlPrep50, [], $sqlStr50, false],
+            [$select51, $sqlPrep51, [], $sqlStr51, false],
+            [$select52, $sqlPrep52, [], $sqlStr52, false],
+            [$select53, $sqlPrep53, $params53, $sqlStr53, true],
+            [$select54, $sqlPrep54, [], $sqlStr54, false],
         ];
         // phpcs:enable Generic.Files.LineLength.TooLong
     }
@@ -1554,15 +1285,6 @@ final class SelectTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('from() expects $table as an array is a single element associative array');
         $select->from(['foo', 'bar']); // Numeric array instead of associative
-    }
-
-    public function testSetSpecificationThrowsExceptionForInvalidName(): void
-    {
-        $select = new Select();
-
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Not a valid specification name.');
-        $select->setSpecification('invalid_spec', 'some spec');
     }
 
     public function testGetThrowsExceptionForInvalidProperty(): void

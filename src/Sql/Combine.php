@@ -109,7 +109,7 @@ class Combine extends AbstractPreparableSql
      * Build sql string
      */
     #[Override]
-    protected function buildSqlString(
+    public function buildSqlString(
         PlatformInterface $platform,
         ?DriverInterface $driver = null,
         ?ParameterContainer $parameterContainer = null
