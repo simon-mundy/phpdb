@@ -12,8 +12,10 @@ use PhpDb\Adapter\Exception\VunerablePlatformQuoteException;
 use function addcslashes;
 use function array_map;
 use function ctype_alnum;
+use function explode;
 use function implode;
 use function preg_split;
+use function str_contains;
 use function str_replace;
 use function strtolower;
 use function strtr;
@@ -48,8 +50,20 @@ abstract class AbstractPlatform implements PlatformInterface
             return $identifier;
         }
 
-        if ($additionalSafeWords === [] && ctype_alnum(strtr($identifier, ['_' => 'a', '$' => 'a']))) {
-            return $this->quoteIdentifier[0] . $identifier . $this->quoteIdentifier[1];
+        if ($additionalSafeWords === []) {
+            $normalized = strtr($identifier, ['_' => 'a', '$' => 'a']);
+
+            // Simple identifier: actor_id → "actor_id"
+            if (ctype_alnum($normalized)) {
+                return $this->quoteIdentifier[0] . $identifier . $this->quoteIdentifier[1];
+            }
+
+            // Dotted identifier: film.film_id → "film"."film_id"
+            if (str_contains($normalized, '.') && ctype_alnum(str_replace('.', '', $normalized))) {
+                $q = $this->quoteIdentifier[0];
+                $qe = $this->quoteIdentifier[1];
+                return $q . implode($qe . '.' . $q, explode('.', $identifier)) . $qe;
+            }
         }
 
         $safeWords = self::SAFE_WORDS;
