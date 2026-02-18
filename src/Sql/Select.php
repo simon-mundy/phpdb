@@ -26,7 +26,6 @@ use PhpDb\Sql\Predicate\PredicateInterface;
 use function array_key_exists;
 use function count;
 use function gettype;
-use function implode;
 use function is_array;
 use function is_numeric;
 use function is_string;
@@ -377,39 +376,6 @@ class Select extends AbstractPreparableSql
         return $this->tableReadOnly;
     }
 
-    /**
-     * Prepare the column parts for building by resolving the table prefix and join column info.
-     */
-    protected function preparePartsForBuild(SqlProcessor $processor): void
-    {
-        // Resolve the table prefix for column prefixing
-        if ($this->columns->getPrefixColumnsWithTable() && $this->table->get() !== null) {
-            $fromTablePrefix = $this->table->getQuotedPrefix($processor);
-        } else {
-            $fromTablePrefix = '';
-        }
-
-        $this->columns->setFromTablePrefix($fromTablePrefix);
-
-        // Resolve join column info for column rendering using pre-built JoinSpecs
-        if ($this->joins !== null) {
-            $joinColumnInfo = [];
-            foreach ($this->joins->getSpecs() as $spec) {
-                $joinTableName    = $spec->alias ?? $spec->table;
-                $resolvedJoinName = $processor->resolveTable($joinTableName);
-
-                $joinColumnInfo[] = [
-                    'prefix'     => $resolvedJoinName,
-                    'columnRefs' => $spec->columnRefs,
-                ];
-            }
-
-            $this->columns->setJoinColumnGroups($joinColumnInfo);
-        } else {
-            $this->columns->setJoinColumnGroups([]);
-        }
-    }
-
     public function buildSqlString(
         PlatformInterface $platform,
         ?DriverInterface $driver = null,
@@ -425,84 +391,49 @@ class Select extends AbstractPreparableSql
         $processor = new SqlProcessor($platform, $driver, $parameterContainer, $decorator);
         $processor->setParamPrefix($this->processInfo['paramPrefix']);
 
-        $this->preparePartsForBuild($processor);
+        if ($this->columns->getPrefixColumnsWithTable() && $this->table->get() !== null) {
+            $this->columns->setFromTablePrefix($this->table->getQuotedPrefix($processor));
+        } else {
+            $this->columns->setFromTablePrefix('');
+        }
+        $this->columns->setJoinSpecs($this->joins !== null ? $this->joins->getSpecs() : []);
 
-        $hasCombine = $this->combine !== null && ! $this->combine->isEmpty();
+        $sql = 'SELECT';
 
-        // SELECT [QUANTIFIER] columns [FROM table]
-        $selectParts = ['SELECT'];
-
-        if ($this->quantifier !== null) {
-            $quantifierSql = $this->quantifier->toSql($processor);
-            if ($quantifierSql !== null) {
-                $selectParts[] = $quantifierSql;
-            }
+        if (($partSql = $this->quantifier?->toSql($processor)) !== null) {
+            $sql .= ' ' . $partSql;
         }
 
-        $columnsSql = $this->columns->toSql($processor);
-        if ($columnsSql !== null) {
-            $selectParts[] = $columnsSql;
+        $sql .= ' ' . $this->columns->toSql($processor);
+
+        if (($tableSql = $this->table->toSql($processor)) !== null) {
+            $sql .= ' FROM ' . $tableSql;
         }
 
-        $tableSql = $this->table->toSql($processor);
-        if ($tableSql !== null) {
-            $selectParts[] = 'FROM';
-            $selectParts[] = $tableSql;
+        if (($partSql = $this->joins?->toSql($processor)) !== null) {
+            $sql .= ' ' . $partSql;
+        }
+        if (($partSql = $this->where?->toSql($processor)) !== null) {
+            $sql .= ' ' . $partSql;
+        }
+        if (($partSql = $this->groupBy?->toSql($processor)) !== null) {
+            $sql .= ' ' . $partSql;
+        }
+        if (($partSql = $this->having?->toSql($processor)) !== null) {
+            $sql .= ' ' . $partSql;
+        }
+        if (($partSql = $this->orderBy?->toSql($processor)) !== null) {
+            $sql .= ' ' . $partSql;
+        }
+        if (($partSql = $this->limit?->toSql($processor)) !== null) {
+            $sql .= ' ' . $partSql;
+        }
+        if (($partSql = $this->offset?->toSql($processor)) !== null) {
+            $sql .= ' ' . $partSql;
         }
 
-        $sql = ($hasCombine ? '( ' : '') . implode(' ', $selectParts);
-
-        if ($this->joins !== null) {
-            $partSql = $this->joins->toSql($processor);
-            if ($partSql !== null) {
-                $sql .= ' ' . $partSql;
-            }
-        }
-
-        if ($this->where !== null) {
-            $partSql = $this->where->toSql($processor);
-            if ($partSql !== null) {
-                $sql .= ' ' . $partSql;
-            }
-        }
-
-        if ($this->groupBy !== null) {
-            $partSql = $this->groupBy->toSql($processor);
-            if ($partSql !== null) {
-                $sql .= ' ' . $partSql;
-            }
-        }
-
-        if ($this->having !== null) {
-            $partSql = $this->having->toSql($processor);
-            if ($partSql !== null) {
-                $sql .= ' ' . $partSql;
-            }
-        }
-
-        if ($this->orderBy !== null) {
-            $partSql = $this->orderBy->toSql($processor);
-            if ($partSql !== null) {
-                $sql .= ' ' . $partSql;
-            }
-        }
-
-        if ($this->limit !== null) {
-            $partSql = $this->limit->toSql($processor);
-            if ($partSql !== null) {
-                $sql .= ' ' . $partSql;
-            }
-        }
-
-        if ($this->offset !== null) {
-            $partSql = $this->offset->toSql($processor);
-            if ($partSql !== null) {
-                $sql .= ' ' . $partSql;
-            }
-        }
-
-        if ($hasCombine) {
-            $sql    .= ' )';
+        if ($this->combine !== null && ! $this->combine->isEmpty()) {
+            $sql     = '( ' . $sql . ' )';
             $partSql = $this->combine->toSql($processor);
             if ($partSql !== null) {
                 $sql .= ' ' . $partSql;

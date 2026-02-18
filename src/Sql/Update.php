@@ -139,23 +139,14 @@ class Update extends AbstractPreparableSql
         // Render inline: UPDATE table [JOINS] SET ... [WHERE ...]
         $sql = $this->getStatementKeyword() . ' ' . $this->table->toSql($processor);
 
-        if ($this->joins !== null) {
-            $joinsSql = $this->joins->toSql($processor);
-            if ($joinsSql !== null) {
-                $sql .= ' ' . $joinsSql;
-            }
+        if (($partSql = $this->joins?->toSql($processor)) !== null) {
+            $sql .= ' ' . $partSql;
         }
-
-        $setSql = $this->set->toSql($processor);
-        if ($setSql !== null) {
-            $sql .= ' ' . $setSql;
+        if (($partSql = $this->set->toSql($processor)) !== null) {
+            $sql .= ' ' . $partSql;
         }
-
-        if ($this->where !== null) {
-            $whereSql = $this->where->toSql($processor);
-            if ($whereSql !== null) {
-                $sql .= ' ' . $whereSql;
-            }
+        if (($partSql = $this->where?->toSql($processor)) !== null) {
+            $sql .= ' ' . $partSql;
         }
 
         return $sql;

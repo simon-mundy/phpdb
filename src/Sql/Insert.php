@@ -18,6 +18,7 @@ use function array_keys;
 use function array_values;
 use function count;
 use function implode;
+use function is_object;
 use function range;
 
 class Insert extends AbstractPreparableSql
@@ -193,7 +194,19 @@ class Insert extends AbstractPreparableSql
         foreach ($this->columns as $column => $value) {
             $columns[] = $platform->quoteIdentifier($column);
 
-            if ($value instanceof ArgumentInterface) {
+            if ($value === null) {
+                $values[] = 'NULL';
+            } elseif (! is_object($value)) {
+                // Scalar value — most common path
+                if ($hasParamContainer) {
+                    $name = $paramPrefix
+                        . ($isPdoDriver ? 'c_' . $i++ : $column);
+                    $parameterContainer->offsetSet($name, $value);
+                    $values[] = $driver->formatParameterName($name);
+                } else {
+                    $values[] = $platform->quoteValue((string) $value);
+                }
+            } elseif ($value instanceof ArgumentInterface) {
                 $values[] = match ($value->getType()) {
                     ArgumentType::Parameter => $processor->renderParameter(
                         $value,
@@ -210,17 +223,8 @@ class Insert extends AbstractPreparableSql
                 };
             } elseif ($value instanceof Select) {
                 $values[] = '(' . $processor->processSubSelect($value) . ')';
-            } elseif ($value instanceof ExpressionInterface) {
-                $values[] = $processor->renderExpression($value);
-            } elseif ($value === null) {
-                $values[] = 'NULL';
-            } elseif ($hasParamContainer) {
-                $name = $paramPrefix
-                    . ($isPdoDriver ? 'c_' . $i++ : $column);
-                $parameterContainer->offsetSet($name, $value);
-                $values[] = $driver->formatParameterName($name);
             } else {
-                $values[] = $platform->quoteValue((string) $value);
+                $values[] = $processor->renderExpression($value);
             }
         }
 

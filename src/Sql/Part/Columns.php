@@ -39,8 +39,8 @@ class Columns extends AbstractPart
      */
     private string $fromTablePrefix = '';
 
-    /** @var array<int, array{prefix: string, columnRefs: ColumnRef[]}> Join column groups */
-    private array $joinColumnGroups = [];
+    /** @var JoinSpec[] Join specs for column resolution */
+    private array $joinSpecs = [];
 
     public function __construct()
     {
@@ -58,11 +58,14 @@ class Columns extends AbstractPart
             $this->renderColumnRef($ref, $fromPrefix, $processor, $columnFragments, $exprCounter);
         }
 
-        if ($this->joinColumnGroups !== []) {
+        if ($this->joinSpecs !== []) {
             $separator = $processor->identifierSeparator;
-            foreach ($this->joinColumnGroups as $group) {
-                $joinPrefix = $group['prefix'] . $separator;
-                foreach ($group['columnRefs'] as $ref) {
+            foreach ($this->joinSpecs as $spec) {
+                if ($spec->columnRefs === []) {
+                    continue;
+                }
+                $joinPrefix = $processor->resolveTable($spec->alias ?? $spec->table) . $separator;
+                foreach ($spec->columnRefs as $ref) {
                     $this->renderColumnRef($ref, $joinPrefix, $processor, $columnFragments, $exprCounter);
                 }
             }
@@ -158,14 +161,13 @@ class Columns extends AbstractPart
     }
 
     /**
-     * Set pre-normalized join column groups.
-     * Each entry has 'prefix' (resolved table name) and 'columnRefs' (ColumnRef[]).
+     * Set join specs for column resolution during rendering.
      *
-     * @param array<int, array{prefix: string, columnRefs: ColumnRef[]}> $groups
+     * @param JoinSpec[] $specs
      */
-    public function setJoinColumnGroups(array $groups): void
+    public function setJoinSpecs(array $specs): void
     {
-        $this->joinColumnGroups = $groups;
+        $this->joinSpecs = $specs;
     }
 
     /**

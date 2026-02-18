@@ -101,11 +101,8 @@ class Delete extends AbstractPreparableSql
         // Render inline: DELETE FROM table [WHERE ...]
         $sql = $this->getStatementKeyword() . ' ' . $this->table->toSql($processor);
 
-        if ($this->where !== null) {
-            $whereSql = $this->where->toSql($processor);
-            if ($whereSql !== null) {
-                $sql .= ' ' . $whereSql;
-            }
+        if (($partSql = $this->where?->toSql($processor)) !== null) {
+            $sql .= ' ' . $partSql;
         }
 
         return $sql;

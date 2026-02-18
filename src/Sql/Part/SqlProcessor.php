@@ -17,6 +17,7 @@ use PhpDb\Sql\TableIdentifier;
 use ValueError;
 
 use function implode;
+use function is_string;
 use function str_replace;
 
 /**
@@ -109,6 +110,10 @@ class SqlProcessor
      */
     public function resolveTable(Select|string|TableIdentifier|null $table): string|null
     {
+        if (is_string($table)) {
+            return $this->platform->quoteIdentifier($table);
+        }
+
         $schema = null;
         if ($table instanceof TableIdentifier) {
             [$table, $schema] = $table->getTableAndSchema();
