@@ -80,7 +80,7 @@ class Columns extends AbstractPart
 
         $columnSql = match ($ref->arg->getType()) {
             ArgumentType::Identifier => $prefix . $processor->platform->quoteIdentifierInFragment($ref->arg->getValue()),
-            ArgumentType::Select     => $processor->processExpression($ref->arg->getValue(), $ref->alias ?? 'column'),
+            ArgumentType::Select     => $processor->renderExpression($ref->arg->getValue(), $ref->alias ?? 'column'),
             ArgumentType::Literal    => $ref->arg->getValue(),
         };
 

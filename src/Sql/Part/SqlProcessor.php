@@ -22,10 +22,8 @@ use PhpDb\Sql\Select;
 use PhpDb\Sql\TableIdentifier;
 use ValueError;
 
-use function count;
 use function implode;
 use function str_replace;
-use function vsprintf;
 
 /**
  * Central SQL rendering service used by Part objects and Expressions
@@ -75,55 +73,6 @@ class SqlProcessor
         }
 
         return $this->platform->quoteValue((string) $param->getValue());
-    }
-
-    /**
-     * Render an ExpressionInterface to a SQL string, handling parameter binding.
-     */
-    public function processExpression(
-        ExpressionInterface $expression,
-        ?string $namedParameterPrefix = null
-    ): string {
-        $expressionData   = $expression->getExpressionData();
-        $specification    = $expressionData['spec'];
-        $expressionValues = $expressionData['values'];
-
-        if ($expressionValues === []) {
-            return str_replace('%%', '%', $specification);
-        }
-
-        $namedParameterPrefix = $this->resolveParamPrefix($namedParameterPrefix);
-        $expressionParamIndex = &$this->instanceParameterIndex[$namedParameterPrefix];
-        $expressionValues     = $this->flattenExpressionValues($expressionValues);
-        $values               = [];
-
-        foreach ($expressionValues as $vIndex => $argument) {
-            $values[] = match (true) {
-                $argument instanceof Value => $this->parameterContainer instanceof ParameterContainer
-                    ? $this->processExpressionParameterName(
-                        $argument->getValue(),
-                        $namedParameterPrefix,
-                        $expressionParamIndex,
-                    )
-                    : $this->platform->quoteValue((string) $argument->getValue()),
-                $argument instanceof Identifier => $this->platform->quoteIdentifierInFragment($argument->getValue()),
-                $argument instanceof Literal => $argument->getValue(),
-                $argument instanceof Values => $this->processValuesArgument(
-                    $argument,
-                    $expressionParamIndex,
-                    $namedParameterPrefix,
-                ),
-                $argument instanceof Identifiers => $this->processIdentifiersArgument($argument),
-                $argument instanceof SelectArgument => $this->processExpressionOrSelect(
-                    $argument,
-                    $namedParameterPrefix,
-                    $vIndex,
-                ),
-                default => throw new Exception\InvalidArgumentException('Unknown argument type'),
-            };
-        }
-
-        return vsprintf($specification, $values);
     }
 
     /**
@@ -267,82 +216,6 @@ class SqlProcessor
         }
 
         throw new \ValueError('Invalid SelectArgument value');
-    }
-
-    /**
-     * @param ArgumentInterface[] $arguments
-     * @return ArgumentInterface[]
-     */
-    private function flattenExpressionValues(array $arguments): array
-    {
-        $hasValues = false;
-        foreach ($arguments as $argument) {
-            if ($argument instanceof Values) {
-                $hasValues = true;
-                break;
-            }
-        }
-
-        if (! $hasValues) {
-            return $arguments;
-        }
-
-        $values = [];
-        foreach ($arguments as $argument) {
-            if ($argument instanceof Values) {
-                foreach ($argument->getValue() as $v) {
-                    $values[] = new Value($v);
-                }
-            } else {
-                $values[] = $argument;
-            }
-        }
-
-        return $values;
-    }
-
-    private function processExpressionOrSelect(
-        ArgumentInterface $argument,
-        string $namedParameterPrefix,
-        int $vIndex,
-    ): string {
-        $value = $argument->getValue();
-
-        return match (true) {
-            $value instanceof Select => '('
-                . $this->processSubSelect($value)
-                . ')',
-            $value instanceof ExpressionInterface => $this->processExpression(
-                $value,
-                "{$namedParameterPrefix}{$vIndex}subpart"
-            ),
-            default => throw new ValueError('Invalid Argument type'),
-        };
-    }
-
-    private function processValuesArgument(
-        ArgumentInterface $argument,
-        int &$expressionParamIndex,
-        string $namedParameterPrefix,
-    ): string {
-        $values          = $argument->getValue();
-        $processedValues = [];
-
-        if ($this->parameterContainer instanceof ParameterContainer) {
-            foreach ($values as $value) {
-                $processedValues[] = $this->processExpressionParameterName(
-                    $value,
-                    $namedParameterPrefix,
-                    $expressionParamIndex,
-                );
-            }
-        } else {
-            foreach ($values as $value) {
-                $processedValues[] = $this->platform->quoteValue((string) $value);
-            }
-        }
-
-        return implode(', ', $processedValues);
     }
 
     private function processIdentifiersArgument(ArgumentInterface $argument): string

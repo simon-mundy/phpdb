@@ -4,44 +4,38 @@ declare(strict_types=1);
 
 namespace PhpDbTest\Sql\Ddl\Column;
 
-use PhpDb\Sql\Argument;
 use PhpDb\Sql\Ddl\Column\AbstractLengthColumn;
 use PhpDb\Sql\Ddl\Column\Varchar;
+use PhpDb\Sql\Part\SqlProcessor;
+use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\TestCase;
 
-#[CoversMethod(Varchar::class, 'getExpressionData')]
+#[CoversMethod(Varchar::class, 'renderSql')]
 #[CoversMethod(AbstractLengthColumn::class, '__construct')]
 #[CoversMethod(AbstractLengthColumn::class, 'setLength')]
 #[CoversMethod(AbstractLengthColumn::class, 'getLength')]
 #[CoversMethod(AbstractLengthColumn::class, 'getLengthExpression')]
-#[CoversMethod(AbstractLengthColumn::class, 'getExpressionData')]
+#[CoversMethod(AbstractLengthColumn::class, 'renderSql')]
 final class VarcharTest extends TestCase
 {
     public function testGetExpressionData(): void
     {
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+
         $column = new Varchar('foo', 20);
 
-        $expressionData = $column->getExpressionData();
+        $sql = $column->renderSql($processor, '', $paramIndex);
 
-        self::assertEquals('%s %s(%s) NOT NULL', $expressionData['spec']);
-        self::assertEquals([
-            Argument::identifier('foo'),
-            Argument::literal('VARCHAR'),
-            Argument::literal('20'),
-        ], $expressionData['values']);
+        self::assertEquals('"foo" VARCHAR(20) NOT NULL', $sql);
 
         $column->setDefault('bar');
 
-        $expressionData = $column->getExpressionData();
+        $paramIndex = 1;
+        $sql = $column->renderSql($processor, '', $paramIndex);
 
-        self::assertEquals('%s %s(%s) NOT NULL DEFAULT %s', $expressionData['spec']);
-        self::assertEquals([
-            Argument::identifier('foo'),
-            Argument::literal('VARCHAR'),
-            Argument::literal('20'),
-            Argument::value('bar'),
-        ], $expressionData['values']);
+        self::assertEquals('"foo" VARCHAR(20) NOT NULL DEFAULT \'bar\'', $sql);
     }
 
     public function testSetLengthAndGetLength(): void
@@ -57,22 +51,14 @@ final class VarcharTest extends TestCase
     {
         $column = new Varchar('name');
 
-        $expressionData = $column->getExpressionData();
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+
+        $sql = $column->renderSql($processor, '', $paramIndex);
 
         // When length is null, getLengthExpression() returns empty string
-        // The condition in getExpressionData checks: getLengthExpression() !== '' && !== '0'
-        // Empty string fails the first check, so length value is NOT added
-        // But specification still has (%s) placeholder - need to verify actual behavior
-        $spec   = $expressionData['spec'];
-        $values = $expressionData['values'];
-
-        // The specification format is defined in AbstractLengthColumn as '%s %s(%s)'
-        // But when length value is not added, we need to check if placeholder remains
-        self::assertEquals('%s %s(%s) NOT NULL', $spec);
-        self::assertEquals([
-            Argument::identifier('name'),
-            Argument::literal('VARCHAR'),
-        ], $values);
+        // which means no length modifier is appended
+        self::assertEquals('"name" VARCHAR NOT NULL', $sql);
     }
 
     public function testInheritanceFromAbstractLengthColumn(): void

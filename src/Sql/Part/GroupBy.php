@@ -29,7 +29,7 @@ class GroupBy extends AbstractPart
         foreach ($this->group as $ref) {
             $groups[] = match ($ref->arg->getType()) {
                 ArgumentType::Identifier => $processor->platform->quoteIdentifierInFragment($ref->arg->getValue()),
-                ArgumentType::Select     => $processor->processExpression($ref->arg->getValue()),
+                ArgumentType::Select     => $processor->renderExpression($ref->arg->getValue()),
                 ArgumentType::Literal    => $ref->arg->getValue(),
             };
         }

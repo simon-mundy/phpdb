@@ -6,8 +6,10 @@ namespace PhpDbTest\Sql\Predicate;
 
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ArgumentType;
+use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Predicate\Like;
 use PhpDb\Sql\Predicate\NotLike;
+use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\TestCase;
 
 final class NotLikeTest extends TestCase
@@ -90,24 +92,11 @@ final class NotLikeTest extends TestCase
     {
         $notLike = new NotLike('bar', 'Foo%');
 
-        $expressionData = $notLike->getExpressionData();
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $notLike->renderSql($processor, '', $paramIndex);
 
-        // Verify specification
-        self::assertEquals('%s NOT LIKE %s', $expressionData['spec']);
-
-        // Verify expression values
-        $values = $expressionData['values'];
-        self::assertCount(2, $values);
-
-        // Verify identifier argument
-        self::assertInstanceOf(ArgumentInterface::class, $values[0]);
-        self::assertEquals('bar', $values[0]->getValue());
-        self::assertEquals(ArgumentType::Identifier, $values[0]->getType());
-
-        // Verify like expression argument
-        self::assertInstanceOf(ArgumentInterface::class, $values[1]);
-        self::assertEquals('Foo%', $values[1]->getValue());
-        self::assertEquals(ArgumentType::Value, $values[1]->getType());
+        self::assertEquals('"bar" NOT LIKE \'Foo%\'', $sql);
     }
 
     public function testInstanceOfPerSetters(): void

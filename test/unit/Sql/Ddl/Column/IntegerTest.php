@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace PhpDbTest\Sql\Ddl\Column;
 
-use PhpDb\Sql\Argument;
 use PhpDb\Sql\Ddl\Column\Column;
 use PhpDb\Sql\Ddl\Column\Integer;
 use PhpDb\Sql\Ddl\Constraint\PrimaryKey;
+use PhpDb\Sql\Part\SqlProcessor;
+use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\TestCase;
 
 #[CoversMethod(Integer::class, '__construct')]
-#[CoversMethod(Column::class, 'getExpressionData')]
+#[CoversMethod(Column::class, 'renderSql')]
 final class IntegerTest extends TestCase
 {
     public function testObjectConstruction(): void
@@ -23,25 +24,20 @@ final class IntegerTest extends TestCase
 
     public function testGetExpressionData(): void
     {
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+
         $column = new Integer('foo');
+        $sql    = $column->renderSql($processor, '', $paramIndex);
 
-        $expressionData = $column->getExpressionData();
-
-        self::assertEquals('%s %s NOT NULL', $expressionData['spec']);
-        self::assertEquals([
-            Argument::identifier('foo'),
-            Argument::literal('INTEGER'),
-        ], $expressionData['values']);
+        self::assertEquals('"foo" INTEGER NOT NULL', $sql);
 
         $column = new Integer('foo');
         $column->addConstraint(new PrimaryKey());
 
-        $expressionData = $column->getExpressionData();
+        $paramIndex = 1;
+        $sql = $column->renderSql($processor, '', $paramIndex);
 
-        self::assertEquals('%s %s NOT NULL PRIMARY KEY', $expressionData['spec']);
-        self::assertEquals([
-            Argument::identifier('foo'),
-            Argument::literal('INTEGER'),
-        ], $expressionData['values']);
+        self::assertEquals('"foo" INTEGER NOT NULL PRIMARY KEY', $sql);
     }
 }

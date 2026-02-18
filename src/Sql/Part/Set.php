@@ -46,7 +46,7 @@ class Set extends AbstractPart
                     $arg,
                     $isPdoDriver ? 'c_' . $i++ : null
                 ),
-                ArgumentType::Select  => $processor->processExpression($arg->getValue()),
+                ArgumentType::Select  => $processor->renderExpression($arg->getValue()),
                 ArgumentType::Literal => $arg->getValue(),
                 default               => $processor->platform->quoteValue((string) $arg->getValue()),
             };

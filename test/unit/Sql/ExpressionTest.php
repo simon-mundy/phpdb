@@ -11,6 +11,8 @@ use PhpDb\Sql\Argument\Value;
 use PhpDb\Sql\Exception\InvalidArgumentException;
 use PhpDb\Sql\Exception\RuntimeException;
 use PhpDb\Sql\Expression;
+use PhpDb\Sql\Part\SqlProcessor;
+use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
@@ -28,9 +30,17 @@ use TypeError;
 #[CoversMethod(Expression::class, 'getExpression')]
 #[CoversMethod(Expression::class, 'setParameters')]
 #[CoversMethod(Expression::class, 'getParameters')]
-#[CoversMethod(Expression::class, 'getExpressionData')]
+#[CoversMethod(Expression::class, 'renderSql')]
 final class ExpressionTest extends TestCase
 {
+    private function renderSql(Expression $expression): string
+    {
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+
+        return $expression->renderSql($processor, '', $paramIndex);
+    }
+
     public function testSetExpression(): void
     {
         $expression = new Expression();
@@ -95,23 +105,18 @@ final class ExpressionTest extends TestCase
             ]
         );
 
-        $expressionData = $expression->getExpressionData();
+        $sql = $this->renderSql($expression);
 
-        self::assertEquals('X SAME AS %s AND Y = %s BUT LITERALLY %s', $expressionData['spec']);
-        self::assertEquals([
-            new Identifier('foo'),
-            new Value(5),
-            new Literal('FUNC(FF%X)'),
-        ], $expressionData['values']);
+        self::assertEquals('X SAME AS "foo" AND Y = \'5\' BUT LITERALLY FUNC(FF%X)', $sql);
     }
 
     public function testGetExpressionDataWillEscapePercent(): void
     {
         $expression = new Expression('X LIKE "foo%"');
 
-        $expressionData = $expression->getExpressionData();
+        $sql = $this->renderSql($expression);
 
-        self::assertEquals('X LIKE "foo%%"', $expressionData['spec']);
+        self::assertEquals('X LIKE "foo%"', $sql);
     }
 
     public function testConstructorWithLiteralZero(): void
@@ -132,26 +137,22 @@ final class ExpressionTest extends TestCase
     public function testNumberOfReplacementsConsidersWhenSameVariableIsUsedManyTimes(): void
     {
         $expression = new Expression('uf.user_id = :user_id OR uf.friend_id = :user_id', ['user_id' => 1]);
-        $value      = new Value(1);
 
-        $expressionData = $expression->getExpressionData();
+        $sql = $this->renderSql($expression);
 
-        self::assertEquals(
-            'uf.user_id = :user_id OR uf.friend_id = :user_id',
-            $expressionData['spec']
-        );
-        self::assertEquals([$value], $expressionData['values']);
+        // Named parameters are kept as-is in spec; the Value(1) is rendered
+        self::assertEquals('uf.user_id = :user_id OR uf.friend_id = :user_id', $sql);
     }
 
     #[DataProvider('falsyExpressionParametersProvider')]
     public function testConstructorWithFalsyValidParameters(mixed $falsyParameter): void
     {
         $expression = new Expression('?', $falsyParameter);
-        $falsyValue = Argument::value($falsyParameter);
 
-        $expressionData = $expression->getExpressionData();
-
-        self::assertEquals([$falsyValue], $expressionData['values']);
+        // Verify the parameter was stored correctly
+        $params = $expression->getParameters();
+        self::assertCount(1, $params);
+        self::assertEquals($falsyParameter, $params[0]->getValue());
     }
 
     public function testConstructorWithInvalidParameter(): void
@@ -175,13 +176,11 @@ final class ExpressionTest extends TestCase
     public function testNumberOfReplacementsForExpressionWithParameters(): void
     {
         $expression = new Expression(':a + :b', ['a' => 1, 'b' => 2]);
-        $value1     = Argument::value(1);
-        $value2     = Argument::value(2);
 
-        $expressionData = $expression->getExpressionData();
+        $sql = $this->renderSql($expression);
 
-        self::assertEquals(':a + :b', $expressionData['spec']);
-        self::assertEquals([$value1, $value2], $expressionData['values']);
+        // Named parameters are kept in spec, Values rendered inline
+        self::assertEquals(':a + :b', $sql);
     }
 
     public function testGetExpressionDataThrowsExceptionWhenParameterCountMismatch(): void
@@ -192,7 +191,7 @@ final class ExpressionTest extends TestCase
         $this->expectExceptionMessage(
             'The number of replacements in the expression does not match the number of parameters'
         );
-        $expression->getExpressionData();
+        $this->renderSql($expression);
     }
 
     public function testConstructorWithMultipleArguments(): void
@@ -200,13 +199,8 @@ final class ExpressionTest extends TestCase
         // Test deprecated multi-argument constructor
         $expression = new Expression('? + ? - ?', 1, 2, 3);
 
-        $expressionData = $expression->getExpressionData();
+        $sql = $this->renderSql($expression);
 
-        self::assertEquals('%s + %s - %s', $expressionData['spec']);
-        self::assertEquals([
-            Argument::value(1),
-            Argument::value(2),
-            Argument::value(3),
-        ], $expressionData['values']);
+        self::assertEquals("'1' + '2' - '3'", $sql);
     }
 }

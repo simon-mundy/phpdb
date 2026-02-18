@@ -7,8 +7,6 @@ namespace PhpDb\Sql;
 use Override;
 use PhpDb\Sql\Part\SqlProcessor;
 
-use function str_replace;
-
 class Literal implements ExpressionInterface
 {
     public function __construct(protected string $literal = '')
@@ -25,16 +23,6 @@ class Literal implements ExpressionInterface
     public function getLiteral(): string
     {
         return $this->literal;
-    }
-
-    /** @inheritDoc */
-    #[Override]
-    public function getExpressionData(): array
-    {
-        return [
-            'spec'   => str_replace('%', '%%', $this->literal),
-            'values' => [],
-        ];
     }
 
     #[Override]

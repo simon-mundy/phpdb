@@ -105,9 +105,8 @@ class Between extends AbstractExpression implements PredicateInterface
         return $this->maxValue;
     }
 
-    /** @inheritDoc */
     #[Override]
-    public function getExpressionData(): array
+    public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
     {
         if (! $this->identifier instanceof ArgumentInterface) {
             throw new LogicException('Identifier must be specified');
@@ -121,20 +120,6 @@ class Between extends AbstractExpression implements PredicateInterface
             throw new LogicException('maxValue must be specified');
         }
 
-        $identifierSpec = $this->identifier->getSpecification();
-        $minValueSpec   = $this->minValue->getSpecification();
-        $maxValueSpec   = $this->maxValue->getSpecification();
-        $spec           = "{$identifierSpec} {$this->operator} {$minValueSpec} AND {$maxValueSpec}";
-
-        return [
-            'spec'   => $this->specification ?? $spec,
-            'values' => [$this->identifier, $this->minValue, $this->maxValue],
-        ];
-    }
-
-    #[Override]
-    public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
-    {
         $id  = $processor->renderArgument($this->identifier, $paramPrefix, $paramIndex);
         $min = $processor->renderArgument($this->minValue, $paramPrefix, $paramIndex);
         $max = $processor->renderArgument($this->maxValue, $paramPrefix, $paramIndex);

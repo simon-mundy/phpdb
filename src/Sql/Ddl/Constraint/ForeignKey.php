@@ -6,10 +6,8 @@ namespace PhpDb\Sql\Ddl\Constraint;
 
 use Override;
 use PhpDb\Sql\Argument\Identifier;
-use PhpDb\Sql\Argument\Literal;
+use PhpDb\Sql\Part\SqlProcessor;
 
-use function array_fill;
-use function count;
 use function implode;
 
 class ForeignKey extends AbstractConstraint
@@ -24,12 +22,6 @@ class ForeignKey extends AbstractConstraint
 
     /** @var string[] */
     protected array $referenceColumn = [];
-
-    /** @var string[] */
-    protected array $referenceSpecification = [
-        'REFERENCES %s',
-        'ON DELETE %s ON UPDATE %s',
-    ];
 
     /**
      * @param string[]|string|null $referenceColumn
@@ -110,27 +102,32 @@ class ForeignKey extends AbstractConstraint
         return $this;
     }
 
-    /** @inheritDoc */
     #[Override]
-    public function getExpressionData(): array
+    public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
     {
-        $expressionData = parent::getExpressionData();
-        $colCount       = count($this->referenceColumn);
+        $sql = parent::renderSql($processor, $paramPrefix, $paramIndex);
 
-        $expressionData['spec']    .= ' ' . $this->referenceSpecification[0];
-        $expressionData['values'][] = new Identifier($this->referenceTable);
+        $sql .= ' REFERENCES ' . $processor->renderArgument(
+            new Identifier($this->referenceTable),
+            $paramPrefix,
+            $paramIndex,
+        );
 
-        if ($colCount !== 0) {
-            $expressionData['spec'] .= ' (' . implode(', ', array_fill(0, $colCount, '%s')) . ')';
+        if ($this->referenceColumn !== []) {
+            $quotedColumns = [];
             foreach ($this->referenceColumn as $column) {
-                $expressionData['values'][] = new Identifier($column);
+                $quotedColumns[] = $processor->renderArgument(
+                    new Identifier($column),
+                    $paramPrefix,
+                    $paramIndex,
+                );
             }
+            $sql .= ' (' . implode(', ', $quotedColumns) . ')';
         }
 
-        $expressionData['spec']    .= ' ' . $this->referenceSpecification[1];
-        $expressionData['values'][] = new Literal($this->onDeleteRule);
-        $expressionData['values'][] = new Literal($this->onUpdateRule);
+        $sql .= ' ON DELETE ' . $this->onDeleteRule
+            . ' ON UPDATE ' . $this->onUpdateRule;
 
-        return $expressionData;
+        return $sql;
     }
 }

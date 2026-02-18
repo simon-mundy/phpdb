@@ -5,20 +5,20 @@ declare(strict_types=1);
 namespace PhpDb\Sql\Ddl\Column;
 
 use Override;
+use PhpDb\Sql\Part\SqlProcessor;
 
 class Integer extends Column
 {
-    /** @inheritDoc */
     #[Override]
-    public function getExpressionData(): array
+    public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
     {
-        $expressionData = parent::getExpressionData();
-        $options        = $this->getOptions();
+        $sql     = parent::renderSql($processor, $paramPrefix, $paramIndex);
+        $options = $this->getOptions();
 
         if (isset($options['length'])) {
-            $expressionData['spec'] .= ' (' . $options['length'] . ')';
+            $sql .= ' (' . $options['length'] . ')';
         }
 
-        return $expressionData;
+        return $sql;
     }
 }

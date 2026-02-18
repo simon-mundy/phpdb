@@ -8,7 +8,9 @@ use PhpDb\Sql\Argument;
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ArgumentType;
 use PhpDb\Sql\Exception\InvalidArgumentException;
+use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Predicate\Like;
+use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\TestCase;
 
@@ -19,7 +21,7 @@ use PHPUnit\Framework\TestCase;
 #[CoversMethod(Like::class, 'getLike')]
 #[CoversMethod(Like::class, 'setSpecification')]
 #[CoversMethod(Like::class, 'getSpecification')]
-#[CoversMethod(Like::class, 'getExpressionData')]
+#[CoversMethod(Like::class, 'renderSql')]
 final class LikeTest extends TestCase
 {
     public function testConstructEmptyArgs(): void
@@ -100,45 +102,18 @@ final class LikeTest extends TestCase
     {
         $like = new Like('bar', 'Foo%');
 
-        $expressionData = $like->getExpressionData();
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $like->renderSql($processor, '', $paramIndex);
 
-        // Verify specification
-        self::assertEquals('%s LIKE %s', $expressionData['spec']);
-
-        // Verify expression values
-        $values = $expressionData['values'];
-        self::assertCount(2, $values);
-
-        // Verify identifier argument
-        self::assertInstanceOf(ArgumentInterface::class, $values[0]);
-        self::assertEquals('bar', $values[0]->getValue());
-        self::assertEquals(ArgumentType::Identifier, $values[0]->getType());
-
-        // Verify like expression argument
-        self::assertInstanceOf(ArgumentInterface::class, $values[1]);
-        self::assertEquals('Foo%', $values[1]->getValue());
-        self::assertEquals(ArgumentType::Value, $values[1]->getType());
+        self::assertEquals('"bar" LIKE \'Foo%\'', $sql);
 
         $like = new Like(Argument::value('Foo%'), Argument::identifier('bar'));
 
-        $expressionData = $like->getExpressionData();
+        $paramIndex = 1;
+        $sql        = $like->renderSql($processor, '', $paramIndex);
 
-        // Verify specification
-        self::assertEquals('%s LIKE %s', $expressionData['spec']);
-
-        // Verify expression values with custom types
-        $values = $expressionData['values'];
-        self::assertCount(2, $values);
-
-        // Verify identifier argument (now with Value type)
-        self::assertInstanceOf(ArgumentInterface::class, $values[0]);
-        self::assertEquals('Foo%', $values[0]->getValue());
-        self::assertEquals(ArgumentType::Value, $values[0]->getType());
-
-        // Verify like expression argument (now with Identifier type)
-        self::assertInstanceOf(ArgumentInterface::class, $values[1]);
-        self::assertEquals('bar', $values[1]->getValue());
-        self::assertEquals(ArgumentType::Identifier, $values[1]->getType());
+        self::assertEquals('\'Foo%\' LIKE "bar"', $sql);
     }
 
     public function testInstanceOfPerSetters(): void
@@ -154,9 +129,12 @@ final class LikeTest extends TestCase
         $like = new Like();
         $like->setLike('foo%');
 
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Identifier must be specified');
-        $like->getExpressionData();
+        $like->renderSql($processor, '', $paramIndex);
     }
 
     public function testGetExpressionDataThrowsExceptionWhenLikeNotSet(): void
@@ -164,8 +142,11 @@ final class LikeTest extends TestCase
         $like = new Like();
         $like->setIdentifier('bar');
 
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Like expression must be specified');
-        $like->getExpressionData();
+        $like->renderSql($processor, '', $paramIndex);
     }
 }

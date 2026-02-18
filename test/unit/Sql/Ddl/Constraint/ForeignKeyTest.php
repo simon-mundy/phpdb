@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace PhpDbTest\Sql\Ddl\Constraint;
 
-use PhpDb\Sql\ArgumentInterface;
-use PhpDb\Sql\ArgumentType;
 use PhpDb\Sql\Ddl\Constraint\AbstractConstraint;
 use PhpDb\Sql\Ddl\Constraint\ForeignKey;
+use PhpDb\Sql\Part\SqlProcessor;
+use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\TestCase;
 
@@ -17,7 +17,7 @@ use PHPUnit\Framework\TestCase;
 #[CoversMethod(AbstractConstraint::class, 'setColumns')]
 #[CoversMethod(AbstractConstraint::class, 'addColumn')]
 #[CoversMethod(AbstractConstraint::class, 'getColumns')]
-#[CoversMethod(AbstractConstraint::class, 'getExpressionData')]
+#[CoversMethod(AbstractConstraint::class, 'renderSql')]
 #[CoversMethod(ForeignKey::class, '__construct')]
 #[CoversMethod(ForeignKey::class, 'setName')]
 #[CoversMethod(ForeignKey::class, 'getName')]
@@ -29,7 +29,7 @@ use PHPUnit\Framework\TestCase;
 #[CoversMethod(ForeignKey::class, 'getOnDeleteRule')]
 #[CoversMethod(ForeignKey::class, 'setOnUpdateRule')]
 #[CoversMethod(ForeignKey::class, 'getOnUpdateRule')]
-#[CoversMethod(ForeignKey::class, 'getExpressionData')]
+#[CoversMethod(ForeignKey::class, 'renderSql')]
 final class ForeignKeyTest extends TestCase
 {
     public function testSetName(): void
@@ -136,46 +136,13 @@ final class ForeignKeyTest extends TestCase
     {
         $fk = new ForeignKey('foo', 'bar', 'baz', 'bam', 'CASCADE', 'SET NULL');
 
-        $expressionData = $fk->getExpressionData();
+        $processor = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql = $fk->renderSql($processor, '', $paramIndex);
 
-        // Verify specification
         self::assertEquals(
-            'CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s (%s) ON DELETE %s ON UPDATE %s',
-            $expressionData['spec']
+            'CONSTRAINT "foo" FOREIGN KEY ("bar") REFERENCES "baz" ("bam") ON DELETE CASCADE ON UPDATE SET NULL',
+            $sql
         );
-
-        // Verify expression values
-        $values = $expressionData['values'];
-        self::assertCount(6, $values);
-
-        // Verify constraint name
-        self::assertInstanceOf(ArgumentInterface::class, $values[0]);
-        self::assertEquals('foo', $values[0]->getValue());
-        self::assertEquals(ArgumentType::Identifier, $values[0]->getType());
-
-        // Verify column name
-        self::assertInstanceOf(ArgumentInterface::class, $values[1]);
-        self::assertEquals('bar', $values[1]->getValue());
-        self::assertEquals(ArgumentType::Identifier, $values[1]->getType());
-
-        // Verify reference table
-        self::assertInstanceOf(ArgumentInterface::class, $values[2]);
-        self::assertEquals('baz', $values[2]->getValue());
-        self::assertEquals(ArgumentType::Identifier, $values[2]->getType());
-
-        // Verify reference column
-        self::assertInstanceOf(ArgumentInterface::class, $values[3]);
-        self::assertEquals('bam', $values[3]->getValue());
-        self::assertEquals(ArgumentType::Identifier, $values[3]->getType());
-
-        // Verify on delete rule
-        self::assertInstanceOf(ArgumentInterface::class, $values[4]);
-        self::assertEquals('CASCADE', $values[4]->getValue());
-        self::assertEquals(ArgumentType::Literal, $values[4]->getType());
-
-        // Verify on update rule
-        self::assertInstanceOf(ArgumentInterface::class, $values[5]);
-        self::assertEquals('SET NULL', $values[5]->getValue());
-        self::assertEquals(ArgumentType::Literal, $values[5]->getType());
     }
 }

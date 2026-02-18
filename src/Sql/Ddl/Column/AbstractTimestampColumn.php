@@ -5,25 +5,23 @@ declare(strict_types=1);
 namespace PhpDb\Sql\Ddl\Column;
 
 use Override;
-use PhpDb\Sql\Argument\Literal;
+use PhpDb\Sql\Part\SqlProcessor;
 
 /**
  * @see doc section http://dev.mysql.com/doc/refman/5.6/en/timestamp-initialization.html
  */
 abstract class AbstractTimestampColumn extends Column
 {
-    /** @inheritDoc */
     #[Override]
-    public function getExpressionData(): array
+    public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
     {
-        $expressionData = parent::getExpressionData();
-        $options        = $this->getOptions();
+        $sql     = parent::renderSql($processor, $paramPrefix, $paramIndex);
+        $options = $this->getOptions();
 
         if (isset($options['on_update'])) {
-            $expressionData['spec']    .= ' %s';
-            $expressionData['values'][] = new Literal('ON UPDATE CURRENT_TIMESTAMP');
+            $sql .= ' ON UPDATE CURRENT_TIMESTAMP';
         }
 
-        return $expressionData;
+        return $sql;
     }
 }

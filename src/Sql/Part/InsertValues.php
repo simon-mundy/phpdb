@@ -59,7 +59,7 @@ class InsertValues extends AbstractPart
                     $cv->value,
                     $isPdoDriver ? 'c_' . $i++ : null
                 ),
-                ArgumentType::Select  => $processor->processExpression($cv->value->getValue()),
+                ArgumentType::Select  => $processor->renderExpression($cv->value->getValue()),
                 ArgumentType::Literal => $cv->value->getValue(),
                 default               => $processor->platform->quoteValue((string) $cv->value->getValue()),
             };

@@ -17,7 +17,7 @@ use PhpDb\Sql\Argument\Values;
  * Specifies how values should be treated during SQL generation:
  * - Identifier: Column names, table names, and other identifiers that require quoting
  * - Identifiers: Multiple identifiers for multi-column clauses (e.g., multi-column IN predicates)
- * - Value: Data values that should be parameterized or escaped (via processExpression)
+ * - Value: Data values that should be parameterized or escaped (via renderArgument)
  * - Values: Multiple values for IN clauses and similar constructs
  * - Literal: Raw SQL fragments that are inserted as-is without modification
  * - Select: Subquery objects (Expression or SqlInterface instances)

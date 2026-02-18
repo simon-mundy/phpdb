@@ -159,58 +159,6 @@ class PredicateSet implements PredicateInterface, Countable
         return $this;
     }
 
-    /** @inheritDoc */
-    #[Override]
-    public function getExpressionData(): array
-    {
-        $predicateCount = count($this->predicates);
-
-        if ($predicateCount === 0) {
-            return ['spec' => '', 'values' => []];
-        }
-
-        if ($predicateCount === 1) {
-            [$operator, $predicate] = $this->predicates[0];
-            $expressionData         = $predicate->getExpressionData();
-
-            if ($predicate instanceof self) {
-                return [
-                    'spec'   => "({$expressionData['spec']})",
-                    'values' => $expressionData['values'],
-                ];
-            }
-
-            return $expressionData;
-        }
-
-        $specParts = [];
-        $allValues = [];
-        $first     = true;
-
-        foreach ($this->predicates as [$operator, $predicate]) {
-            $expressionData = $predicate->getExpressionData();
-
-            $spec = $predicate instanceof self
-                ? "({$expressionData['spec']})"
-                : $expressionData['spec'];
-
-            $specParts[] = $first ? $spec : "{$operator} {$spec}";
-            $first       = false;
-
-            $values = $expressionData['values'];
-            if ($values !== []) {
-                foreach ($values as $value) {
-                    $allValues[] = $value;
-                }
-            }
-        }
-
-        return [
-            'spec'   => implode(' ', $specParts),
-            'values' => $allValues,
-        ];
-    }
-
     /**
      * Get count of attached predicates
      */

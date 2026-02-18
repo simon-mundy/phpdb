@@ -8,6 +8,7 @@ use PhpDb\Sql\Argument\Identifier;
 use PhpDb\Sql\Argument\Literal;
 use PhpDb\Sql\Argument\Select as SelectArgument;
 use PhpDb\Sql\ArgumentInterface;
+use PhpDb\Sql\Expression;
 use PhpDb\Sql\ExpressionInterface;
 use PhpDb\Sql\Select;
 
@@ -69,8 +70,8 @@ final readonly class ColumnRef
 
         // Expression at integer key — check if it already contains ' as '
         if ($column instanceof ExpressionInterface) {
-            $data = $column->getExpressionData();
-            $this->containsAlias = stripos($data['spec'], ' as ') !== false;
+            $this->containsAlias = $column instanceof Expression
+                && stripos($column->getExpression(), ' as ') !== false;
             $this->alias = null;
             return;
         }

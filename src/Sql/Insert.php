@@ -195,14 +195,14 @@ class Insert extends AbstractPreparableSql
             if ($value instanceof ArgumentInterface) {
                 $values[] = match ($value->getType()) {
                     ArgumentType::Parameter => $processor->renderParameter($value, $isPdoDriver ? 'c_' . $i++ : null),
-                    ArgumentType::Select    => $processor->processExpression($value->getValue()),
+                    ArgumentType::Select    => $processor->renderExpression($value->getValue()),
                     ArgumentType::Literal   => $value->getValue(),
                     default                 => $platform->quoteValue((string) $value->getValue()),
                 };
             } elseif ($value instanceof Select) {
-                $values[] = $processor->processExpression(new SelectArgument($value));
+                $values[] = '(' . $processor->processSubSelect($value) . ')';
             } elseif ($value instanceof ExpressionInterface) {
-                $values[] = $processor->processExpression($value);
+                $values[] = $processor->renderExpression($value);
             } elseif ($value === null) {
                 $values[] = 'NULL';
             } elseif ($parameterContainer instanceof ParameterContainer) {

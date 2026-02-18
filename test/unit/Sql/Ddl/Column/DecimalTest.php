@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace PhpDbTest\Sql\Ddl\Column;
 
-use PhpDb\Sql\Argument;
 use PhpDb\Sql\Ddl\Column\AbstractPrecisionColumn;
 use PhpDb\Sql\Ddl\Column\Decimal;
+use PhpDb\Sql\Part\SqlProcessor;
+use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\TestCase;
 
-#[CoversMethod(Decimal::class, 'getExpressionData')]
+#[CoversMethod(Decimal::class, 'renderSql')]
 #[CoversMethod(AbstractPrecisionColumn::class, '__construct')]
 #[CoversMethod(AbstractPrecisionColumn::class, 'setDigits')]
 #[CoversMethod(AbstractPrecisionColumn::class, 'getDigits')]
@@ -23,14 +24,12 @@ final class DecimalTest extends TestCase
     {
         $column = new Decimal('foo', 10, 5);
 
-        $expressionData = $column->getExpressionData();
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
 
-        self::assertEquals('%s %s(%s) NOT NULL', $expressionData['spec']);
-        self::assertEquals([
-            Argument::identifier('foo'),
-            Argument::literal('DECIMAL'),
-            Argument::literal('10,5'),
-        ], $expressionData['values']);
+        $sql = $column->renderSql($processor, '', $paramIndex);
+
+        self::assertEquals('"foo" DECIMAL(10,5) NOT NULL', $sql);
     }
 
     public function testConstructorSetsDigitsAndDecimal(): void
@@ -64,15 +63,13 @@ final class DecimalTest extends TestCase
         $column = new Decimal('amount', 10);
         $column->setDecimal(null);
 
-        $expressionData = $column->getExpressionData();
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
 
-        // Without decimal, length expression should be just the digits (as string)
-        $values = $expressionData['values'];
-        self::assertCount(3, $values);
-        self::assertEquals(Argument::identifier('amount'), $values[0]);
-        self::assertEquals(Argument::literal('DECIMAL'), $values[1]);
-        // The third value should be "10" (string representation)
-        self::assertEquals(Argument::literal((string) 10), $values[2]);
+        $sql = $column->renderSql($processor, '', $paramIndex);
+
+        // Without decimal, length expression should be just the digits
+        self::assertEquals('"amount" DECIMAL(10) NOT NULL', $sql);
     }
 
     public function testInheritanceFromAbstractPrecisionColumn(): void

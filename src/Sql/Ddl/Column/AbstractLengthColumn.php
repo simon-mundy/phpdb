@@ -5,9 +5,6 @@ declare(strict_types=1);
 namespace PhpDb\Sql\Ddl\Column;
 
 use Override;
-use PhpDb\Sql\Argument\Literal;
-
-use function array_splice;
 
 abstract class AbstractLengthColumn extends Column
 {
@@ -44,16 +41,15 @@ abstract class AbstractLengthColumn extends Column
         return (string) $this->length;
     }
 
-    /** @inheritDoc */
     #[Override]
-    public function getExpressionData(): array
+    protected function renderTypeModifier(): string
     {
-        $expressionData = parent::getExpressionData();
+        $lengthExpr = $this->getLengthExpression();
 
-        if ($this->getLengthExpression() !== '' && $this->getLengthExpression() !== '0') {
-            array_splice($expressionData['values'], 2, 0, [new Literal($this->getLengthExpression())]);
+        if ($lengthExpr !== '' && $lengthExpr !== '0') {
+            return '(' . $lengthExpr . ')';
         }
 
-        return $expressionData;
+        return '';
     }
 }

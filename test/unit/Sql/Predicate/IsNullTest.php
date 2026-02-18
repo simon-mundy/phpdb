@@ -7,8 +7,10 @@ namespace PhpDbTest\Sql\Predicate;
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ArgumentType;
 use PhpDb\Sql\Exception\InvalidArgumentException;
+use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Predicate\IsNotNull;
 use PhpDb\Sql\Predicate\IsNull;
+use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\TestCase;
 
@@ -17,7 +19,7 @@ use PHPUnit\Framework\TestCase;
 #[CoversMethod(IsNull::class, 'getIdentifier')]
 #[CoversMethod(IsNull::class, 'setSpecification')]
 #[CoversMethod(IsNull::class, 'getSpecification')]
-#[CoversMethod(IsNull::class, 'getExpressionData')]
+#[CoversMethod(IsNull::class, 'renderSql')]
 final class IsNullTest extends TestCase
 {
     public function testEmptyConstructorYieldsNullIdentifier(): void
@@ -81,27 +83,22 @@ final class IsNullTest extends TestCase
         $isNotNull = new IsNotNull();
         $isNotNull->setIdentifier('foo.bar');
 
-        $expressionData = $isNotNull->getExpressionData();
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $isNotNull->renderSql($processor, '', $paramIndex);
 
-        // Verify specification (default built from arguments)
-        self::assertEquals('%s IS NOT NULL', $expressionData['spec']);
-
-        // Verify expression values
-        $values = $expressionData['values'];
-        self::assertCount(1, $values);
-
-        // Verify identifier argument
-        self::assertInstanceOf(ArgumentInterface::class, $values[0]);
-        self::assertEquals('foo.bar', $values[0]->getValue());
-        self::assertEquals(ArgumentType::Identifier, $values[0]->getType());
+        self::assertEquals('"foo"."bar" IS NOT NULL', $sql);
     }
 
     public function testGetExpressionDataThrowsExceptionWhenIdentifierNotSet(): void
     {
         $isNull = new IsNull();
 
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Identifier must be specified');
-        $isNull->getExpressionData();
+        $isNull->renderSql($processor, '', $paramIndex);
     }
 }

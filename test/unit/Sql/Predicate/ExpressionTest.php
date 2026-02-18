@@ -9,8 +9,10 @@ use PhpDb\Sql\Argument\Select;
 use PhpDb\Sql\Argument\Value;
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ArgumentType;
+use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Predicate\Expression;
 use PhpDb\Sql\Predicate\IsNull;
+use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
@@ -191,12 +193,10 @@ final class ExpressionTest extends TestCase
             ->setExpression('foo.bar = ? AND id != ?')
             ->setParameters(['foo', 'bar']);
 
-        $parameter1 = new Value('foo');
-        $parameter2 = Argument::value('bar');
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $expression->renderSql($processor, '', $paramIndex);
 
-        $expressionData = $expression->getExpressionData();
-
-        self::assertEquals('foo.bar = %s AND id != %s', $expressionData['spec']);
-        self::assertEquals([$parameter1, $parameter2], $expressionData['values']);
+        self::assertEquals('foo.bar = \'foo\' AND id != \'bar\'', $sql);
     }
 }

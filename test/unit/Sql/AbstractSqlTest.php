@@ -29,7 +29,7 @@ use function uniqid;
 
 #[IgnoreDeprecations]
 #[RequiresPhp('<= 8.6')]
-#[CoversMethod(SqlProcessor::class, 'processExpression')]
+#[CoversMethod(SqlProcessor::class, 'renderExpression')]
 #[CoversMethod(SqlProcessor::class, 'resolveTable')]
 final class AbstractSqlTest extends TestCase
 {
@@ -187,6 +187,6 @@ final class AbstractSqlTest extends TestCase
             $parameterContainer,
         );
 
-        return $processor->processExpression($expression, $namedParameterPrefix);
+        return $processor->renderExpression($expression, $namedParameterPrefix);
     }
 }

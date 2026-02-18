@@ -167,7 +167,7 @@ abstract class AbstractSqlFunctionalTestCase extends TestCase
                     ],
                 ],
             ],
-            'Update::processExpression()'          => [
+            'Update::renderExpression()'           => [
                 'sqlObject' => self::update('foo')->set(
                     ['x' => new Sql\Expression('?', [self::select('foo')->where(['x' => 'y'])])]
                 ),

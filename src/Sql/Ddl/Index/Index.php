@@ -6,10 +6,9 @@ namespace PhpDb\Sql\Ddl\Index;
 
 use Override;
 use PhpDb\Sql\Argument\Identifier;
+use PhpDb\Sql\Part\SqlProcessor;
 
-use function count;
 use function implode;
-use function str_replace;
 
 class Index extends AbstractIndex
 {
@@ -24,28 +23,30 @@ class Index extends AbstractIndex
         $this->lengths = $lengths;
     }
 
-    /** @inheritDoc */
     #[Override]
-    public function getExpressionData(): array
+    public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
     {
-        $colCount  = count($this->columns);
-        $values    = [new Identifier($this->name)];
-        $specParts = [];
+        $quotedName = $processor->renderArgument(
+            new Identifier($this->name),
+            $paramPrefix,
+            $paramIndex,
+        );
 
-        for ($i = 0; $i < $colCount; $i++) {
-            $specPart = '%s';
-            $values[] = new Identifier($this->columns[$i]);
+        $columnParts = [];
+        foreach ($this->columns as $i => $column) {
+            $part = $processor->renderArgument(
+                new Identifier($column),
+                $paramPrefix,
+                $paramIndex,
+            );
 
             if (isset($this->lengths[$i])) {
-                $specPart .= '(' . $this->lengths[$i] . ')';
+                $part .= '(' . $this->lengths[$i] . ')';
             }
 
-            $specParts[] = $specPart;
+            $columnParts[] = $part;
         }
 
-        return [
-            'spec'   => str_replace('...', implode(', ', $specParts), $this->specification),
-            'values' => $values,
-        ];
+        return 'INDEX ' . $quotedName . '(' . implode(', ', $columnParts) . ')';
     }
 }

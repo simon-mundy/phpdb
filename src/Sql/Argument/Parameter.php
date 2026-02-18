@@ -11,7 +11,7 @@ use PhpDb\Sql\ArgumentType;
  * Represents a value that should be bound as a driver parameter.
  * Carries optional metadata for parameter naming and type hinting.
  *
- * Unlike Value (which is rendered via processExpression with auto-named params),
+ * Unlike Value (which is rendered via renderArgument with auto-named params),
  * Parameter is used for direct bind scenarios (SET, INSERT VALUES, LIMIT, OFFSET)
  * where the parameter name and type hint are predetermined.
  */

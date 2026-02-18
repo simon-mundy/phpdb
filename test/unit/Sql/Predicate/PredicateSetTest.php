@@ -6,6 +6,7 @@ namespace PhpDbTest\Sql\Predicate;
 
 use PhpDb\Sql\Argument;
 use PhpDb\Sql\Expression as SqlExpression;
+use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Predicate\Expression;
 use PhpDb\Sql\Predicate\In;
 use PhpDb\Sql\Predicate\IsNotNull;
@@ -14,6 +15,7 @@ use PhpDb\Sql\Predicate\Literal;
 use PhpDb\Sql\Predicate\Operator;
 use PhpDb\Sql\Predicate\PredicateSet;
 use PhpDbTest\DeprecatedAssertionsTrait;
+use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 use PHPUnit\Framework\Attributes\RequiresPhp;
@@ -29,7 +31,7 @@ use TypeError;
 #[CoversMethod(PredicateSet::class, 'getPredicates')]
 #[CoversMethod(PredicateSet::class, 'orPredicate')]
 #[CoversMethod(PredicateSet::class, 'andPredicate')]
-#[CoversMethod(PredicateSet::class, 'getExpressionData')]
+#[CoversMethod(PredicateSet::class, 'renderSql')]
 #[CoversMethod(PredicateSet::class, 'count')]
 final class PredicateSetTest extends TestCase
 {
@@ -48,12 +50,13 @@ final class PredicateSetTest extends TestCase
             ->addPredicate(new IsNull('foo'))
             ->addPredicate(new IsNull('bar'));
 
-        $expressionData = $predicateSet->getExpressionData();
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $predicateSet->renderSql($processor, '', $paramIndex);
 
-        // 2 predicates = 2 values
-        self::assertCount(2, $expressionData['values']);
-        self::assertStringContainsString('AND', $expressionData['spec']);
-        self::assertStringNotContainsString('OR', $expressionData['spec']);
+        self::assertStringContainsString('AND', $sql);
+        self::assertStringNotContainsString('OR', $sql);
+        self::assertEquals('"foo" IS NULL AND "bar" IS NULL', $sql);
     }
 
     public function testCanPassPredicatesAndDefaultCombinationViaConstructor(): void
@@ -64,12 +67,13 @@ final class PredicateSetTest extends TestCase
             new IsNull('bar'),
         ], 'OR');
 
-        $expressionData = $predicateSet->getExpressionData();
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $predicateSet->renderSql($processor, '', $paramIndex);
 
-        // 2 predicates = 2 values
-        self::assertCount(2, $expressionData['values']);
-        self::assertStringContainsString('OR', $expressionData['spec']);
-        self::assertStringNotContainsString('AND', $expressionData['spec']);
+        self::assertStringContainsString('OR', $sql);
+        self::assertStringNotContainsString('AND', $sql);
+        self::assertEquals('"foo" IS NULL OR "bar" IS NULL', $sql);
     }
 
     public function testCanPassBothPredicateAndCombinationToAddPredicate(): void
@@ -81,14 +85,11 @@ final class PredicateSetTest extends TestCase
             ->addPredicate(new IsNull('baz'), 'OR')
             ->addPredicate(new IsNull('bat'), 'AND');
 
-        $expressionData = $predicateSet->getExpressionData();
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $predicateSet->renderSql($processor, '', $paramIndex);
 
-        // 4 predicates = 4 values
-        self::assertCount(4, $expressionData['values']);
-
-        // Verify combinators are in spec string: AND bar AND baz OR bat
-        $spec = $expressionData['spec'];
-        self::assertEquals('%s IS NULL AND %s IS NULL OR %s IS NULL AND %s IS NULL', $spec);
+        self::assertEquals('"foo" IS NULL AND "bar" IS NULL OR "baz" IS NULL AND "bat" IS NULL', $sql);
     }
 
     public function testCanUseOrPredicateAndAndPredicateMethods(): void
@@ -99,14 +100,11 @@ final class PredicateSetTest extends TestCase
                      ->orPredicate(new IsNull('baz'))
                      ->andPredicate(new IsNull('bat'));
 
-        $expressionData = $predicateSet->getExpressionData();
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $predicateSet->renderSql($processor, '', $paramIndex);
 
-        // 4 predicates = 4 values
-        self::assertCount(4, $expressionData['values']);
-
-        // Verify spec contains correct pattern: foo AND bar OR baz AND bat
-        $spec = $expressionData['spec'];
-        self::assertEquals('%s IS NULL AND %s IS NULL OR %s IS NULL AND %s IS NULL', $spec);
+        self::assertEquals('"foo" IS NULL AND "bar" IS NULL OR "baz" IS NULL AND "bat" IS NULL', $sql);
     }
 
     /**
@@ -186,9 +184,11 @@ final class PredicateSetTest extends TestCase
         // Should be wrapped in a Predicate\Expression
         self::assertInstanceOf(Expression::class, $predicates[0][1]);
 
-        // Verify the expression data is preserved
-        $expressionData = $predicateSet->getExpressionData();
-        self::assertStringContainsString('COUNT', $expressionData['spec']);
+        // Verify the rendered SQL contains COUNT
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $predicateSet->renderSql($processor, '', $paramIndex);
+        self::assertStringContainsString('COUNT', $sql);
     }
 
     /**

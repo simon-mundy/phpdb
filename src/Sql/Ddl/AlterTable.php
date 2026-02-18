@@ -134,12 +134,12 @@ class AlterTable extends AbstractDdl
         $clauses = [];
 
         foreach ($this->addColumns as $column) {
-            $clauses[] = 'ADD COLUMN ' . $processor->processExpression($column);
+            $clauses[] = 'ADD COLUMN ' . $processor->renderExpression($column);
         }
 
         foreach ($this->changeColumns as $name => $column) {
             $clauses[] = 'CHANGE COLUMN ' . $platform->quoteIdentifier($name)
-                . ' ' . $processor->processExpression($column);
+                . ' ' . $processor->renderExpression($column);
         }
 
         foreach ($this->dropColumns as $column) {
@@ -147,7 +147,7 @@ class AlterTable extends AbstractDdl
         }
 
         foreach ($this->addConstraints as $constraint) {
-            $clauses[] = 'ADD ' . $processor->processExpression($constraint);
+            $clauses[] = 'ADD ' . $processor->renderExpression($constraint);
         }
 
         foreach ($this->dropConstraints as $constraint) {

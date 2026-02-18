@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace PhpDbTest\Sql\Ddl\Column;
 
-use PhpDb\Sql\Argument;
 use PhpDb\Sql\Ddl\Column\Boolean;
+use PhpDb\Sql\Part\SqlProcessor;
+use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
-#[CoversMethod(Boolean::class, 'getExpressionData')]
+#[CoversMethod(Boolean::class, 'renderSql')]
 #[CoversClass(Boolean::class)]
 final class BooleanTest extends TestCase
 {
@@ -19,13 +20,12 @@ final class BooleanTest extends TestCase
     {
         $column = new Boolean('foo');
 
-        $expressionData = $column->getExpressionData();
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
 
-        self::assertEquals('%s %s NOT NULL', $expressionData['spec']);
-        self::assertEquals([
-            Argument::identifier('foo'),
-            Argument::literal('BOOLEAN'),
-        ], $expressionData['values']);
+        $sql = $column->renderSql($processor, '', $paramIndex);
+
+        self::assertEquals('"foo" BOOLEAN NOT NULL', $sql);
     }
 
     #[Group('6257')]

@@ -103,21 +103,6 @@ class Expression extends AbstractExpression
         return $this->parameters;
     }
 
-    /**
-     * @throws Exception\RuntimeException
-     * @inheritDoc
-     */
-    #[Override]
-    public function getExpressionData(): array
-    {
-        $specification = $this->prepareSpecification();
-
-        return [
-            'spec'   => $specification,
-            'values' => $this->parameters,
-        ];
-    }
-
     #[Override]
     public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
     {

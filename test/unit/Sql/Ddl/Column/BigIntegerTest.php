@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace PhpDbTest\Sql\Ddl\Column;
 
-use PhpDb\Sql\Argument;
 use PhpDb\Sql\Ddl\Column\BigInteger;
 use PhpDb\Sql\Ddl\Column\Column;
+use PhpDb\Sql\Part\SqlProcessor;
+use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\TestCase;
 
 #[CoversMethod(BigInteger::class, '__construct')]
-#[CoversMethod(Column::class, 'getExpressionData')]
+#[CoversMethod(Column::class, 'renderSql')]
 final class BigIntegerTest extends TestCase
 {
     public function testObjectConstruction(): void
@@ -22,20 +23,12 @@ final class BigIntegerTest extends TestCase
 
     public function testGetExpressionData(): void
     {
-        $column         = new BigInteger('foo');
-        $expressionData = $column->getExpressionData();
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
 
-        self::assertEquals(
-            '%s %s NOT NULL',
-            $expressionData['spec']
-        );
+        $column = new BigInteger('foo');
+        $sql    = $column->renderSql($processor, '', $paramIndex);
 
-        self::assertEquals(
-            [
-                Argument::Identifier('foo'),
-                Argument::Literal('BIGINT'),
-            ],
-            $expressionData['values']
-        );
+        self::assertEquals('"foo" BIGINT NOT NULL', $sql);
     }
 }

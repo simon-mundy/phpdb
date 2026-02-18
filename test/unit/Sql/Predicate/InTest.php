@@ -8,8 +8,10 @@ use PhpDb\Sql\Argument;
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ArgumentType;
 use PhpDb\Sql\Exception\InvalidArgumentException;
+use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Predicate\In;
 use PhpDb\Sql\Select;
+use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\TestCase;
 
@@ -18,7 +20,7 @@ use PHPUnit\Framework\TestCase;
 #[CoversMethod(In::class, 'getIdentifier')]
 #[CoversMethod(In::class, 'setValueSet')]
 #[CoversMethod(In::class, 'getValueSet')]
-#[CoversMethod(In::class, 'getExpressionData')]
+#[CoversMethod(In::class, 'renderSql')]
 final class InTest extends TestCase
 {
     public function testEmptyConstructorYieldsNullIdentifierAndValueSet(): void
@@ -120,140 +122,58 @@ final class InTest extends TestCase
         $in->setIdentifier('foo.bar')
             ->setValueSet([1, 2, 3]);
 
-        $expressionData = $in->getExpressionData();
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $in->renderSql($processor, '', $paramIndex);
 
-        // Verify specification
-        self::assertEquals('%s IN (%s, %s, %s)', $expressionData['spec']);
-
-        // Verify expression values
-        $values = $expressionData['values'];
-        self::assertCount(2, $values);
-
-        // Verify identifier argument
-        self::assertInstanceOf(ArgumentInterface::class, $values[0]);
-        self::assertEquals('foo.bar', $values[0]->getValue());
-        self::assertEquals(ArgumentType::Identifier, $values[0]->getType());
-
-        // Verify value set argument
-        self::assertInstanceOf(ArgumentInterface::class, $values[1]);
-        self::assertEquals([1, 2, 3], $values[1]->getValue());
-        self::assertEquals(ArgumentType::Values, $values[1]->getType());
-
-        // Test with typed value sets
-        $in->setIdentifier('foo.bar')
-            ->setValueSet([
-                [1 => ArgumentType::Literal],
-                [2 => ArgumentType::Value],
-                [3 => ArgumentType::Literal],
-            ]);
-
-        $expressionData = $in->getExpressionData();
-
-        // Verify specification
-        self::assertEquals('%s IN (%s, %s, %s)', $expressionData['spec']);
-
-        // Verify expression values
-        $values = $expressionData['values'];
-        self::assertCount(2, $values);
-
-        // Verify identifier argument
-        self::assertInstanceOf(ArgumentInterface::class, $values[0]);
-        self::assertEquals('foo.bar', $values[0]->getValue());
-        self::assertEquals(ArgumentType::Identifier, $values[0]->getType());
-
-        // Verify value set argument with types
-        self::assertInstanceOf(ArgumentInterface::class, $values[1]);
-        self::assertEquals([
-            [1 => ArgumentType::Literal],
-            [2 => ArgumentType::Value],
-            [3 => ArgumentType::Literal],
-        ], $values[1]->getValue());
-        self::assertEquals(ArgumentType::Values, $values[1]->getType());
+        self::assertEquals('"foo"."bar" IN (\'1\', \'2\', \'3\')', $sql);
     }
 
     public function testGetExpressionDataWithSubselect(): void
     {
-        $select = new Select();
+        $select = new Select('foo');
         $in     = new In(Argument::value('foo'), $select);
 
-        $expressionData = $in->getExpressionData();
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $in->renderSql($processor, '', $paramIndex);
 
-        // Verify specification
-        self::assertEquals('%s IN %s', $expressionData['spec']);
-
-        // Verify expression values
-        $values = $expressionData['values'];
-        self::assertCount(2, $values);
-
-        // Verify value argument (passed as value type)
-        self::assertInstanceOf(ArgumentInterface::class, $values[0]);
-        self::assertEquals('foo', $values[0]->getValue());
-        self::assertEquals(ArgumentType::Value, $values[0]->getType());
-
-        // Verify subselect argument
-        self::assertInstanceOf(ArgumentInterface::class, $values[1]);
-        self::assertSame($select, $values[1]->getValue());
-        self::assertEquals(ArgumentType::Select, $values[1]->getType());
+        self::assertStringStartsWith('\'foo\' IN (SELECT "foo"', $sql);
     }
 
     public function testGetExpressionDataWithEmptyValues(): void
     {
-        new Select();
         $in = new In('foo', []);
 
-        $expressionData = $in->getExpressionData();
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $in->renderSql($processor, '', $paramIndex);
 
-        self::assertEquals('%s IN (NULL)', $expressionData['spec']);
+        self::assertEquals('"foo" IN ()', $sql);
     }
 
     public function testGetExpressionDataWithSubselectAndIdentifier(): void
     {
-        $select = new Select();
+        $select = new Select('foo');
         $in     = new In(Argument::identifier('foo'), $select);
 
-        $expressionData = $in->getExpressionData();
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $in->renderSql($processor, '', $paramIndex);
 
-        // Verify specification
-        self::assertEquals('%s IN %s', $expressionData['spec']);
-
-        // Verify expression values
-        $values = $expressionData['values'];
-        self::assertCount(2, $values);
-
-        // Verify identifier argument
-        self::assertInstanceOf(ArgumentInterface::class, $values[0]);
-        self::assertEquals('foo', $values[0]->getValue());
-        self::assertEquals(ArgumentType::Identifier, $values[0]->getType());
-
-        // Verify subselect argument
-        self::assertInstanceOf(ArgumentInterface::class, $values[1]);
-        self::assertSame($select, $values[1]->getValue());
-        self::assertEquals(ArgumentType::Select, $values[1]->getType());
+        self::assertStringStartsWith('"foo" IN (SELECT "foo"', $sql);
     }
 
     public function testGetExpressionDataWithSubselectAndArrayIdentifier(): void
     {
-        $select = new Select();
+        $select = new Select('foo');
         $in     = new In(Argument::identifiers(['foo', 'bar']), $select);
 
-        $expressionData = $in->getExpressionData();
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $in->renderSql($processor, '', $paramIndex);
 
-        // Verify specification
-        self::assertEquals('(%s, %s) IN %s', $expressionData['spec']);
-
-        // Verify expression values
-        $values = $expressionData['values'];
-        self::assertCount(2, $values);
-
-        // Verify array identifiers argument
-        self::assertInstanceOf(ArgumentInterface::class, $values[0]);
-        self::assertEquals(['foo', 'bar'], $values[0]->getValue());
-        self::assertEquals(ArgumentType::Identifiers, $values[0]->getType());
-
-        // Verify subselect argument
-        self::assertInstanceOf(ArgumentInterface::class, $values[1]);
-        self::assertSame($select, $values[1]->getValue());
-        self::assertEquals(ArgumentType::Select, $values[1]->getType());
+        self::assertStringStartsWith('"foo", "bar" IN (SELECT "foo"', $sql);
     }
 
     public function testGetExpressionDataThrowsExceptionWhenIdentifierNotSet(): void
@@ -261,9 +181,12 @@ final class InTest extends TestCase
         $in = new In();
         $in->setValueSet([1, 2]);
 
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Identifier must be specified');
-        $in->getExpressionData();
+        $in->renderSql($processor, '', $paramIndex);
     }
 
     public function testGetExpressionDataThrowsExceptionWhenValueSetNotSet(): void
@@ -271,8 +194,11 @@ final class InTest extends TestCase
         $in = new In();
         $in->setIdentifier('foo');
 
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Value set must be provided for IN predicate');
-        $in->getExpressionData();
+        $in->renderSql($processor, '', $paramIndex);
     }
 }

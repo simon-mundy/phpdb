@@ -4,26 +4,24 @@ declare(strict_types=1);
 
 namespace PhpDbTest\Sql\Ddl\Column;
 
-use PhpDb\Sql\Argument\Identifier;
-use PhpDb\Sql\Argument\Literal;
 use PhpDb\Sql\Ddl\Column\Char;
+use PhpDb\Sql\Part\SqlProcessor;
+use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\TestCase;
 
-#[CoversMethod(Char::class, 'getExpressionData')]
+#[CoversMethod(Char::class, 'renderSql')]
 final class CharTest extends TestCase
 {
     public function testGetExpressionData(): void
     {
         $column = new Char('foo', 20);
 
-        $expressionData = $column->getExpressionData();
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
 
-        self::assertEquals('%s %s(%s) NOT NULL', $expressionData['spec']);
-        self::assertEquals([
-            new Identifier('foo'),
-            new Literal('CHAR'),
-            new Literal('20'),
-        ], $expressionData['values']);
+        $sql = $column->renderSql($processor, '', $paramIndex);
+
+        self::assertEquals('"foo" CHAR(20) NOT NULL', $sql);
     }
 }

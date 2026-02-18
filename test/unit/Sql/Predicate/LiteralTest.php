@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace PhpDbTest\Sql\Predicate;
 
+use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Predicate\Literal;
+use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\TestCase;
 
 class LiteralTest extends TestCase
@@ -39,8 +41,10 @@ class LiteralTest extends TestCase
     {
         $literal = new Literal('bar');
 
-        $expressionData = $literal->getExpressionData();
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $literal->renderSql($processor, '', $paramIndex);
 
-        self::assertEquals('bar', $expressionData['spec']);
+        self::assertEquals('bar', $sql);
     }
 }

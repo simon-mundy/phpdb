@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace PhpDbTest\Sql\Ddl\Column;
 
-use PhpDb\Sql\Argument;
 use PhpDb\Sql\Ddl\Column\Column;
+use PhpDb\Sql\Part\SqlProcessor;
+use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\TestCase;
 
@@ -20,7 +21,7 @@ use PHPUnit\Framework\TestCase;
 #[CoversMethod(Column::class, 'setOption')]
 #[CoversMethod(Column::class, 'getOptions')]
 #[CoversMethod(Column::class, 'addConstraint')]
-#[CoversMethod(Column::class, 'getExpressionData')]
+#[CoversMethod(Column::class, 'renderSql')]
 final class ColumnTest extends TestCase
 {
     public function testConstructor(): void
@@ -134,36 +135,25 @@ final class ColumnTest extends TestCase
 
     public function testGetExpressionData(): void
     {
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+
         $column = new Column();
         $column->setName('foo');
 
-        $expressionData = $column->getExpressionData();
-
-        self::assertEquals('%s %s NOT NULL', $expressionData['spec']);
-        self::assertEquals([
-            Argument::identifier('foo'),
-            Argument::literal('INTEGER'),
-        ], $expressionData['values']);
+        $sql = $column->renderSql($processor, '', $paramIndex);
+        self::assertEquals('"foo" INTEGER NOT NULL', $sql);
 
         $column->setNullable(true);
 
-        $expressionData = $column->getExpressionData();
-
-        self::assertEquals('%s %s', $expressionData['spec']);
-        self::assertEquals([
-            Argument::identifier('foo'),
-            Argument::literal('INTEGER'),
-        ], $expressionData['values']);
+        $paramIndex = 1;
+        $sql = $column->renderSql($processor, '', $paramIndex);
+        self::assertEquals('"foo" INTEGER', $sql);
 
         $column->setDefault('bar');
 
-        $expressionData = $column->getExpressionData();
-
-        self::assertEquals('%s %s DEFAULT %s', $expressionData['spec']);
-        self::assertEquals([
-            Argument::identifier('foo'),
-            Argument::literal('INTEGER'),
-            Argument::value('bar'),
-        ], $expressionData['values']);
+        $paramIndex = 1;
+        $sql = $column->renderSql($processor, '', $paramIndex);
+        self::assertEquals('"foo" INTEGER DEFAULT \'bar\'', $sql);
     }
 }

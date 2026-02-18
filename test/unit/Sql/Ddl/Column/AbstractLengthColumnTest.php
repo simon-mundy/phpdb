@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace PhpDbTest\Sql\Ddl\Column;
 
-use PhpDb\Sql\Argument\Identifier;
-use PhpDb\Sql\Argument\Literal;
 use PhpDb\Sql\Ddl\Column\AbstractLengthColumn;
+use PhpDb\Sql\Part\SqlProcessor;
+use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\MockObject\Exception;
 use PHPUnit\Framework\TestCase;
 
 #[CoversMethod(AbstractLengthColumn::class, 'setLength')]
 #[CoversMethod(AbstractLengthColumn::class, 'getLength')]
-#[CoversMethod(AbstractLengthColumn::class, 'getExpressionData')]
+#[CoversMethod(AbstractLengthColumn::class, 'renderSql')]
 final class AbstractLengthColumnTest extends TestCase
 {
     /**
@@ -52,13 +52,11 @@ final class AbstractLengthColumnTest extends TestCase
             ->onlyMethods([])
             ->getMock();
 
-        $expressionData = $column->getExpressionData();
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
 
-        self::assertEquals('%s %s(%s) NOT NULL', $expressionData['spec']);
-        self::assertEquals([
-            new Identifier('foo'),
-            new Literal('INTEGER'),
-            new Literal('4'),
-        ], $expressionData['values']);
+        $sql = $column->renderSql($processor, '', $paramIndex);
+
+        self::assertEquals('"foo" INTEGER(4) NOT NULL', $sql);
     }
 }

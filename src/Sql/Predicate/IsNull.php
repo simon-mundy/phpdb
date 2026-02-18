@@ -49,25 +49,13 @@ class IsNull extends AbstractExpression implements PredicateInterface
         return $this->identifier;
     }
 
-    /** @inheritDoc */
     #[Override]
-    public function getExpressionData(): array
+    public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
     {
         if (! $this->identifier instanceof ArgumentInterface) {
             throw new InvalidArgumentException('Identifier must be specified');
         }
 
-        $identifierSpec = $this->identifier->getSpecification();
-
-        return [
-            'spec'   => $this->specification ?? "{$identifierSpec} {$this->operator}",
-            'values' => [$this->identifier],
-        ];
-    }
-
-    #[Override]
-    public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
-    {
         $id = $processor->renderArgument($this->identifier, $paramPrefix, $paramIndex);
 
         if ($this->specification !== null) {

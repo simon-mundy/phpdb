@@ -9,8 +9,10 @@ use PhpDb\Adapter\Exception\VunerablePlatformQuoteException;
 use PhpDb\Adapter\Platform\Sql92;
 use PhpDb\Sql\Argument;
 use PhpDb\Sql\Expression;
+use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Predicate\Predicate;
 use PhpDb\Sql\Select;
+use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\TestDox;
 use PHPUnit\Framework\TestCase;
 
@@ -21,15 +23,11 @@ final class PredicateTest extends TestCase
         $predicate = new Predicate();
         $predicate->equalTo('foo.bar', 'bar');
 
-        $identifier = Argument::identifier('foo.bar');
-        $expression = Argument::value('bar');
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $predicate->renderSql($processor, '', $paramIndex);
 
-        $expressionData = $predicate->getExpressionData();
-
-        self::assertEquals('%s = %s', $expressionData['spec']);
-        self::assertCount(2, $expressionData['values']);
-        self::assertEquals($identifier, $expressionData['values'][0]);
-        self::assertEquals($expression, $expressionData['values'][1]);
+        self::assertEquals('"foo"."bar" = \'bar\'', $sql);
     }
 
     public function testNotEqualToCreatesOperatorPredicate(): void
@@ -37,15 +35,11 @@ final class PredicateTest extends TestCase
         $predicate = new Predicate();
         $predicate->notEqualTo('foo.bar', 'bar');
 
-        $identifier = Argument::identifier('foo.bar');
-        $expression = Argument::value('bar');
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $predicate->renderSql($processor, '', $paramIndex);
 
-        $expressionData = $predicate->getExpressionData();
-
-        self::assertEquals('%s != %s', $expressionData['spec']);
-        self::assertCount(2, $expressionData['values']);
-        self::assertEquals($identifier, $expressionData['values'][0]);
-        self::assertEquals($expression, $expressionData['values'][1]);
+        self::assertEquals('"foo"."bar" != \'bar\'', $sql);
     }
 
     public function testLessThanCreatesOperatorPredicate(): void
@@ -53,15 +47,11 @@ final class PredicateTest extends TestCase
         $predicate = new Predicate();
         $predicate->lessThan('foo.bar', 'bar');
 
-        $identifier = Argument::identifier('foo.bar');
-        $expression = Argument::value('bar');
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $predicate->renderSql($processor, '', $paramIndex);
 
-        $expressionData = $predicate->getExpressionData();
-
-        self::assertEquals('%s < %s', $expressionData['spec']);
-        self::assertCount(2, $expressionData['values']);
-        self::assertEquals($identifier, $expressionData['values'][0]);
-        self::assertEquals($expression, $expressionData['values'][1]);
+        self::assertEquals('"foo"."bar" < \'bar\'', $sql);
     }
 
     public function testGreaterThanCreatesOperatorPredicate(): void
@@ -69,15 +59,11 @@ final class PredicateTest extends TestCase
         $predicate = new Predicate();
         $predicate->greaterThan('foo.bar', 'bar');
 
-        $identifier = Argument::identifier('foo.bar');
-        $expression = Argument::value('bar');
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $predicate->renderSql($processor, '', $paramIndex);
 
-        $expressionData = $predicate->getExpressionData();
-
-        self::assertEquals('%s > %s', $expressionData['spec']);
-        self::assertCount(2, $expressionData['values']);
-        self::assertEquals($identifier, $expressionData['values'][0]);
-        self::assertEquals($expression, $expressionData['values'][1]);
+        self::assertEquals('"foo"."bar" > \'bar\'', $sql);
     }
 
     public function testLessThanOrEqualToCreatesOperatorPredicate(): void
@@ -85,15 +71,11 @@ final class PredicateTest extends TestCase
         $predicate = new Predicate();
         $predicate->lessThanOrEqualTo('foo.bar', 'bar');
 
-        $identifier = Argument::identifier('foo.bar');
-        $expression = Argument::value('bar');
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $predicate->renderSql($processor, '', $paramIndex);
 
-        $expressionData = $predicate->getExpressionData();
-
-        self::assertEquals('%s <= %s', $expressionData['spec']);
-        self::assertCount(2, $expressionData['values']);
-        self::assertEquals($identifier, $expressionData['values'][0]);
-        self::assertEquals($expression, $expressionData['values'][1]);
+        self::assertEquals('"foo"."bar" <= \'bar\'', $sql);
     }
 
     public function testGreaterThanOrEqualToCreatesOperatorPredicate(): void
@@ -101,15 +83,11 @@ final class PredicateTest extends TestCase
         $predicate = new Predicate();
         $predicate->greaterThanOrEqualTo('foo.bar', 'bar');
 
-        $identifier = Argument::identifier('foo.bar');
-        $expression = Argument::value('bar');
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $predicate->renderSql($processor, '', $paramIndex);
 
-        $expressionData = $predicate->getExpressionData();
-
-        self::assertEquals('%s >= %s', $expressionData['spec']);
-        self::assertCount(2, $expressionData['values']);
-        self::assertEquals($identifier, $expressionData['values'][0]);
-        self::assertEquals($expression, $expressionData['values'][1]);
+        self::assertEquals('"foo"."bar" >= \'bar\'', $sql);
     }
 
     public function testLikeCreatesLikePredicate(): void
@@ -117,15 +95,11 @@ final class PredicateTest extends TestCase
         $predicate = new Predicate();
         $predicate->like('foo.bar', 'bar%');
 
-        $identifier = Argument::identifier('foo.bar');
-        $expression = Argument::value('bar%');
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $predicate->renderSql($processor, '', $paramIndex);
 
-        $expressionData = $predicate->getExpressionData();
-
-        self::assertEquals('%s LIKE %s', $expressionData['spec']);
-        self::assertCount(2, $expressionData['values']);
-        self::assertEquals($identifier, $expressionData['values'][0]);
-        self::assertEquals($expression, $expressionData['values'][1]);
+        self::assertEquals('"foo"."bar" LIKE \'bar%\'', $sql);
     }
 
     public function testNotLikeCreatesLikePredicate(): void
@@ -133,15 +107,11 @@ final class PredicateTest extends TestCase
         $predicate = new Predicate();
         $predicate->notLike('foo.bar', 'bar%');
 
-        $identifier = Argument::identifier('foo.bar');
-        $expression = Argument::value('bar%');
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $predicate->renderSql($processor, '', $paramIndex);
 
-        $expressionData = $predicate->getExpressionData();
-
-        self::assertEquals('%s NOT LIKE %s', $expressionData['spec']);
-        self::assertCount(2, $expressionData['values']);
-        self::assertEquals($identifier, $expressionData['values'][0]);
-        self::assertEquals($expression, $expressionData['values'][1]);
+        self::assertEquals('"foo"."bar" NOT LIKE \'bar%\'', $sql);
     }
 
     public function testLiteralCreatesLiteralPredicate(): void
@@ -149,10 +119,11 @@ final class PredicateTest extends TestCase
         $predicate = new Predicate();
         $predicate->literal('foo.bar = ?');
 
-        $expressionData = $predicate->getExpressionData();
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $predicate->renderSql($processor, '', $paramIndex);
 
-        self::assertCount(0, $expressionData['values']);
-        self::assertEquals('foo.bar = ?', $expressionData['spec']);
+        self::assertEquals('foo.bar = ?', $sql);
     }
 
     public function testIsNullCreatesIsNullPredicate(): void
@@ -160,13 +131,11 @@ final class PredicateTest extends TestCase
         $predicate = new Predicate();
         $predicate->isNull('foo.bar');
 
-        $identifier = Argument::identifier('foo.bar');
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $predicate->renderSql($processor, '', $paramIndex);
 
-        $expressionData = $predicate->getExpressionData();
-
-        self::assertEquals('%s IS NULL', $expressionData['spec']);
-        self::assertCount(1, $expressionData['values']);
-        self::assertEquals($identifier, $expressionData['values'][0]);
+        self::assertEquals('"foo"."bar" IS NULL', $sql);
     }
 
     public function testIsNotNullCreatesIsNotNullPredicate(): void
@@ -174,13 +143,11 @@ final class PredicateTest extends TestCase
         $predicate = new Predicate();
         $predicate->isNotNull('foo.bar');
 
-        $identifier = Argument::identifier('foo.bar');
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $predicate->renderSql($processor, '', $paramIndex);
 
-        $expressionData = $predicate->getExpressionData();
-
-        self::assertEquals('%s IS NOT NULL', $expressionData['spec']);
-        self::assertCount(1, $expressionData['values']);
-        self::assertEquals($identifier, $expressionData['values'][0]);
+        self::assertEquals('"foo"."bar" IS NOT NULL', $sql);
     }
 
     public function testInCreatesInPredicate(): void
@@ -188,15 +155,11 @@ final class PredicateTest extends TestCase
         $predicate = new Predicate();
         $predicate->in('foo.bar', ['foo', 'bar']);
 
-        $identifier = Argument::identifier('foo.bar');
-        $expression = Argument::values(['foo', 'bar']);
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $predicate->renderSql($processor, '', $paramIndex);
 
-        $expressionData = $predicate->getExpressionData();
-
-        self::assertEquals('%s IN (%s, %s)', $expressionData['spec']);
-        self::assertCount(2, $expressionData['values']);
-        self::assertEquals($identifier, $expressionData['values'][0]);
-        self::assertEquals($expression, $expressionData['values'][1]);
+        self::assertEquals('"foo"."bar" IN (\'foo\', \'bar\')', $sql);
     }
 
     public function testNotInCreatesNotInPredicate(): void
@@ -204,15 +167,11 @@ final class PredicateTest extends TestCase
         $predicate = new Predicate();
         $predicate->notIn('foo.bar', ['foo', 'bar']);
 
-        $identifier = Argument::identifier('foo.bar');
-        $expression = Argument::values(['foo', 'bar']);
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $predicate->renderSql($processor, '', $paramIndex);
 
-        $expressionData = $predicate->getExpressionData();
-
-        self::assertEquals('%s NOT IN (%s, %s)', $expressionData['spec']);
-        self::assertCount(2, $expressionData['values']);
-        self::assertEquals($identifier, $expressionData['values'][0]);
-        self::assertEquals($expression, $expressionData['values'][1]);
+        self::assertEquals('"foo"."bar" NOT IN (\'foo\', \'bar\')', $sql);
     }
 
     public function testBetweenCreatesBetweenPredicate(): void
@@ -220,17 +179,11 @@ final class PredicateTest extends TestCase
         $predicate = new Predicate();
         $predicate->between('foo.bar', 1, 10);
 
-        $identifier = Argument::identifier('foo.bar');
-        $minValue   = Argument::value(1);
-        $maxValue   = Argument::value(10);
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $predicate->renderSql($processor, '', $paramIndex);
 
-        $expressionData = $predicate->getExpressionData();
-
-        self::assertEquals('%s BETWEEN %s AND %s', $expressionData['spec']);
-        self::assertCount(3, $expressionData['values']);
-        self::assertEquals($identifier, $expressionData['values'][0]);
-        self::assertEquals($minValue, $expressionData['values'][1]);
-        self::assertEquals($maxValue, $expressionData['values'][2]);
+        self::assertEquals('"foo"."bar" BETWEEN \'1\' AND \'10\'', $sql);
     }
 
     public function testBetweenCreatesNotBetweenPredicate(): void
@@ -238,17 +191,11 @@ final class PredicateTest extends TestCase
         $predicate = new Predicate();
         $predicate->notBetween('foo.bar', 1, 10);
 
-        $identifier = Argument::identifier('foo.bar');
-        $minValue   = Argument::value(1);
-        $maxValue   = Argument::value(10);
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $predicate->renderSql($processor, '', $paramIndex);
 
-        $expressionData = $predicate->getExpressionData();
-
-        self::assertEquals('%s NOT BETWEEN %s AND %s', $expressionData['spec']);
-        self::assertCount(3, $expressionData['values']);
-        self::assertEquals($identifier, $expressionData['values'][0]);
-        self::assertEquals($minValue, $expressionData['values'][1]);
-        self::assertEquals($maxValue, $expressionData['values'][2]);
+        self::assertEquals('"foo"."bar" NOT BETWEEN \'1\' AND \'10\'', $sql);
     }
 
     public function testCanChainPredicateFactoriesBetweenOperators(): void
@@ -260,21 +207,11 @@ final class PredicateTest extends TestCase
             ->and
             ->equalTo('baz.bat', 'foo');
 
-        $identifier1 = Argument::identifier('foo.bar');
-        $identifier2 = Argument::identifier('bar.baz');
-        $identifier3 = Argument::identifier('baz.bat');
-        $expression3 = Argument::value('foo');
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $predicate->renderSql($processor, '', $paramIndex);
 
-        $expressionData = $predicate->getExpressionData();
-
-        // 3 predicates: IsNull, IsNotNull, Operator = 4 values (1+1+2)
-        self::assertCount(4, $expressionData['values']);
-        // Verify combined spec
-        self::assertEquals('%s IS NULL OR %s IS NOT NULL AND %s = %s', $expressionData['spec']);
-        self::assertEquals($identifier1, $expressionData['values'][0]);
-        self::assertEquals($identifier2, $expressionData['values'][1]);
-        self::assertEquals($identifier3, $expressionData['values'][2]);
-        self::assertEquals($expression3, $expressionData['values'][3]);
+        self::assertEquals('"foo"."bar" IS NULL OR "bar"."baz" IS NOT NULL AND "baz"."bat" = \'foo\'', $sql);
     }
 
     public function testCanNestPredicates(): void
@@ -287,35 +224,26 @@ final class PredicateTest extends TestCase
             ->equalTo('baz.bat', 'foo')
             ->unnest();
 
-        $identifier1 = Argument::identifier('foo.bar');
-        $identifier2 = Argument::identifier('bar.baz');
-        $identifier3 = Argument::identifier('baz.bat');
-        $expression3 = Argument::value('foo');
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $predicate->renderSql($processor, '', $paramIndex);
 
-        $expressionData = $predicate->getExpressionData();
-
-        // 3 predicates: IsNull + nested(IsNotNull, Operator) = 4 values
-        self::assertCount(4, $expressionData['values']);
-        // Verify combined spec with nested brackets
-        self::assertEquals('%s IS NULL AND (%s IS NOT NULL AND %s = %s)', $expressionData['spec']);
-        self::assertEquals($identifier1, $expressionData['values'][0]);
-        self::assertEquals($identifier2, $expressionData['values'][1]);
-        self::assertEquals($identifier3, $expressionData['values'][2]);
-        self::assertEquals($expression3, $expressionData['values'][3]);
+        self::assertEquals('"foo"."bar" IS NULL AND ("bar"."baz" IS NOT NULL AND "baz"."bat" = \'foo\')', $sql);
     }
 
     #[TestDox('Unit test: Test expression() is chainable and returns proper values')]
     public function testExpression(): void
     {
         $predicate = new Predicate();
-        $value     = Argument::value(0);
 
         // is chainable
         self::assertSame($predicate, $predicate->expression('foo = ?', 0));
-        $expressionData = $predicate->getExpressionData();
-        // with parameter
-        self::assertEquals('foo = %s', $expressionData['spec']);
-        self::assertEquals([$value], $expressionData['values']);
+
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $predicate->renderSql($processor, '', $paramIndex);
+
+        self::assertEquals('foo = \'0\'', $sql);
     }
 
     #[TestDox('Unit test: Test expression() allows null $parameters')]
@@ -344,33 +272,29 @@ final class PredicateTest extends TestCase
         // is chainable
         self::assertSame($predicate, $predicate->literal('foo = bar'));
 
-        $expressionData = $predicate->getExpressionData();
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $predicate->renderSql($processor, '', $paramIndex);
 
-        // with parameter
-        self::assertEquals('foo = bar', $expressionData['spec']);
-        self::assertEquals([], $expressionData['values']);
+        self::assertEquals('foo = bar', $sql);
 
         // test literal() is backwards-compatible, and works with with parameters
         $predicate = new Predicate();
         $predicate->expression('foo = ?', 'bar');
 
-        $expression     = Argument::value('bar');
-        $expressionData = $predicate->getExpressionData();
+        $paramIndex = 1;
+        $sql        = $predicate->renderSql($processor, '', $paramIndex);
 
-        // with parameter
-        self::assertEquals('foo = %s', $expressionData['spec']);
-        self::assertEquals([$expression], $expressionData['values']);
+        self::assertEquals('foo = \'bar\'', $sql);
 
         // test literal() is backwards-compatible, and works with with parameters, even 0 which tests as false
         $predicate = new Predicate();
         $predicate->expression('foo = ?', 0);
 
-        $expression     = Argument::value(0);
-        $expressionData = $predicate->getExpressionData();
+        $paramIndex = 1;
+        $sql        = $predicate->renderSql($processor, '', $paramIndex);
 
-        // with parameter
-        self::assertEquals('foo = %s', $expressionData['spec']);
-        self::assertEquals([$expression], $expressionData['values']);
+        self::assertEquals('foo = \'0\'', $sql);
     }
 
     /**

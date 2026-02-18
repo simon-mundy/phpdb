@@ -6,12 +6,9 @@ namespace PhpDb\Sql\Ddl\Column;
 
 use Override;
 use PhpDb\Sql\Argument\Identifier;
-use PhpDb\Sql\Argument\Literal;
 use PhpDb\Sql\Argument\Value;
 use PhpDb\Sql\Ddl\Constraint\ConstraintInterface;
 use PhpDb\Sql\Part\SqlProcessor;
-
-use function implode;
 
 class Column implements ColumnInterface
 {
@@ -103,42 +100,34 @@ class Column implements ColumnInterface
         return $this;
     }
 
-    /** @inheritDoc */
-    #[Override]
-    public function getExpressionData(): array
-    {
-        $specParts = [$this->specification];
-        $values    = [
-            new Identifier($this->name),
-            new Literal($this->type),
-        ];
-
-        if ($this->isNullable === false) {
-            $specParts[] = 'NOT NULL';
-        }
-
-        if ($this->default !== null) {
-            $specParts[] = 'DEFAULT %s';
-            $values[]    = new Value($this->default);
-        }
-
-        foreach ($this->constraints as $constraint) {
-            $constraintData = $constraint->getExpressionData();
-            $specParts[]    = $constraintData['spec'];
-            foreach ($constraintData['values'] as $value) {
-                $values[] = $value;
-            }
-        }
-
-        return [
-            'spec'   => implode(' ', $specParts),
-            'values' => $values,
-        ];
-    }
-
     #[Override]
     public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
     {
-        return $processor->processExpression($this, $paramPrefix);
+        $sql = $processor->renderArgument(new Identifier($this->name), $paramPrefix, $paramIndex)
+            . ' ' . $this->type;
+
+        $sql .= $this->renderTypeModifier();
+
+        if ($this->isNullable === false) {
+            $sql .= ' NOT NULL';
+        }
+
+        if ($this->default !== null) {
+            $sql .= ' DEFAULT ' . $processor->renderArgument(new Value($this->default), $paramPrefix, $paramIndex);
+        }
+
+        foreach ($this->constraints as $constraint) {
+            $sql .= ' ' . $constraint->renderSql($processor, $paramPrefix, $paramIndex);
+        }
+
+        return $sql;
+    }
+
+    /**
+     * Hook for subclasses to append type modifiers (e.g. length, precision).
+     */
+    protected function renderTypeModifier(): string
+    {
+        return '';
     }
 }

@@ -82,9 +82,8 @@ class In extends AbstractExpression implements PredicateInterface
         return $this->valueSet;
     }
 
-    /** @inheritDoc */
     #[Override]
-    public function getExpressionData(): array
+    public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
     {
         if (! $this->identifier instanceof ArgumentInterface) {
             throw new InvalidArgumentException('Identifier must be specified');
@@ -94,18 +93,6 @@ class In extends AbstractExpression implements PredicateInterface
             throw new InvalidArgumentException('Value set must be provided for IN predicate');
         }
 
-        $identifierSpec = $this->identifier->getSpecification();
-        $valueSetSpec   = $this->valueSet->getSpecification();
-
-        return [
-            'spec'   => $this->specification ?? "{$identifierSpec} {$this->operator} {$valueSetSpec}",
-            'values' => [$this->identifier, $this->valueSet],
-        ];
-    }
-
-    #[Override]
-    public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
-    {
         $id       = $processor->renderArgument($this->identifier, $paramPrefix, $paramIndex);
         $valueSet = $processor->renderArgument($this->valueSet, $paramPrefix, $paramIndex);
 

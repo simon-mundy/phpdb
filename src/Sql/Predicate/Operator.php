@@ -135,9 +135,8 @@ class Operator extends AbstractExpression implements PredicateInterface
         return $this;
     }
 
-    /** @inheritDoc */
     #[Override]
-    public function getExpressionData(): array
+    public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
     {
         if (! $this->left instanceof ArgumentInterface) {
             throw new InvalidArgumentException('Left expression must be specified');
@@ -147,18 +146,6 @@ class Operator extends AbstractExpression implements PredicateInterface
             throw new InvalidArgumentException('Right expression must be specified');
         }
 
-        $leftSpec  = $this->left->getSpecification();
-        $rightSpec = $this->right->getSpecification();
-
-        return [
-            'spec'   => $this->specification ?? "{$leftSpec} {$this->operator} {$rightSpec}",
-            'values' => [$this->left, $this->right],
-        ];
-    }
-
-    #[Override]
-    public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
-    {
         $left  = $processor->renderArgument($this->left, $paramPrefix, $paramIndex);
         $right = $processor->renderArgument($this->right, $paramPrefix, $paramIndex);
 

@@ -4,30 +4,27 @@ declare(strict_types=1);
 
 namespace PhpDbTest\Sql\Ddl\Column;
 
-use PhpDb\Sql\Argument;
-use PhpDb\Sql\Argument\Identifier;
-use PhpDb\Sql\Argument\Literal;
-use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\Ddl\Column\AbstractTimestampColumn;
 use PhpDb\Sql\Ddl\Column\Timestamp;
+use PhpDb\Sql\Part\SqlProcessor;
+use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\TestCase;
 
-#[CoversMethod(Timestamp::class, 'getExpressionData')]
-#[CoversMethod(AbstractTimestampColumn::class, 'getExpressionData')]
+#[CoversMethod(Timestamp::class, 'renderSql')]
+#[CoversMethod(AbstractTimestampColumn::class, 'renderSql')]
 final class TimestampTest extends TestCase
 {
     public function testGetExpressionData(): void
     {
         $column = new Timestamp('foo');
 
-        $expressionData = $column->getExpressionData();
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
 
-        self::assertEquals('%s %s NOT NULL', $expressionData['spec']);
-        self::assertEquals([
-            new Identifier('foo'),
-            new Literal('TIMESTAMP'),
-        ], $expressionData['values']);
+        $sql = $column->renderSql($processor, '', $paramIndex);
+
+        self::assertEquals('"foo" TIMESTAMP NOT NULL', $sql);
     }
 
     public function testGetExpressionDataWithOnUpdateOption(): void
@@ -35,36 +32,25 @@ final class TimestampTest extends TestCase
         $column = new Timestamp('created_at');
         $column->setOption('on_update', true);
 
-        $expressionData = $column->getExpressionData();
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
 
-        // Verify specification includes ON UPDATE
-        $spec = $expressionData['spec'];
-        self::assertEquals('%s %s NOT NULL %s', $spec);
+        $sql = $column->renderSql($processor, '', $paramIndex);
 
-        $values = $expressionData['values'];
-
-        // Should have 3 values: identifier, type, and ON UPDATE argument
-        self::assertCount(3, $values);
-        self::assertEquals(new Identifier('created_at'), $values[0]);
-        self::assertEquals(new Literal('TIMESTAMP'), $values[1]);
-
-        // Third value should be the ON UPDATE argument
-        self::assertInstanceOf(ArgumentInterface::class, $values[2]);
-        // Verify it equals the expected Argument using factory method for consistency
-        self::assertEquals(new Literal('ON UPDATE CURRENT_TIMESTAMP'), $values[2]);
+        self::assertEquals('"created_at" TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP', $sql);
     }
 
     public function testGetExpressionDataWithoutOnUpdateOption(): void
     {
         $column = new Timestamp('updated_at');
 
-        $expressionData = $column->getExpressionData();
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
 
-        // Should have 2 values: identifier and type (no ON UPDATE)
-        $values = $expressionData['values'];
-        self::assertCount(2, $values);
-        self::assertEquals(new Identifier('updated_at'), $values[0]);
-        self::assertEquals(Argument::literal('TIMESTAMP'), $values[1]);
+        $sql = $column->renderSql($processor, '', $paramIndex);
+
+        // Should NOT include ON UPDATE
+        self::assertEquals('"updated_at" TIMESTAMP NOT NULL', $sql);
     }
 
     public function testInheritanceFromAbstractTimestampColumn(): void

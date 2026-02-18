@@ -9,7 +9,9 @@ use PhpDb\Sql\Argument\Value;
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ArgumentType;
 use PhpDb\Sql\Exception\InvalidArgumentException;
+use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Predicate\Operator;
+use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\TestCase;
 
@@ -20,7 +22,7 @@ use PHPUnit\Framework\TestCase;
 #[CoversMethod(Operator::class, 'setOperator')]
 #[CoversMethod(Operator::class, 'getRight')]
 #[CoversMethod(Operator::class, 'setRight')]
-#[CoversMethod(Operator::class, 'getExpressionData')]
+#[CoversMethod(Operator::class, 'renderSql')]
 final class OperatorTest extends TestCase
 {
     public function testEmptyConstructorYieldsNullLeftAndRightValues(): void
@@ -148,24 +150,11 @@ final class OperatorTest extends TestCase
             ->setOperator('>=')
             ->setRight(new Identifier('foo.bar'));
 
-        $expressionData = $operator->getExpressionData();
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $operator->renderSql($processor, '', $paramIndex);
 
-        // Verify specification
-        self::assertEquals('%s >= %s', $expressionData['spec']);
-
-        // Verify expression values
-        $values = $expressionData['values'];
-        self::assertCount(2, $values);
-
-        // Verify left argument
-        self::assertInstanceOf(ArgumentInterface::class, $values[0]);
-        self::assertEquals('foo', $values[0]->getValue());
-        self::assertEquals(ArgumentType::Value, $values[0]->getType());
-
-        // Verify right argument
-        self::assertInstanceOf(ArgumentInterface::class, $values[1]);
-        self::assertEquals('foo.bar', $values[1]->getValue());
-        self::assertEquals(ArgumentType::Identifier, $values[1]->getType());
+        self::assertEquals('\'foo\' >= "foo"."bar"', $sql);
     }
 
     public function testGetExpressionDataThrowsExceptionWhenLeftNotSet(): void
@@ -173,9 +162,12 @@ final class OperatorTest extends TestCase
         $operator = new Operator();
         $operator->setRight('value');
 
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Left expression must be specified');
-        $operator->getExpressionData();
+        $operator->renderSql($processor, '', $paramIndex);
     }
 
     public function testGetExpressionDataThrowsExceptionWhenRightNotSet(): void
@@ -183,8 +175,11 @@ final class OperatorTest extends TestCase
         $operator = new Operator();
         $operator->setLeft('left');
 
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Right expression must be specified');
-        $operator->getExpressionData();
+        $operator->renderSql($processor, '', $paramIndex);
     }
 }

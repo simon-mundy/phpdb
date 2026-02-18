@@ -8,8 +8,6 @@ use Override;
 use PhpDb\Sql\Argument\Identifier;
 use PhpDb\Sql\Part\SqlProcessor;
 
-use function array_fill;
-use function count;
 use function implode;
 use function str_replace;
 
@@ -65,40 +63,35 @@ abstract class AbstractConstraint implements ConstraintInterface
         return $this->columns;
     }
 
-    /** @inheritDoc */
-    #[Override]
-    public function getExpressionData(): array
-    {
-        $specParts = [];
-        $values    = [];
-
-        if ($this->name !== '') {
-            $specParts[] = $this->namedSpecification;
-            $values[]    = new Identifier($this->name);
-        }
-
-        if ($this->specification !== '') {
-            $specParts[] = $this->specification;
-        }
-
-        $columnCount = count($this->columns);
-        if ($columnCount !== 0) {
-            $columnSpec  = array_fill(0, $columnCount, '%s');
-            $specParts[] = str_replace('%s', implode(', ', $columnSpec), $this->columnSpecification);
-            for ($i = 0; $i < $columnCount; $i++) {
-                $values[] = new Identifier($this->columns[$i]);
-            }
-        }
-
-        return [
-            'spec'   => implode(' ', $specParts),
-            'values' => $values,
-        ];
-    }
-
     #[Override]
     public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
     {
-        return $processor->processExpression($this, $paramPrefix);
+        $parts = [];
+
+        if ($this->name !== '') {
+            $parts[] = 'CONSTRAINT ' . $processor->renderArgument(
+                new Identifier($this->name),
+                $paramPrefix,
+                $paramIndex,
+            );
+        }
+
+        if ($this->specification !== '') {
+            $parts[] = $this->specification;
+        }
+
+        if ($this->columns !== []) {
+            $quotedColumns = [];
+            foreach ($this->columns as $column) {
+                $quotedColumns[] = $processor->renderArgument(
+                    new Identifier($column),
+                    $paramPrefix,
+                    $paramIndex,
+                );
+            }
+            $parts[] = str_replace('%s', implode(', ', $quotedColumns), $this->columnSpecification);
+        }
+
+        return implode(' ', $parts);
     }
 }

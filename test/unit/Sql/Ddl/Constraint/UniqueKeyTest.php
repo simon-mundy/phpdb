@@ -4,24 +4,23 @@ declare(strict_types=1);
 
 namespace PhpDbTest\Sql\Ddl\Constraint;
 
-use PhpDb\Sql\Argument;
 use PhpDb\Sql\Ddl\Constraint\UniqueKey;
+use PhpDb\Sql\Part\SqlProcessor;
+use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\TestCase;
 
-#[CoversMethod(UniqueKey::class, 'getExpressionData')]
+#[CoversMethod(UniqueKey::class, 'renderSql')]
 final class UniqueKeyTest extends TestCase
 {
     public function testGetExpressionData(): void
     {
         $uk = new UniqueKey('foo', 'my_uk');
 
-        $expressionData = $uk->getExpressionData();
+        $processor = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql = $uk->renderSql($processor, '', $paramIndex);
 
-        self::assertEquals('CONSTRAINT %s UNIQUE (%s)', $expressionData['spec']);
-        self::assertEquals([
-            Argument::identifier('my_uk'),
-            Argument::identifier('foo'),
-        ], $expressionData['values']);
+        self::assertEquals('CONSTRAINT "my_uk" UNIQUE ("foo")', $sql);
     }
 }

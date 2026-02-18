@@ -100,7 +100,7 @@ class CreateTable extends AbstractDdl
         if ($this->columns) {
             $columnSqls = [];
             foreach ($this->columns as $column) {
-                $columnSqls[] = $processor->processExpression($column);
+                $columnSqls[] = $processor->renderExpression($column);
             }
             $sql .= " \n    " . implode(",\n    ", $columnSqls);
         }
@@ -114,7 +114,7 @@ class CreateTable extends AbstractDdl
         if ($this->constraints) {
             $constraintSqls = [];
             foreach ($this->constraints as $constraint) {
-                $constraintSqls[] = $processor->processExpression($constraint);
+                $constraintSqls[] = $processor->renderExpression($constraint);
             }
             $sql .= " \n    " . implode(",\n    ", $constraintSqls);
         }

@@ -35,7 +35,7 @@ class OrderBy extends AbstractPart
         $orders = [];
         foreach ($this->order as $spec) {
             $orders[] = match ($spec->column->getType()) {
-                ArgumentType::Select     => $processor->processExpression($spec->column->getValue()),
+                ArgumentType::Select     => $processor->renderExpression($spec->column->getValue()),
                 ArgumentType::Identifier => $processor->platform->quoteIdentifierInFragment($spec->column->getValue())
                                              . ' ' . $spec->direction,
             };

@@ -70,9 +70,8 @@ class Like extends AbstractExpression implements PredicateInterface
         return $this->like;
     }
 
-    /** @inheritDoc */
     #[Override]
-    public function getExpressionData(): array
+    public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
     {
         if (! $this->identifier instanceof ArgumentInterface) {
             throw new InvalidArgumentException('Identifier must be specified');
@@ -82,18 +81,6 @@ class Like extends AbstractExpression implements PredicateInterface
             throw new InvalidArgumentException('Like expression must be specified');
         }
 
-        $identifierSpec = $this->identifier->getSpecification();
-        $likeSpec       = $this->like->getSpecification();
-
-        return [
-            'spec'   => $this->specification ?? "{$identifierSpec} {$this->operator} {$likeSpec}",
-            'values' => [$this->identifier, $this->like],
-        ];
-    }
-
-    #[Override]
-    public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
-    {
         $id   = $processor->renderArgument($this->identifier, $paramPrefix, $paramIndex);
         $like = $processor->renderArgument($this->like, $paramPrefix, $paramIndex);
 

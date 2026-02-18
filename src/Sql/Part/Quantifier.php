@@ -26,7 +26,7 @@ class Quantifier extends AbstractPart
 
         return match ($this->quantifier->getType()) {
             ArgumentType::Literal => $this->quantifier->getValue(),
-            ArgumentType::Select  => $processor->processExpression($this->quantifier->getValue(), 'quantifier'),
+            ArgumentType::Select  => $processor->renderExpression($this->quantifier->getValue(), 'quantifier'),
         };
     }
 
