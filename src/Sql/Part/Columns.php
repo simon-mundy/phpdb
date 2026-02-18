@@ -4,23 +4,29 @@ declare(strict_types=1);
 
 namespace PhpDb\Sql\Part;
 
+use PhpDb\Sql\ArgumentType;
 use PhpDb\Sql\ExpressionInterface;
-use PhpDb\Sql\Join;
 use PhpDb\Sql\Select;
 
 use function implode;
-use function is_scalar;
-use function is_string;
-use function key;
-use function stripos;
+use function is_numeric;
 
 /**
  * Holds column definitions and renders the column list for SELECT statements.
  * Includes both main table columns and join columns.
+ *
+ * Columns are normalized to ColumnRef[] at set time. At render time,
+ * a flat render list of [prefix, ColumnRef] pairs is built from the main columns
+ * and any join columns, then rendered in a single loop with ArgumentType enum matching.
  */
 class Columns extends AbstractPart
 {
-    private array $columns = [Select::SQL_STAR];
+    /** @var ColumnRef[] Normalized column references */
+    private array $columnRefs = [];
+
+    /** @var array Raw columns for getRawState() backward compatibility */
+    private array $rawColumns = [Select::SQL_STAR];
+
     private bool $prefixColumnsWithTable = true;
 
     /**
@@ -28,74 +34,54 @@ class Columns extends AbstractPart
      */
     private string $fromTablePrefix = '';
 
-    /**
-     * Set during preparePartsForBuild -- join column info
-     * @var array<int, array{name: string, columns: array}>
-     */
-    private array $joinColumnInfo = [];
+    /** @var array<int, array{prefix: string, columns: ColumnRef[]}> Join column groups */
+    private array $joinColumnGroups = [];
+
+    public function __construct()
+    {
+        // Default: normalize the initial [SQL_STAR] column
+        $this->normalizeColumns();
+    }
 
     public function toSql(SqlPartProcessor $processor): ?string
     {
-        $expr           = 1;
-        $fromTable      = $this->fromTablePrefix;
-        $columnFragments = [];
+        // Build a flat render list: [prefix, ColumnRef] pairs
+        $renderList = [];
 
-        foreach ($this->columns as $columnIndexOrAs => $column) {
-            if ($column === Select::SQL_STAR) {
-                $columnFragments[] = "{$fromTable}*";
-                continue;
-            }
+        foreach ($this->columnRefs as $ref) {
+            $renderList[] = [$this->fromTablePrefix, $ref];
+        }
 
-            $columnName = $processor->resolveColumnValue(
-                [
-                    'column'       => $column,
-                    'fromTable'    => $fromTable,
-                    'isIdentifier' => true,
-                ],
-                is_string($columnIndexOrAs) ? $columnIndexOrAs : 'column'
-            );
-
-            $columnAs = null;
-            if (is_string($columnIndexOrAs)) {
-                $columnAs = $processor->platform->quoteIdentifier($columnIndexOrAs);
-            } elseif (stripos($columnName, ' as ') === false) {
-                $columnAs = is_string($column) ? $processor->platform->quoteIdentifier($column) : 'Expression' . $expr++;
-            }
-
-            if ($columnAs !== null) {
-                $columnFragments[] = $columnName . ' AS ' . $columnAs;
-            } else {
-                $columnFragments[] = $columnName;
+        $separator = $processor->platform->getIdentifierSeparator();
+        foreach ($this->joinColumnGroups as $group) {
+            $joinPrefix = $group['prefix'] . $separator;
+            foreach ($group['columns'] as $ref) {
+                $renderList[] = [$joinPrefix, $ref];
             }
         }
 
-        // Add join columns
-        foreach ($this->joinColumnInfo as $joinInfo) {
-            $joinTableName = $joinInfo['name'];
+        // Render all columns in a single loop
+        $columnFragments = [];
+        $exprCounter     = 1;
 
-            foreach ($joinInfo['columns'] as $jKey => $jColumn) {
-                $jFromTable = is_scalar($jColumn)
-                    ? $joinTableName . $processor->platform->getIdentifierSeparator()
-                    : '';
+        foreach ($renderList as [$prefix, $ref]) {
+            if ($ref->isStar) {
+                $columnFragments[] = $prefix . '*';
+                continue;
+            }
 
-                $jColumnName = $processor->resolveColumnValue(
-                    [
-                        'column'       => $jColumn,
-                        'fromTable'    => $jFromTable,
-                        'isIdentifier' => true,
-                    ],
-                    is_string($jKey) ? $jKey : 'column'
-                );
+            $columnSql = match ($ref->arg->getType()) {
+                ArgumentType::Identifier => $prefix . $processor->platform->quoteIdentifierInFragment($ref->arg->getValue()),
+                ArgumentType::Select     => $processor->processExpression($ref->arg->getValue(), $ref->alias ?? 'column'),
+                ArgumentType::Literal    => $ref->arg->getValue(),
+            };
 
-                if (is_string($jKey)) {
-                    $jAlias = $processor->platform->quoteIdentifier($jKey);
-                    $columnFragments[] = $jColumnName . ' AS ' . $jAlias;
-                } elseif ($jColumn !== Select::SQL_STAR) {
-                    $jAlias = $processor->platform->quoteIdentifier($jColumn);
-                    $columnFragments[] = $jColumnName . ' AS ' . $jAlias;
-                } else {
-                    $columnFragments[] = $jColumnName;
-                }
+            if ($ref->alias !== null) {
+                $columnFragments[] = $columnSql . ' AS ' . $processor->platform->quoteIdentifier($ref->alias);
+            } elseif ($ref->containsAlias) {
+                $columnFragments[] = $columnSql;
+            } else {
+                $columnFragments[] = $columnSql . ' AS Expression' . $exprCounter++;
             }
         }
 
@@ -104,17 +90,38 @@ class Columns extends AbstractPart
 
     public function isEmpty(): bool
     {
-        return $this->columns === [];
+        return $this->rawColumns === [];
     }
 
     public function set(array $columns): void
     {
-        $this->columns = $columns;
+        $this->rawColumns = $columns;
+        $this->normalizeColumns();
     }
 
+    public function add(array|ExpressionInterface|string $column, ?string $alias = null): void
+    {
+        if (is_array($column)) {
+            $key    = key($column);
+            $alias  = ! is_numeric($key) ? $key : null;
+            $column = current($column);
+        }
+
+        if ($alias !== null) {
+            $this->rawColumns[$alias] = $column;
+            $this->columnRefs[] = new ColumnRef($alias, $column);
+        } else {
+            $this->rawColumns[] = $column;
+            $this->columnRefs[] = new ColumnRef(count($this->columnRefs), $column);
+        }
+    }
+
+    /**
+     * Reconstruct the original format for getRawState() compatibility.
+     */
     public function get(): array
     {
-        return $this->columns;
+        return $this->rawColumns;
     }
 
     public function setPrefixColumnsWithTable(bool $prefix): void
@@ -137,10 +144,30 @@ class Columns extends AbstractPart
 
     /**
      * Set join column info for resolving join columns.
+     * Normalizes raw join column data into ColumnRef[] grouped by table prefix.
+     *
      * @param array<int, array{name: string, columns: array}> $joinColumnInfo
      */
     public function setJoinColumnInfo(array $joinColumnInfo): void
     {
-        $this->joinColumnInfo = $joinColumnInfo;
+        $this->joinColumnGroups = [];
+        foreach ($joinColumnInfo as $info) {
+            $columnRefs = [];
+            foreach ($info['columns'] as $key => $column) {
+                $columnRefs[] = new ColumnRef($key, $column);
+            }
+            $this->joinColumnGroups[] = ['prefix' => $info['name'], 'columns' => $columnRefs];
+        }
+    }
+
+    /**
+     * Normalize the raw columns array into ColumnRef[].
+     */
+    private function normalizeColumns(): void
+    {
+        $this->columnRefs = [];
+        foreach ($this->rawColumns as $key => $column) {
+            $this->columnRefs[] = new ColumnRef($key, $column);
+        }
     }
 }

@@ -15,20 +15,20 @@ use PhpDb\Sql\Where as WhereModel;
  */
 class Where extends AbstractPart
 {
-    private ?WhereModel $where = null;
+    public ?WhereModel $model = null;
 
     public function toSql(SqlPartProcessor $processor): ?string
     {
-        if ($this->where === null || $this->where->count() === 0) {
+        if ($this->model === null || $this->model->count() === 0) {
             return null;
         }
 
-        return 'WHERE ' . $processor->processExpression($this->where, 'where');
+        return 'WHERE ' . $processor->processExpression($this->model, 'where');
     }
 
     public function isEmpty(): bool
     {
-        return $this->where === null || $this->where->count() === 0;
+        return $this->model === null || $this->model->count() === 0;
     }
 
     /**
@@ -39,32 +39,17 @@ class Where extends AbstractPart
         string $combination = PredicateSet::OP_AND
     ): void {
         if ($predicate instanceof WhereModel) {
-            $this->where = $predicate;
+            $this->model = $predicate;
         } else {
-            $this->getModel()->addPredicates($predicate, $combination);
+            $this->model ??= new WhereModel();
+            $this->model->addPredicates($predicate, $combination);
         }
-    }
-
-    /**
-     * Get the underlying Where model, creating it lazily.
-     */
-    public function getModel(): WhereModel
-    {
-        return $this->where ??= new WhereModel();
-    }
-
-    /**
-     * Replace the underlying Where model.
-     */
-    public function setModel(?WhereModel $where): void
-    {
-        $this->where = $where;
     }
 
     public function __clone()
     {
-        if ($this->where !== null) {
-            $this->where = clone $this->where;
+        if ($this->model !== null) {
+            $this->model = clone $this->model;
         }
     }
 }

@@ -688,7 +688,7 @@ final class SelectTest extends TestCase
 
         // order
         $select->order('foo asc');
-        self::assertEquals(['foo asc'], $select->getRawState(Select::ORDER));
+        self::assertEquals(['foo ASC'], $select->getRawState(Select::ORDER));
         $select->reset(Select::ORDER);
         self::assertEmpty($select->getRawState(Select::ORDER));
     }

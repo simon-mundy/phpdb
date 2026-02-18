@@ -5,13 +5,15 @@ declare(strict_types=1);
 namespace PhpDb\Sql\Part;
 
 use PhpDb\Adapter\ParameterContainer;
+use PhpDb\Sql\Argument\Parameter;
 
 /**
  * Holds and renders LIMIT clause.
+ * Normalizes limit value to Parameter at set time.
  */
 class Limit extends AbstractPart
 {
-    private string|int|null $limit = null;
+    private ?Parameter $limit = null;
 
     public function toSql(SqlPartProcessor $processor): ?string
     {
@@ -19,17 +21,7 @@ class Limit extends AbstractPart
             return null;
         }
 
-        if ($processor->parameterContainer instanceof ParameterContainer) {
-            $paramPrefix = $processor->getParamPrefix();
-            $processor->parameterContainer->offsetSet(
-                $paramPrefix . 'limit',
-                $this->limit,
-                ParameterContainer::TYPE_INTEGER
-            );
-            return 'LIMIT ' . $processor->driver->formatParameterName($paramPrefix . 'limit');
-        }
-
-        return 'LIMIT ' . $processor->platform->quoteValue((string) $this->limit);
+        return 'LIMIT ' . $processor->renderParameter($this->limit);
     }
 
     public function isEmpty(): bool
@@ -39,11 +31,13 @@ class Limit extends AbstractPart
 
     public function set(string|int|null $limit): void
     {
-        $this->limit = $limit;
+        $this->limit = $limit === null
+            ? null
+            : new Parameter($limit, preferredName: 'limit', typeHint: ParameterContainer::TYPE_INTEGER);
     }
 
     public function get(): string|int|null
     {
-        return $this->limit;
+        return $this->limit?->getValue();
     }
 }

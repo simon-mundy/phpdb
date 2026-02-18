@@ -107,8 +107,8 @@ class Update extends AbstractPreparableSql
             'emptyWhereProtection' => $this->emptyWhereProtection,
             'table'                => $this->table->get(),
             'set'                  => $this->set->toArray(),
-            'where'                => $this->where->getModel(),
-            'joins'                => $this->joins->getModel(),
+            'where'                => $this->where->model ??= new Where(),
+            'joins'                => $this->joins->model ??= new Join(),
         ];
         return $key !== null && array_key_exists($key, $rawState) ? $rawState[$key] : $rawState;
     }
@@ -163,7 +163,7 @@ class Update extends AbstractPreparableSql
     public function __get(string $name): ?Where
     {
         if (strtolower($name) === 'where') {
-            return $this->where->getModel();
+            return $this->where->model ??= new Where();
         }
 
         return null;

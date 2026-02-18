@@ -331,16 +331,16 @@ class Select extends AbstractPreparableSql
                 $this->columns->set([]);
                 break;
             case self::JOINS:
-                $this->joins->setModel(null);
+                $this->joins->model = null;
                 break;
             case self::WHERE:
-                $this->where->setModel(null);
+                $this->where->model = null;
                 break;
             case self::GROUP:
                 $this->groupBy->reset();
                 break;
             case self::HAVING:
-                $this->having->setModel(null);
+                $this->having->model = null;
                 break;
             case self::LIMIT:
                 $this->limit->set(null);
@@ -365,11 +365,11 @@ class Select extends AbstractPreparableSql
             self::TABLE      => $this->table->get(),
             self::QUANTIFIER => $this->quantifier->get(),
             self::COLUMNS    => $this->columns->get(),
-            self::JOINS      => $this->joins->getModel(),
-            self::WHERE      => $this->where->getModel(),
+            self::JOINS      => $this->joins->model ??= new Join(),
+            self::WHERE      => $this->where->model ??= new Where(),
             self::ORDER      => $this->orderBy->get(),
             self::GROUP      => $this->groupBy->get(),
-            self::HAVING     => $this->having->getModel(),
+            self::HAVING     => $this->having->model ??= new Having(),
             self::LIMIT      => $this->limit->get(),
             self::OFFSET     => $this->offset->get(),
             self::COMBINE    => $this->combine->get(),
@@ -446,14 +446,15 @@ class Select extends AbstractPreparableSql
 
         // Resolve join column info for column rendering
         $joinColumnInfo = [];
-        $joinsModel = $this->joins->getModel();
-        foreach ($joinsModel->getJoins() as $join) {
-            $joinName = is_array($join['name']) ? key($join['name']) : $join['name'];
-            $resolvedJoinName = $processor->resolveTable($joinName);
+        $joinsModel = $this->joins->model;
+        foreach ($joinsModel?->getJoins() ?? [] as $rawJoin) {
+            $spec = new Part\JoinSpec($rawJoin);
+            $joinTableName = $spec->alias ?? $spec->table;
+            $resolvedJoinName = $processor->resolveTable($joinTableName);
 
             $joinColumnInfo[] = [
                 'name'    => $resolvedJoinName,
-                'columns' => $join['columns'],
+                'columns' => $spec->columns,
             ];
         }
 
@@ -492,9 +493,9 @@ class Select extends AbstractPreparableSql
     public function __get(string $name): Where|Join|Having
     {
         return match (strtolower($name)) {
-            'where' => $this->where->getModel(),
-            'having' => $this->having->getModel(),
-            'joins' => $this->joins->getModel(),
+            'where' => $this->where->model ??= new Where(),
+            'having' => $this->having->model ??= new Having(),
+            'joins' => $this->joins->model ??= new Join(),
             default => throw new Exception\InvalidArgumentException('Not a valid magic property for this object'),
         };
     }

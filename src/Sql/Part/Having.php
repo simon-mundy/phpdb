@@ -14,20 +14,20 @@ use PhpDb\Sql\Predicate\PredicateSet;
  */
 class Having extends AbstractPart
 {
-    private ?HavingModel $having = null;
+    public ?HavingModel $model = null;
 
     public function toSql(SqlPartProcessor $processor): ?string
     {
-        if ($this->having === null || $this->having->count() === 0) {
+        if ($this->model === null || $this->model->count() === 0) {
             return null;
         }
 
-        return 'HAVING ' . $processor->processExpression($this->having, 'having');
+        return 'HAVING ' . $processor->processExpression($this->model, 'having');
     }
 
     public function isEmpty(): bool
     {
-        return $this->having === null || $this->having->count() === 0;
+        return $this->model === null || $this->model->count() === 0;
     }
 
     /**
@@ -38,26 +38,17 @@ class Having extends AbstractPart
         string $combination = PredicateSet::OP_AND
     ): void {
         if ($predicate instanceof HavingModel) {
-            $this->having = $predicate;
+            $this->model = $predicate;
         } else {
-            $this->getModel()->addPredicates($predicate, $combination);
+            $this->model ??= new HavingModel();
+            $this->model->addPredicates($predicate, $combination);
         }
-    }
-
-    public function getModel(): HavingModel
-    {
-        return $this->having ??= new HavingModel();
-    }
-
-    public function setModel(?HavingModel $having): void
-    {
-        $this->having = $having;
     }
 
     public function __clone()
     {
-        if ($this->having !== null) {
-            $this->having = clone $this->having;
+        if ($this->model !== null) {
+            $this->model = clone $this->model;
         }
     }
 }

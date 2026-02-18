@@ -4,14 +4,19 @@ declare(strict_types=1);
 
 namespace PhpDb\Sql\Part;
 
+use PhpDb\Sql\ArgumentType;
+use PhpDb\Sql\ExpressionInterface;
+
 use function implode;
 use function is_array;
 
 /**
  * Holds and renders GROUP BY clause.
+ * Normalizes columns to ColumnRef at add time.
  */
 class GroupBy extends AbstractPart
 {
+    /** @var ColumnRef[]|null */
     private ?array $group = null;
 
     public function toSql(SqlPartProcessor $processor): ?string
@@ -21,14 +26,12 @@ class GroupBy extends AbstractPart
         }
 
         $groups = [];
-        foreach ($this->group as $column) {
-            $groups[] = $processor->resolveColumnValue(
-                [
-                    'column'       => $column,
-                    'isIdentifier' => true,
-                ],
-                'group'
-            );
+        foreach ($this->group as $ref) {
+            $groups[] = match ($ref->arg->getType()) {
+                ArgumentType::Identifier => $processor->platform->quoteIdentifierInFragment($ref->arg->getValue()),
+                ArgumentType::Select     => $processor->processExpression($ref->arg->getValue()),
+                ArgumentType::Literal    => $ref->arg->getValue(),
+            };
         }
 
         return 'GROUP BY ' . implode(', ', $groups);
@@ -43,16 +46,27 @@ class GroupBy extends AbstractPart
     {
         if (is_array($group)) {
             foreach ($group as $g) {
-                $this->group[] = $g;
+                $this->group[] = new ColumnRef(0, $g);
             }
         } else {
-            $this->group[] = $group;
+            $this->group[] = new ColumnRef(0, $group);
         }
     }
 
+    /**
+     * Reconstruct the original format for getRawState() compatibility.
+     */
     public function get(): ?array
     {
-        return $this->group;
+        if ($this->group === null) {
+            return null;
+        }
+
+        $result = [];
+        foreach ($this->group as $ref) {
+            $result[] = $ref->arg->getValue();
+        }
+        return $result;
     }
 
     public function reset(): void

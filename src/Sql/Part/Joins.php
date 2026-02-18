@@ -6,82 +6,58 @@ namespace PhpDb\Sql\Part;
 
 use PhpDb\Sql\Exception;
 use PhpDb\Sql\Expression;
-use PhpDb\Sql\ExpressionInterface;
 use PhpDb\Sql\Join;
 use PhpDb\Sql\Predicate\PredicateInterface;
 use PhpDb\Sql\Select;
 use PhpDb\Sql\TableIdentifier;
 
-use function gettype;
-use function is_array;
-use function is_callable;
-use function is_object;
+use function get_debug_type;
+use function implode;
 use function is_string;
 use function sprintf;
-use function strtoupper;
 
 /**
  * Wraps a Join model and renders all JOIN clauses.
  * Used by Select and Update.
+ *
+ * Raw join data from the Join model is normalized to JoinSpec[] at render time.
+ * The rendering loop uses typed access on JoinSpec — no instanceof/is_array cascades.
  */
 class Joins extends AbstractPart
 {
-    private ?Join $joins = null;
+    public ?Join $model = null;
 
     public function toSql(SqlPartProcessor $processor): ?string
     {
-        if ($this->joins === null || $this->joins->count() === 0) {
+        if ($this->model === null || $this->model->count() === 0) {
             return null;
         }
 
         $joinSqlParts = [];
 
-        foreach ($this->joins->getJoins() as $j => $join) {
-            $joinAs        = null;
-            $joinNameValue = $join['name'];
+        foreach ($this->model->getJoins() as $j => $rawJoin) {
+            $spec = new JoinSpec($rawJoin);
 
-            if (is_array($joinNameValue)) {
-                $joinName = current($joinNameValue);
-                $joinAs   = $processor->platform->quoteIdentifier(key($joinNameValue));
-            } else {
-                $joinName = $joinNameValue;
-            }
+            $joinName  = $this->resolveJoinTable($spec, $processor);
+            $quotedAlias = $spec->alias !== null
+                ? $processor->platform->quoteIdentifier($spec->alias)
+                : null;
 
-            if ($joinName instanceof Expression) {
-                $joinName = $joinName->getExpression();
-            } elseif ($joinName instanceof TableIdentifier) {
-                $joinName = $joinName->getTableAndSchema();
-                $joinName = ($joinName[1]
-                        ? $processor->platform->quoteIdentifier($joinName[1])
-                            . $processor->platform->getIdentifierSeparator()
-                        : '') . $processor->platform->quoteIdentifier($joinName[0]);
-            } elseif ($joinName instanceof Select) {
-                $joinName = '(' . $processor->processSubSelect($joinName) . ')';
-            } elseif (is_string($joinName) || (is_object($joinName) && is_callable([$joinName, '__toString']))) {
-                $joinName = $processor->platform->quoteIdentifier($joinName);
-            } else {
-                throw new Exception\InvalidArgumentException(sprintf(
-                    'Join name expected to be Expression|TableIdentifier|Select|string, "%s" given',
-                    gettype($joinName)
-                ));
-            }
+            $renderedTable = $processor->renderTable($joinName, $quotedAlias);
 
-            $renderedTable = $processor->renderTable($joinName, $joinAs);
-            $type          = strtoupper($join['type']);
-
-            if ($join['on'] instanceof ExpressionInterface) {
+            if ($spec->isExpressionOn) {
                 $onClause = $processor->processExpression(
-                    $join['on'],
+                    $spec->on,
                     'join' . ($j + 1) . 'part'
                 );
             } else {
                 $onClause = $processor->platform->quoteIdentifierInFragment(
-                    $join['on'],
+                    $spec->on,
                     ['=', 'AND', 'OR', '(', ')', 'BETWEEN', '<', '>']
                 );
             }
 
-            $joinSqlParts[] = "{$type} JOIN {$renderedTable} ON {$onClause}";
+            $joinSqlParts[] = "{$spec->type} JOIN {$renderedTable} ON {$onClause}";
         }
 
         return implode(' ', $joinSqlParts);
@@ -89,7 +65,7 @@ class Joins extends AbstractPart
 
     public function isEmpty(): bool
     {
-        return $this->joins === null || $this->joins->count() === 0;
+        return $this->model === null || $this->model->count() === 0;
     }
 
     /**
@@ -101,29 +77,48 @@ class Joins extends AbstractPart
         array|string $columns = Select::SQL_STAR,
         string $type = Join::JOIN_INNER
     ): void {
-        $this->getModel()->join($name, $on, $columns, $type);
-    }
-
-    /**
-     * Get the underlying Join model, creating it lazily.
-     */
-    public function getModel(): Join
-    {
-        return $this->joins ??= new Join();
-    }
-
-    /**
-     * Replace the underlying Join model.
-     */
-    public function setModel(?Join $joins): void
-    {
-        $this->joins = $joins;
+        $this->model ??= new Join();
+        $this->model->join($name, $on, $columns, $type);
     }
 
     public function __clone()
     {
-        if ($this->joins !== null) {
-            $this->joins = clone $this->joins;
+        if ($this->model !== null) {
+            $this->model = clone $this->model;
         }
+    }
+
+    /**
+     * Resolve the join table name to its SQL string representation.
+     * Dispatches on the known typed alternatives stored in JoinSpec.
+     */
+    private function resolveJoinTable(JoinSpec $spec, SqlPartProcessor $processor): string
+    {
+        $table = $spec->table;
+
+        if ($table instanceof Expression) {
+            return $table->getExpression();
+        }
+
+        if ($table instanceof TableIdentifier) {
+            $parts = $table->getTableAndSchema();
+            return ($parts[1]
+                    ? $processor->platform->quoteIdentifier($parts[1])
+                        . $processor->platform->getIdentifierSeparator()
+                    : '') . $processor->platform->quoteIdentifier($parts[0]);
+        }
+
+        if ($table instanceof Select) {
+            return '(' . $processor->processSubSelect($table) . ')';
+        }
+
+        if (! is_string($table)) {
+            throw new Exception\InvalidArgumentException(sprintf(
+                'Join name expected to be Expression|TableIdentifier|Select|string, "%s" given',
+                get_debug_type($table)
+            ));
+        }
+
+        return $processor->platform->quoteIdentifier($table);
     }
 }

@@ -70,7 +70,7 @@ class Delete extends AbstractPreparableSql
         $rawState = [
             'emptyWhereProtection' => $this->emptyWhereProtection,
             'table'                => $this->table->get(),
-            'where'                => $this->where->getModel(),
+            'where'                => $this->where->model ??= new Where(),
         ];
         return $key !== null && array_key_exists($key, $rawState) ? $rawState[$key] : $rawState;
     }
@@ -123,7 +123,7 @@ class Delete extends AbstractPreparableSql
     public function __get(string $name): ?Where
     {
         if (strtolower($name) === 'where') {
-            return $this->where->getModel();
+            return $this->where->model ??= new Where();
         }
 
         return null;

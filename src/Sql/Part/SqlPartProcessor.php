@@ -10,12 +10,12 @@ use PhpDb\Adapter\Platform\PlatformInterface;
 use PhpDb\Sql\Argument\Identifier;
 use PhpDb\Sql\Argument\Identifiers;
 use PhpDb\Sql\Argument\Literal;
+use PhpDb\Sql\Argument\Parameter;
 use PhpDb\Sql\Argument\Select as SelectArgument;
 use PhpDb\Sql\Argument\Value;
 use PhpDb\Sql\Argument\Values;
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\Exception;
-use PhpDb\Sql\Expression;
 use PhpDb\Sql\ExpressionInterface;
 use PhpDb\Sql\Platform\PlatformDecoratorInterface;
 use PhpDb\Sql\Select;
@@ -24,13 +24,7 @@ use ValueError;
 
 use function count;
 use function implode;
-use function is_array;
-use function is_callable;
-use function is_object;
-use function is_string;
-use function sprintf;
 use function str_replace;
-use function strtoupper;
 use function vsprintf;
 
 /**
@@ -62,6 +56,24 @@ class SqlPartProcessor
     public function setParamPrefix(string $prefix): void
     {
         $this->processInfo['paramPrefix'] = $prefix;
+    }
+
+    /**
+     * Render a Parameter argument: bind to parameterContainer if available, otherwise quote inline.
+     *
+     * @param Parameter    $param         The parameter to render
+     * @param ?string      $nameOverride  Override the parameter's preferred name (e.g. for PDO incremental naming)
+     */
+    public function renderParameter(Parameter $param, ?string $nameOverride = null): string
+    {
+        if ($this->parameterContainer instanceof ParameterContainer) {
+            $name = $this->processInfo['paramPrefix'] . ($nameOverride ?? $param->getPreferredName() ?? 'param');
+            $this->parameterContainer->offsetSet($name, $param->getValue(), $param->getTypeHint());
+
+            return $this->driver->formatParameterName($name);
+        }
+
+        return $this->platform->quoteValue((string) $param->getValue());
     }
 
     /**
@@ -178,41 +190,6 @@ class SqlPartProcessor
         }
 
         return $table;
-    }
-
-    /**
-     * Resolve a column value (identifier, expression, subselect, literal, or null).
-     */
-    public function resolveColumnValue(
-        Select|array|string|int|bool|ExpressionInterface|null $column,
-        ?string $namedParameterPrefix = null
-    ): string {
-        $namedParameterPrefix = $namedParameterPrefix
-            ? $this->processInfo['paramPrefix'] . $namedParameterPrefix
-            : $namedParameterPrefix;
-        $isIdentifier         = false;
-        $fromTable            = '';
-        if (is_array($column)) {
-            $isIdentifier = (bool) ($column['isIdentifier'] ?? false);
-            $fromTable    = $column['fromTable'] ?? '';
-            $column       = $column['column'];
-        }
-
-        if ($column instanceof ExpressionInterface) {
-            return $this->processExpression($column, $namedParameterPrefix);
-        }
-
-        if ($column instanceof Select) {
-            return '(' . $this->processSubSelect($column) . ')';
-        }
-
-        if ($column === null) {
-            return 'NULL';
-        }
-
-        return $isIdentifier
-            ? $fromTable . $this->platform->quoteIdentifierInFragment($column)
-            : $this->platform->quoteValue($column);
     }
 
     /**

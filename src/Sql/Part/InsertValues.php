@@ -5,26 +5,29 @@ declare(strict_types=1);
 namespace PhpDb\Sql\Part;
 
 use PhpDb\Adapter\Driver\PdoDriverInterface;
-use PhpDb\Adapter\ParameterContainer;
+use PhpDb\Sql\Argument\Literal;
+use PhpDb\Sql\Argument\Parameter;
+use PhpDb\Sql\Argument\Select as SelectArgument;
+use PhpDb\Sql\ArgumentInterface;
+use PhpDb\Sql\ArgumentType;
 use PhpDb\Sql\Exception;
-use PhpDb\Sql\TableIdentifier;
+use PhpDb\Sql\ExpressionInterface;
+use PhpDb\Sql\Select;
 
-use function array_keys;
-use function array_map;
 use function implode;
-use function is_scalar;
 
 /**
  * Renders an INSERT INTO table (columns) VALUES (values) statement.
  * Mutually exclusive with InsertSelect -- only one renders.
+ * Normalizes values to ArgumentInterface at setColumns time.
  */
 class InsertValues extends AbstractPart
 {
     private string $keyword = 'INSERT INTO';
     private Table $table;
 
-    /** @var array<string, mixed> Column-to-value mapping (keys are column names) */
-    private array $columns = [];
+    /** @var InsertColumnValue[] Normalized column-value pairs */
+    private array $columnValues = [];
 
     private bool $hasSelect = false;
 
@@ -39,7 +42,7 @@ class InsertValues extends AbstractPart
             return null;
         }
 
-        if ($this->columns === []) {
+        if ($this->columnValues === []) {
             throw new Exception\InvalidArgumentException('values or select should be present');
         }
 
@@ -48,21 +51,18 @@ class InsertValues extends AbstractPart
         $i           = 0;
         $isPdoDriver = $processor->driver instanceof PdoDriverInterface;
 
-        foreach ($this->columns as $column => $value) {
-            $columns[] = $processor->platform->quoteIdentifier($column);
-            if (is_scalar($value) && $processor->parameterContainer) {
-                // use incremental value instead of column name for PDO
-                // @see https://github.com/zendframework/zend-db/issues/35
-                $paramName = $column;
-                if ($isPdoDriver) {
-                    $paramName = 'c_' . $i++;
-                }
+        foreach ($this->columnValues as $cv) {
+            $columns[] = $processor->platform->quoteIdentifier($cv->column);
 
-                $values[] = $processor->driver->formatParameterName($paramName);
-                $processor->parameterContainer->offsetSet($paramName, $value);
-            } else {
-                $values[] = $processor->resolveColumnValue($value);
-            }
+            $values[] = match ($cv->value->getType()) {
+                ArgumentType::Parameter => $processor->renderParameter(
+                    $cv->value,
+                    $isPdoDriver ? 'c_' . $i++ : null
+                ),
+                ArgumentType::Select  => $processor->processExpression($cv->value->getValue()),
+                ArgumentType::Literal => $cv->value->getValue(),
+                default               => $processor->platform->quoteValue((string) $cv->value->getValue()),
+            };
         }
 
         $tableSql = $processor->resolveTable($this->table->get());
@@ -74,7 +74,7 @@ class InsertValues extends AbstractPart
 
     public function isEmpty(): bool
     {
-        return $this->hasSelect || $this->columns === [];
+        return $this->hasSelect || $this->columnValues === [];
     }
 
     public function setKeyword(string $keyword): void
@@ -87,18 +87,58 @@ class InsertValues extends AbstractPart
         return $this->keyword;
     }
 
+    /**
+     * Set columns with values, normalizing to InsertColumnValue[].
+     *
+     * @param array<string, mixed> $columns Column-to-value mapping
+     */
     public function setColumns(array $columns): void
     {
-        $this->columns = $columns;
+        $this->columnValues = [];
+        foreach ($columns as $column => $value) {
+            $this->columnValues[] = new InsertColumnValue($column, $this->normalizeValue($column, $value));
+        }
     }
 
+    /**
+     * Reconstruct the raw column-to-value mapping for compatibility.
+     */
     public function getColumns(): array
     {
-        return $this->columns;
+        $result = [];
+        foreach ($this->columnValues as $cv) {
+            $result[$cv->column] = $cv->value->getValue();
+        }
+        return $result;
     }
 
     public function setHasSelect(bool $hasSelect): void
     {
         $this->hasSelect = $hasSelect;
+    }
+
+    /**
+     * Normalize a raw value to an ArgumentInterface.
+     */
+    private function normalizeValue(string $column, mixed $value): ArgumentInterface
+    {
+        if ($value instanceof ArgumentInterface) {
+            return $value;
+        }
+
+        if ($value instanceof Select) {
+            return new SelectArgument($value);
+        }
+
+        if ($value instanceof ExpressionInterface) {
+            return new SelectArgument($value);
+        }
+
+        if ($value === null) {
+            return new Literal('NULL');
+        }
+
+        // Scalar — bind as parameter
+        return new Parameter($value, preferredName: $column);
     }
 }

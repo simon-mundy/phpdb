@@ -4,25 +4,26 @@ declare(strict_types=1);
 
 namespace PhpDb\Sql\Part;
 
+use PhpDb\Sql\ArgumentType;
 use PhpDb\Sql\ExpressionInterface;
 
 use function explode;
 use function implode;
 use function is_array;
-use function is_int;
 use function is_string;
+use function preg_split;
 use function str_contains;
-use function strcasecmp;
-use function trim;
 
 /**
  * Holds and renders ORDER BY clause.
+ * Normalizes order specs to OrderSpec at add time.
  */
 class OrderBy extends AbstractPart
 {
     public const ORDER_ASCENDING  = 'ASC';
     public const ORDER_DESCENDING = 'DESC';
 
+    /** @var OrderSpec[] */
     private array $order = [];
 
     public function toSql(SqlPartProcessor $processor): ?string
@@ -32,26 +33,12 @@ class OrderBy extends AbstractPart
         }
 
         $orders = [];
-        foreach ($this->order as $k => $v) {
-            if ($v instanceof ExpressionInterface) {
-                $orders[] = $processor->processExpression($v);
-                continue;
-            }
-
-            if (is_int($k)) {
-                if (str_contains($v, ' ')) {
-                    [$k, $v] = explode(' ', $v, 2);
-                } else {
-                    $k = $v;
-                    $v = self::ORDER_ASCENDING;
-                }
-            }
-
-            if (strcasecmp(trim($v), self::ORDER_DESCENDING) === 0) {
-                $orders[] = $processor->platform->quoteIdentifierInFragment($k) . ' ' . self::ORDER_DESCENDING;
-            } else {
-                $orders[] = $processor->platform->quoteIdentifierInFragment($k) . ' ' . self::ORDER_ASCENDING;
-            }
+        foreach ($this->order as $spec) {
+            $orders[] = match ($spec->column->getType()) {
+                ArgumentType::Select     => $processor->processExpression($spec->column->getValue()),
+                ArgumentType::Identifier => $processor->platform->quoteIdentifierInFragment($spec->column->getValue())
+                                             . ' ' . $spec->direction,
+            };
         }
 
         return 'ORDER BY ' . implode(', ', $orders);
@@ -71,17 +58,37 @@ class OrderBy extends AbstractPart
         }
 
         foreach ($order as $k => $v) {
-            if (is_string($k)) {
-                $this->order[$k] = $v;
+            if ($v instanceof ExpressionInterface) {
+                $this->order[] = new OrderSpec($v);
+            } elseif (is_string($k)) {
+                // ['column' => 'DESC']
+                $this->order[] = new OrderSpec($k, $v);
+            } elseif (str_contains($v, ' ')) {
+                // 'column DESC'
+                [$col, $dir] = explode(' ', $v, 2);
+                $this->order[] = new OrderSpec($col, $dir);
             } else {
-                $this->order[] = $v;
+                // 'column' (no direction)
+                $this->order[] = new OrderSpec($v);
             }
         }
     }
 
+    /**
+     * Reconstruct the order as 'column DIRECTION' strings for getRawState() compatibility.
+     * Expressions are returned at integer keys.
+     */
     public function get(): array
     {
-        return $this->order;
+        $result = [];
+        foreach ($this->order as $spec) {
+            if ($spec->column->getType() === ArgumentType::Select) {
+                $result[] = $spec->column->getValue();
+            } else {
+                $result[] = $spec->column->getValue() . ' ' . $spec->direction;
+            }
+        }
+        return $result;
     }
 
     public function reset(): void

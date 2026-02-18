@@ -5,13 +5,15 @@ declare(strict_types=1);
 namespace PhpDb\Sql\Part;
 
 use PhpDb\Adapter\ParameterContainer;
+use PhpDb\Sql\Argument\Parameter;
 
 /**
  * Holds and renders OFFSET clause.
+ * Normalizes offset value to Parameter at set time.
  */
 class Offset extends AbstractPart
 {
-    private string|int|null $offset = null;
+    private ?Parameter $offset = null;
 
     public function toSql(SqlPartProcessor $processor): ?string
     {
@@ -19,17 +21,7 @@ class Offset extends AbstractPart
             return null;
         }
 
-        if ($processor->parameterContainer instanceof ParameterContainer) {
-            $paramPrefix = $processor->getParamPrefix();
-            $processor->parameterContainer->offsetSet(
-                $paramPrefix . 'offset',
-                $this->offset,
-                ParameterContainer::TYPE_INTEGER
-            );
-            return 'OFFSET ' . $processor->driver->formatParameterName($paramPrefix . 'offset');
-        }
-
-        return 'OFFSET ' . $processor->platform->quoteValue((string) $this->offset);
+        return 'OFFSET ' . $processor->renderParameter($this->offset);
     }
 
     public function isEmpty(): bool
@@ -39,11 +31,13 @@ class Offset extends AbstractPart
 
     public function set(string|int|null $offset): void
     {
-        $this->offset = $offset;
+        $this->offset = $offset === null
+            ? null
+            : new Parameter($offset, preferredName: 'offset', typeHint: ParameterContainer::TYPE_INTEGER);
     }
 
     public function get(): string|int|null
     {
-        return $this->offset;
+        return $this->offset?->getValue();
     }
 }

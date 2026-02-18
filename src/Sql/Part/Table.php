@@ -10,29 +10,22 @@ use PhpDb\Sql\TableIdentifier;
 /**
  * Holds and renders a table reference with optional alias.
  * Used by Select (FROM), Insert (INTO), Update (UPDATE), Delete (DELETE FROM).
+ * Normalizes input to TableRef at set time — alias extraction happens once, not at render time.
  */
 class Table extends AbstractPart
 {
-    private string|array|TableIdentifier|Select|null $table = null;
+    private ?TableRef $ref = null;
 
     public function toSql(SqlPartProcessor $processor): ?string
     {
-        if ($this->table === null) {
+        if ($this->ref === null) {
             return null;
         }
 
-        $alias = null;
-        $table = $this->table;
+        $resolved = $processor->resolveTable($this->ref->table);
 
-        if (is_array($table)) {
-            $alias = key($table);
-            $table = current($table);
-        }
-
-        $resolved = $processor->resolveTable($table);
-
-        if ($alias) {
-            $quotedAlias = $processor->platform->quoteIdentifier($alias);
+        if ($this->ref->alias !== null) {
+            $quotedAlias = $processor->platform->quoteIdentifier($this->ref->alias);
             $resolved    = $processor->renderTable($resolved, $quotedAlias);
         }
 
@@ -41,17 +34,32 @@ class Table extends AbstractPart
 
     public function isEmpty(): bool
     {
-        return $this->table === null;
+        return $this->ref === null;
     }
 
     public function set(string|array|TableIdentifier|Select|null $table): void
     {
-        $this->table = $table;
+        if ($table === null) {
+            $this->ref = null;
+        } else {
+            $this->ref = new TableRef($table);
+        }
     }
 
+    /**
+     * Reconstruct the original format for getRawState() compatibility.
+     */
     public function get(): string|array|TableIdentifier|Select|null
     {
-        return $this->table;
+        if ($this->ref === null) {
+            return null;
+        }
+
+        if ($this->ref->alias !== null) {
+            return [$this->ref->alias => $this->ref->table];
+        }
+
+        return $this->ref->table;
     }
 
     /**
@@ -60,24 +68,16 @@ class Table extends AbstractPart
      */
     public function getQuotedPrefix(SqlPartProcessor $processor): string
     {
-        if ($this->table === null) {
+        if ($this->ref === null) {
             return '';
         }
 
-        $table = $this->table;
-        $alias = null;
-
-        if (is_array($table)) {
-            $alias = key($table);
-            $table = current($table);
-        }
-
-        if ($alias) {
-            return $processor->platform->quoteIdentifier($alias)
+        if ($this->ref->alias !== null) {
+            return $processor->platform->quoteIdentifier($this->ref->alias)
                 . $processor->platform->getIdentifierSeparator();
         }
 
-        $resolved = $processor->resolveTable($table);
+        $resolved = $processor->resolveTable($this->ref->table);
         if ($resolved) {
             return $resolved . $processor->platform->getIdentifierSeparator();
         }
