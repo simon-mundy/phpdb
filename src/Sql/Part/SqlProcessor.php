@@ -92,19 +92,7 @@ class SqlProcessor
             return str_replace('%%', '%', $specification);
         }
 
-        if ($namedParameterPrefix === null || $namedParameterPrefix === '') {
-            $namedParameterPrefix = $this->parameterContainer
-                ? 'expr' . self::$runtimeExpressionPrefix++ . 'Param'
-                : '';
-        } else {
-            $namedParameterPrefix = $this->paramPrefix
-                . str_replace([' ', "\t", "\n", "\r"], '__', $namedParameterPrefix);
-        }
-
-        if (! isset($this->instanceParameterIndex[$namedParameterPrefix])) {
-            $this->instanceParameterIndex[$namedParameterPrefix] = 1;
-        }
-
+        $namedParameterPrefix = $this->resolveParamPrefix($namedParameterPrefix);
         $expressionParamIndex = &$this->instanceParameterIndex[$namedParameterPrefix];
         $expressionValues     = $this->flattenExpressionValues($expressionValues);
         $values               = [];
@@ -209,20 +197,8 @@ class SqlProcessor
         ExpressionInterface $expression,
         ?string $namedParameterPrefix = null
     ): string {
-        if ($namedParameterPrefix === null || $namedParameterPrefix === '') {
-            $namedParameterPrefix = $this->parameterContainer
-                ? 'expr' . self::$runtimeExpressionPrefix++ . 'Param'
-                : '';
-        } else {
-            $namedParameterPrefix = $this->paramPrefix
-                . str_replace([' ', "\t", "\n", "\r"], '__', $namedParameterPrefix);
-        }
-
-        if (! isset($this->instanceParameterIndex[$namedParameterPrefix])) {
-            $this->instanceParameterIndex[$namedParameterPrefix] = 1;
-        }
-
-        $paramIndex = &$this->instanceParameterIndex[$namedParameterPrefix];
+        $namedParameterPrefix = $this->resolveParamPrefix($namedParameterPrefix);
+        $paramIndex           = &$this->instanceParameterIndex[$namedParameterPrefix];
 
         return $expression->renderSql($this, $namedParameterPrefix, $paramIndex);
     }
@@ -379,6 +355,27 @@ class SqlProcessor
         }
 
         return implode(', ', $processedIdentifiers);
+    }
+
+    /**
+     * Resolve and initialize the named parameter prefix for expression rendering.
+     */
+    private function resolveParamPrefix(?string $namedParameterPrefix): string
+    {
+        if ($namedParameterPrefix === null || $namedParameterPrefix === '') {
+            $namedParameterPrefix = $this->parameterContainer
+                ? 'expr' . self::$runtimeExpressionPrefix++ . 'Param'
+                : '';
+        } else {
+            $namedParameterPrefix = $this->paramPrefix
+                . str_replace([' ', "\t", "\n", "\r"], '__', $namedParameterPrefix);
+        }
+
+        if (! isset($this->instanceParameterIndex[$namedParameterPrefix])) {
+            $this->instanceParameterIndex[$namedParameterPrefix] = 1;
+        }
+
+        return $namedParameterPrefix;
     }
 
     private function processExpressionParameterName(

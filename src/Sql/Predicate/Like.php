@@ -12,6 +12,8 @@ use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\Exception\InvalidArgumentException;
 use PhpDb\Sql\Part\SqlProcessor;
 
+use function vsprintf;
+
 class Like extends AbstractExpression implements PredicateInterface
 {
     protected string $operator               = 'LIKE';
@@ -92,12 +94,12 @@ class Like extends AbstractExpression implements PredicateInterface
     #[Override]
     public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
     {
-        if ($this->specification !== null) {
-            return $processor->processExpression($this, $paramPrefix);
-        }
-
         $id   = $processor->renderArgument($this->identifier, $paramPrefix, $paramIndex);
         $like = $processor->renderArgument($this->like, $paramPrefix, $paramIndex);
+
+        if ($this->specification !== null) {
+            return vsprintf($this->specification, [$id, $like]);
+        }
 
         return "{$id} {$this->operator} {$like}";
     }

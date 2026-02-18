@@ -9,8 +9,6 @@ use PhpDb\Adapter\Driver\DriverInterface;
 use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Adapter\Platform\PlatformInterface;
 use PhpDb\Sql\Part\Joins as JoinsPart;
-use PhpDb\Sql\Part\Literal;
-use PhpDb\Sql\Part\PartInterface;
 use PhpDb\Sql\Part\Set as SetPart;
 use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Part\Table;
@@ -121,21 +119,6 @@ class Update extends AbstractPreparableSql
     protected function getStatementKeyword(): string
     {
         return 'UPDATE';
-    }
-
-    /** @return PartInterface[] */
-    protected function getParts(): array
-    {
-        $parts = [
-            new Literal($this->getStatementKeyword()),
-            $this->table,
-        ];
-
-        if ($this->joins !== null) $parts[] = $this->joins;
-        $parts[] = $this->set;
-        if ($this->where !== null) $parts[] = $this->where;
-
-        return $parts;
     }
 
     public function buildSqlString(

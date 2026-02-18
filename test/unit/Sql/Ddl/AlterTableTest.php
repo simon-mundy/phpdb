@@ -24,13 +24,7 @@ use function str_replace;
 #[CoversMethod(AlterTable::class, 'addConstraint')]
 #[CoversMethod(AlterTable::class, 'dropIndex')]
 #[CoversMethod(AlterTable::class, 'getRawState')]
-#[CoversMethod(AlterTable::class, 'processTable')]
-#[CoversMethod(AlterTable::class, 'processAddColumns')]
-#[CoversMethod(AlterTable::class, 'processChangeColumns')]
-#[CoversMethod(AlterTable::class, 'processDropColumns')]
-#[CoversMethod(AlterTable::class, 'processAddConstraints')]
-#[CoversMethod(AlterTable::class, 'processDropConstraints')]
-#[CoversMethod(AlterTable::class, 'processDropIndexes')]
+#[CoversMethod(AlterTable::class, 'buildSqlString')]
 class AlterTableTest extends TestCase
 {
     public function testSetTable(): void

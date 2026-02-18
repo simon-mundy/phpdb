@@ -12,6 +12,8 @@ use PhpDb\Sql\Argument\Value;
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\Part\SqlProcessor;
 
+use function vsprintf;
+
 class Between extends AbstractExpression implements PredicateInterface
 {
     protected string $operator = 'BETWEEN';
@@ -133,13 +135,13 @@ class Between extends AbstractExpression implements PredicateInterface
     #[Override]
     public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
     {
-        if ($this->specification !== null) {
-            return $processor->processExpression($this, $paramPrefix);
-        }
-
         $id  = $processor->renderArgument($this->identifier, $paramPrefix, $paramIndex);
         $min = $processor->renderArgument($this->minValue, $paramPrefix, $paramIndex);
         $max = $processor->renderArgument($this->maxValue, $paramPrefix, $paramIndex);
+
+        if ($this->specification !== null) {
+            return vsprintf($this->specification, [$id, $min, $max]);
+        }
 
         return "{$id} {$this->operator} {$min} AND {$max}";
     }

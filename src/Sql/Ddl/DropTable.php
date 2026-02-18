@@ -4,17 +4,16 @@ declare(strict_types=1);
 
 namespace PhpDb\Sql\Ddl;
 
+use PhpDb\Adapter\Driver\DriverInterface;
+use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Adapter\Platform\PlatformInterface;
-use PhpDb\Sql\AbstractSql;
+use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\PlatformDecoratorInterface;
 use PhpDb\Sql\TableIdentifier;
 
-class DropTable extends AbstractSql
+class DropTable extends AbstractDdl
 {
     final public const TABLE = 'table';
-
-    protected array $specifications = [
-        self::TABLE => 'DROP TABLE %1$s',
-    ];
 
     protected string|TableIdentifier $table = '';
 
@@ -23,9 +22,16 @@ class DropTable extends AbstractSql
         $this->table = $table;
     }
 
-    /** @return string[] */
-    protected function processTable(?PlatformInterface $adapterPlatform = null): array
-    {
-        return [$this->resolveTable($this->table, $adapterPlatform)];
+    public function buildSqlString(
+        PlatformInterface $platform,
+        ?DriverInterface $driver = null,
+        ?ParameterContainer $parameterContainer = null
+    ): string {
+        $this->localizeVariables();
+
+        $decorator = $this instanceof PlatformDecoratorInterface ? $this : null;
+        $processor = new SqlProcessor($platform, $driver, $parameterContainer, $decorator);
+
+        return 'DROP TABLE ' . $processor->resolveTable($this->table);
     }
 }

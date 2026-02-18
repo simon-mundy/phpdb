@@ -11,6 +11,8 @@ use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\Exception\InvalidArgumentException;
 use PhpDb\Sql\Part\SqlProcessor;
 
+use function vsprintf;
+
 class IsNull extends AbstractExpression implements PredicateInterface
 {
     protected string $operator = 'IS NULL';
@@ -66,11 +68,11 @@ class IsNull extends AbstractExpression implements PredicateInterface
     #[Override]
     public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
     {
-        if ($this->specification !== null) {
-            return $processor->processExpression($this, $paramPrefix);
-        }
-
         $id = $processor->renderArgument($this->identifier, $paramPrefix, $paramIndex);
+
+        if ($this->specification !== null) {
+            return vsprintf($this->specification, [$id]);
+        }
 
         return "{$id} {$this->operator}";
     }

@@ -110,50 +110,49 @@ class Expression extends AbstractExpression
     #[Override]
     public function getExpressionData(): array
     {
-        $parameters      = $this->parameters;
-        $parametersCount = count($parameters);
-        $specification   = str_replace('%', '%%', $this->expression);
-
-        if ($parametersCount === 0) {
-            return [
-                'spec'   => $specification,
-                'values' => [],
-            ];
-        }
-
-        // assign locally, escaping % signs
-        $specification = str_replace(self::PLACEHOLDER, '%s', $specification, $count);
-
-        // test number of replacements without considering same variable begin used many times first, which is
-        // faster, if the test fails then resort to regex which are slow and used rarely
-        if ($count !== $parametersCount) {
-            preg_match_all('/:\w*/', $specification, $matches);
-            if ($parametersCount !== count(array_unique($matches[0]))) {
-                throw new Exception\RuntimeException(
-                    'The number of replacements in the expression does not match the number of parameters'
-                );
-            }
-        }
+        $specification = $this->prepareSpecification();
 
         return [
             'spec'   => $specification,
-            'values' => $parameters,
+            'values' => $this->parameters,
         ];
     }
 
     #[Override]
     public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
     {
-        $parameters      = $this->parameters;
-        $parametersCount = count($parameters);
+        $specification = $this->prepareSpecification();
+
+        if ($this->parameters === []) {
+            return str_replace('%%', '%', $specification);
+        }
+
+        $values = [];
+        foreach ($this->parameters as $argument) {
+            $values[] = $processor->renderArgument($argument, $paramPrefix, $paramIndex);
+        }
+
+        return vsprintf($specification, $values);
+    }
+
+    /**
+     * Escape % signs and replace ? placeholders with %s, validating the count matches parameters.
+     *
+     * @throws Exception\RuntimeException
+     */
+    private function prepareSpecification(): string
+    {
+        $parametersCount = count($this->parameters);
         $specification   = str_replace('%', '%%', $this->expression);
 
         if ($parametersCount === 0) {
-            return str_replace('%%', '%', $specification);
+            return $specification;
         }
 
         $specification = str_replace(self::PLACEHOLDER, '%s', $specification, $count);
 
+        // Fast path: placeholder count matches parameter count.
+        // Slow path: check for named parameters (:name) used multiple times.
         if ($count !== $parametersCount) {
             preg_match_all('/:\w*/', $specification, $matches);
             if ($parametersCount !== count(array_unique($matches[0]))) {
@@ -163,11 +162,6 @@ class Expression extends AbstractExpression
             }
         }
 
-        $values = [];
-        foreach ($parameters as $argument) {
-            $values[] = $processor->renderArgument($argument, $paramPrefix, $paramIndex);
-        }
-
-        return vsprintf($specification, $values);
+        return $specification;
     }
 }

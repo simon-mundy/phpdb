@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 namespace PhpDb\Sql\Ddl;
 
+use PhpDb\Adapter\Driver\DriverInterface;
+use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Adapter\Platform\PlatformInterface;
-use PhpDb\Sql\AbstractSql;
+use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\PlatformDecoratorInterface;
 use PhpDb\Sql\TableIdentifier;
 
 use function array_key_exists;
+use function implode;
 
-class CreateTable extends AbstractSql
+class CreateTable extends AbstractDdl
 {
     final public const COLUMNS = 'columns';
 
@@ -23,25 +27,6 @@ class CreateTable extends AbstractSql
     protected array $constraints = [];
 
     protected bool $isTemporary = false;
-
-    /**
-     * {@inheritDoc}
-     */
-    protected array $specifications = [
-        self::TABLE       => 'CREATE %1$sTABLE %2$s (',
-        self::COLUMNS     => [
-            "\n    %1\$s" => [
-                [1 => '%1$s', 'combinedby' => ",\n    "],
-            ],
-        ],
-        'combinedBy'      => ',',
-        self::CONSTRAINTS => [
-            "\n    %1\$s" => [
-                [1 => '%1$s', 'combinedby' => ",\n    "],
-            ],
-        ],
-        'statementEnd'    => '%1$s',
-    ];
 
     protected string|TableIdentifier $table = '';
 
@@ -95,67 +80,47 @@ class CreateTable extends AbstractSql
         return isset($key) && array_key_exists($key, $rawState) ? $rawState[$key] : $rawState;
     }
 
-    /**
-     * @return string[]
-     */
-    protected function processTable(?PlatformInterface $adapterPlatform = null): array
-    {
-        return [
-            $this->isTemporary ? 'TEMPORARY ' : '',
-            $this->resolveTable($this->table, $adapterPlatform),
-        ];
-    }
+    public function buildSqlString(
+        PlatformInterface $platform,
+        ?DriverInterface $driver = null,
+        ?ParameterContainer $parameterContainer = null
+    ): string {
+        $this->localizeVariables();
 
-    /**
-     * @return string[][]|null
-     */
-    protected function processColumns(?PlatformInterface $adapterPlatform = null): ?array
-    {
-        if (! $this->columns) {
-            return null;
+        $decorator = $this instanceof PlatformDecoratorInterface ? $this : null;
+        $processor = new SqlProcessor($platform, $driver, $parameterContainer, $decorator);
+        $processor->setParamPrefix($this->processInfo['paramPrefix']);
+
+        // CREATE [TEMPORARY] TABLE "name" (
+        $sql = 'CREATE '
+            . ($this->isTemporary ? 'TEMPORARY ' : '')
+            . 'TABLE ' . $processor->resolveTable($this->table) . ' (';
+
+        // Columns
+        if ($this->columns) {
+            $columnSqls = [];
+            foreach ($this->columns as $column) {
+                $columnSqls[] = $processor->processExpression($column);
+            }
+            $sql .= " \n    " . implode(",\n    ", $columnSqls);
         }
 
-        $sqls = [];
-
-        foreach ($this->columns as $column) {
-            $sqls[] = $this->processExpression($column, $adapterPlatform);
+        // Separator between columns and constraints
+        if ($this->columns && $this->constraints) {
+            $sql .= ' ,';
         }
 
-        return [$sqls];
-    }
-
-    protected function processCombinedby(?PlatformInterface $adapterPlatform = null): string|null
-    {
-        if ($this->constraints && $this->columns) {
-            return $this->specifications['combinedBy'];
+        // Constraints
+        if ($this->constraints) {
+            $constraintSqls = [];
+            foreach ($this->constraints as $constraint) {
+                $constraintSqls[] = $processor->processExpression($constraint);
+            }
+            $sql .= " \n    " . implode(",\n    ", $constraintSqls);
         }
 
-        return null;
-    }
+        $sql .= " \n)";
 
-    /**
-     * @return string[][]|null
-     */
-    protected function processConstraints(?PlatformInterface $adapterPlatform = null): ?array
-    {
-        if (! $this->constraints) {
-            return null;
-        }
-
-        $sqls = [];
-
-        foreach ($this->constraints as $constraint) {
-            $sqls[] = $this->processExpression($constraint, $adapterPlatform);
-        }
-
-        return [$sqls];
-    }
-
-    /**
-     * @return string[]
-     */
-    protected function processStatementEnd(?PlatformInterface $adapterPlatform = null): array
-    {
-        return ["\n)"];
+        return $sql;
     }
 }

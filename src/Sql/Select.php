@@ -14,12 +14,9 @@ use PhpDb\Sql\Part\GroupBy;
 use PhpDb\Sql\Part\Having as HavingPart;
 use PhpDb\Sql\Part\Joins;
 use PhpDb\Sql\Part\Limit;
-use PhpDb\Sql\Part\Literal;
 use PhpDb\Sql\Part\Offset;
 use PhpDb\Sql\Part\OrderBy;
-use PhpDb\Sql\Part\PartInterface;
 use PhpDb\Sql\Part\Quantifier;
-use PhpDb\Sql\Part\SelectClause;
 use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Part\Table;
 use PhpDb\Sql\Part\Where as WherePart;
@@ -380,37 +377,6 @@ class Select extends AbstractPreparableSql
         return $this->tableReadOnly;
     }
 
-    /** @return PartInterface[] */
-    protected function getParts(): array
-    {
-        $hasCombine = $this->combine !== null && ! $this->combine->isEmpty();
-        $parts = [];
-
-        // Statement start paren (when combined)
-        if ($hasCombine) {
-            $parts[] = new Literal('(');
-        }
-
-        // SELECT [QUANTIFIER] columns [FROM table]
-        $parts[] = new SelectClause($this->quantifier, $this->columns, $this->table);
-
-        if ($this->joins !== null) $parts[] = $this->joins;
-        if ($this->where !== null) $parts[] = $this->where;
-        if ($this->groupBy !== null) $parts[] = $this->groupBy;
-        if ($this->having !== null) $parts[] = $this->having;
-        if ($this->orderBy !== null) $parts[] = $this->orderBy;
-        if ($this->limit !== null) $parts[] = $this->limit;
-        if ($this->offset !== null) $parts[] = $this->offset;
-
-        // Statement end paren (when combined)
-        if ($hasCombine) {
-            $parts[] = new Literal(')');
-            $parts[] = $this->combine;
-        }
-
-        return $parts;
-    }
-
     /**
      * Prepare the column parts for building by resolving the table prefix and join column info.
      */
@@ -461,7 +427,6 @@ class Select extends AbstractPreparableSql
 
         $this->preparePartsForBuild($processor);
 
-        // Render inline: avoid getParts() array and SelectClause/Literal allocations
         $hasCombine = $this->combine !== null && ! $this->combine->isEmpty();
 
         // SELECT [QUANTIFIER] columns [FROM table]

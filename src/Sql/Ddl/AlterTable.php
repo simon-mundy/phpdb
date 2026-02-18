@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 namespace PhpDb\Sql\Ddl;
 
+use PhpDb\Adapter\Driver\DriverInterface;
+use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Adapter\Platform\PlatformInterface;
-use PhpDb\Sql\AbstractSql;
+use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\PlatformDecoratorInterface;
 use PhpDb\Sql\TableIdentifier;
 
 use function array_key_exists;
+use function rtrim;
 
-class AlterTable extends AbstractSql
+class AlterTable extends AbstractDdl
 {
     final public const ADD_COLUMNS = 'addColumns';
 
@@ -37,43 +41,6 @@ class AlterTable extends AbstractSql
     protected array $dropConstraints = [];
 
     protected array $dropIndexes = [];
-
-    /**
-     * Specifications for Sql String generation
-     */
-    protected array $specifications = [
-        self::TABLE            => "ALTER TABLE %1\$s\n",
-        self::ADD_COLUMNS      => [
-            "%1\$s" => [
-                [1 => "ADD COLUMN %1\$s,\n", 'combinedby' => ''],
-            ],
-        ],
-        self::CHANGE_COLUMNS   => [
-            "%1\$s" => [
-                [2 => "CHANGE COLUMN %1\$s %2\$s,\n", 'combinedby' => ''],
-            ],
-        ],
-        self::DROP_COLUMNS     => [
-            "%1\$s" => [
-                [1 => "DROP COLUMN %1\$s,\n", 'combinedby' => ''],
-            ],
-        ],
-        self::ADD_CONSTRAINTS  => [
-            "%1\$s" => [
-                [1 => "ADD %1\$s,\n", 'combinedby' => ''],
-            ],
-        ],
-        self::DROP_CONSTRAINTS => [
-            "%1\$s" => [
-                [1 => "DROP CONSTRAINT %1\$s,\n", 'combinedby' => ''],
-            ],
-        ],
-        self::DROP_INDEXES     => [
-            '%1$s' => [
-                [1 => "DROP INDEX %1\$s,\n", 'combinedby' => ''],
-            ],
-        ],
-    ];
 
     protected string|TableIdentifier $table = '';
 
@@ -151,96 +118,48 @@ class AlterTable extends AbstractSql
         return isset($key) && array_key_exists($key, $rawState) ? $rawState[$key] : $rawState;
     }
 
-    /** @return string[] */
-    protected function processTable(?PlatformInterface $adapterPlatform = null): array
-    {
-        return [$this->resolveTable($this->table, $adapterPlatform)];
-    }
+    public function buildSqlString(
+        PlatformInterface $platform,
+        ?DriverInterface $driver = null,
+        ?ParameterContainer $parameterContainer = null
+    ): string {
+        $this->localizeVariables();
 
-    /**
-     * @return string[][]
-     * @psalm-return list{list{0?: string,...}}
-     */
-    protected function processAddColumns(?PlatformInterface $adapterPlatform = null): array
-    {
-        $sqls = [];
+        $decorator = $this instanceof PlatformDecoratorInterface ? $this : null;
+        $processor = new SqlProcessor($platform, $driver, $parameterContainer, $decorator);
+        $processor->setParamPrefix($this->processInfo['paramPrefix']);
+
+        $sql = "ALTER TABLE " . $processor->resolveTable($this->table) . "\n";
+
+        $clauses = [];
+
         foreach ($this->addColumns as $column) {
-            $sqls[] = $this->processExpression($column, $adapterPlatform);
+            $clauses[] = 'ADD COLUMN ' . $processor->processExpression($column);
         }
 
-        return [$sqls];
-    }
-
-    /**
-     * @return string[][][]
-     * @psalm-return list{list{0?: list{string, string},...}}
-     */
-    protected function processChangeColumns(?PlatformInterface $adapterPlatform = null): array
-    {
-        $sqls = [];
         foreach ($this->changeColumns as $name => $column) {
-            $sqls[] = [
-                $adapterPlatform->quoteIdentifier($name),
-                $this->processExpression($column, $adapterPlatform),
-            ];
+            $clauses[] = 'CHANGE COLUMN ' . $platform->quoteIdentifier($name)
+                . ' ' . $processor->processExpression($column);
         }
 
-        return [$sqls];
-    }
-
-    /**
-     * @return string[][]
-     * @psalm-return list{list{0?: string,...}}
-     */
-    protected function processDropColumns(?PlatformInterface $adapterPlatform = null): array
-    {
-        $sqls = [];
         foreach ($this->dropColumns as $column) {
-            $sqls[] = $adapterPlatform->quoteIdentifier($column);
+            $clauses[] = 'DROP COLUMN ' . $platform->quoteIdentifier($column);
         }
 
-        return [$sqls];
-    }
-
-    /**
-     * @return string[][]
-     * @psalm-return list{list{0?: string,...}}
-     */
-    protected function processAddConstraints(?PlatformInterface $adapterPlatform = null): array
-    {
-        $sqls = [];
         foreach ($this->addConstraints as $constraint) {
-            $sqls[] = $this->processExpression($constraint, $adapterPlatform);
+            $clauses[] = 'ADD ' . $processor->processExpression($constraint);
         }
 
-        return [$sqls];
-    }
-
-    /**
-     * @return string[][]
-     * @psalm-return list{list{0?: string,...}}
-     */
-    protected function processDropConstraints(?PlatformInterface $adapterPlatform = null): array
-    {
-        $sqls = [];
         foreach ($this->dropConstraints as $constraint) {
-            $sqls[] = $adapterPlatform->quoteIdentifier($constraint);
+            $clauses[] = 'DROP CONSTRAINT ' . $platform->quoteIdentifier($constraint);
         }
 
-        return [$sqls];
-    }
-
-    /**
-     * @return string[][]
-     * @psalm-return list{list{0?: string,...}}
-     */
-    protected function processDropIndexes(?PlatformInterface $adapterPlatform = null): array
-    {
-        $sqls = [];
         foreach ($this->dropIndexes as $index) {
-            $sqls[] = $adapterPlatform->quoteIdentifier($index);
+            $clauses[] = 'DROP INDEX ' . $platform->quoteIdentifier($index);
         }
 
-        return [$sqls];
+        $sql .= ' ' . implode(",\n ", $clauses);
+
+        return rtrim($sql, "\n ,");
     }
 }

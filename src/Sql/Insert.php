@@ -8,17 +8,11 @@ use PhpDb\Adapter\Driver\DriverInterface;
 use PhpDb\Adapter\Driver\PdoDriverInterface;
 use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Adapter\Platform\PlatformInterface;
-use PhpDb\Sql\Argument\Literal as LiteralArgument;
-use PhpDb\Sql\Argument\Parameter;
 use PhpDb\Sql\Argument\Select as SelectArgument;
-use PhpDb\Sql\Part\InsertSelect;
-use PhpDb\Sql\Part\InsertValues;
-use PhpDb\Sql\Part\PartInterface;
 use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Part\Table;
 use PhpDb\Sql\Platform\PlatformDecoratorInterface;
 
-use function array_combine;
 use function array_flip;
 use function array_key_exists;
 use function array_keys;
@@ -97,9 +91,14 @@ class Insert extends AbstractPreparableSql
         }
 
         if ($flag === self::VALUES_SET) {
-            $this->columns = $this->isAssocativeArray($values)
-                ? $values
-                : array_combine(array_keys($this->columns), array_values($values));
+            if ($this->isAssocativeArray($values)) {
+                $this->columns = $values;
+            } else {
+                $i = 0;
+                foreach ($this->columns as $column => $_) {
+                    $this->columns[$column] = $values[$i++] ?? null;
+                }
+            }
         } else {
             foreach ($values as $column => $value) {
                 $this->columns[$column] = $value;
@@ -149,27 +148,6 @@ class Insert extends AbstractPreparableSql
         return 'INSERT INTO';
     }
 
-    /** @return PartInterface[] */
-    protected function getParts(): array
-    {
-        $keyword = $this->getStatementKeyword();
-
-        $insertValues = new InsertValues($this->table);
-        $insertValues->setKeyword($keyword);
-        $insertValues->setColumns($this->columns);
-        $insertValues->setHasSelect($this->select !== null);
-
-        $insertSelect = new InsertSelect($this->table);
-        $insertSelect->setKeyword($keyword);
-        $insertSelect->setSelect($this->select);
-        $insertSelect->setColumns($this->columns);
-
-        return [
-            $insertValues,
-            $insertSelect,
-        ];
-    }
-
     public function buildSqlString(
         PlatformInterface $platform,
         ?DriverInterface $driver = null,
@@ -177,24 +155,12 @@ class Insert extends AbstractPreparableSql
     ): string {
         if ($this instanceof PlatformDecoratorInterface) {
             $this->localizeVariables();
-
-            // Decorator path: use Part objects for platform-specific rendering
-            $processor = new SqlProcessor($platform, $driver, $parameterContainer, $this);
-            $processor->setParamPrefix($this->processInfo['paramPrefix']);
-
-            $sqls = [];
-            foreach ($this->getParts() as $part) {
-                $sql = $part->toSql($processor);
-                if ($sql !== null) {
-                    $sqls[] = $sql;
-                }
-            }
-
-            return implode(' ', $sqls);
+            $decorator = $this;
+        } else {
+            $decorator = null;
         }
 
-        // Fast path: render inline without Part objects
-        $processor = new SqlProcessor($platform, $driver, $parameterContainer);
+        $processor = new SqlProcessor($platform, $driver, $parameterContainer, $decorator);
         $processor->setParamPrefix($this->processInfo['paramPrefix']);
 
         $keyword  = $this->getStatementKeyword();

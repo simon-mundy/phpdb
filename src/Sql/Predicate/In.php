@@ -14,6 +14,8 @@ use PhpDb\Sql\Exception\InvalidArgumentException;
 use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Select;
 
+use function vsprintf;
+
 class In extends AbstractExpression implements PredicateInterface
 {
     protected ?ArgumentInterface $identifier = null;
@@ -104,12 +106,12 @@ class In extends AbstractExpression implements PredicateInterface
     #[Override]
     public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
     {
-        if ($this->specification !== null) {
-            return $processor->processExpression($this, $paramPrefix);
-        }
-
         $id       = $processor->renderArgument($this->identifier, $paramPrefix, $paramIndex);
         $valueSet = $processor->renderArgument($this->valueSet, $paramPrefix, $paramIndex);
+
+        if ($this->specification !== null) {
+            return vsprintf($this->specification, [$id, $valueSet]);
+        }
 
         return "{$id} {$this->operator} {$valueSet}";
     }

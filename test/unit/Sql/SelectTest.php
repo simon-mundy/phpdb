@@ -57,7 +57,6 @@ use TypeError;
 #[CoversMethod(Select::class, '__get')]
 #[CoversMethod(Select::class, '__clone')]
 #[CoversMethod(Select::class, 'buildSqlString')]
-#[CoversMethod(Select::class, 'getParts')]
 #[CoversMethod(Select::class, 'preparePartsForBuild')]
 final class SelectTest extends TestCase
 {

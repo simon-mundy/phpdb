@@ -21,24 +21,6 @@ class Platform extends AbstractPlatform
 
     protected ?string $cachedPlatformName = null;
 
-    /**
-     * @todo sat-migration
-     * We have removed the default behaviour of setting a decorator for the adapter's platform.
-     * $platformName                    = $this->resolvePlatformName($platform);
-     * $this->decorators[$platformName] = $this->defaultPlatform->getSqlPlatformDecorator();
-     *
-     * The migration of the adapters means checking the below:-
-     * $mySqlPlatform     = new Mysql\Mysql();
-     * $sqlServerPlatform = new SqlServer\SqlServer();
-     * $oraclePlatform    = new Oracle\Oracle();
-     * $ibmDb2Platform    = new IbmDb2\IbmDb2();
-     * $sqlitePlatform    = new Sqlite\Sqlite();
-     * $this->decorators['mysql']     = $mySqlPlatform->getDecorators();
-     * $this->decorators['sqlserver'] = $sqlServerPlatform->getDecorators();
-     * $this->decorators['oracle']    = $oraclePlatform->getDecorators();
-     * $this->decorators['ibmdb2']    = $ibmDb2Platform->getDecorators();
-     * $this->decorators['sqlite']    = $sqlitePlatform->getDecorators();
-     */
     public function __construct(PlatformInterface $platform)
     {
         $this->defaultPlatform = $platform;

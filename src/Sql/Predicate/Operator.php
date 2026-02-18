@@ -15,6 +15,8 @@ use PhpDb\Sql\ExpressionInterface;
 use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\SqlInterface;
 
+use function vsprintf;
+
 class Operator extends AbstractExpression implements PredicateInterface
 {
     final public const OPERATOR_EQUAL_TO = '=';
@@ -157,12 +159,12 @@ class Operator extends AbstractExpression implements PredicateInterface
     #[Override]
     public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
     {
-        if ($this->specification !== null) {
-            return $processor->processExpression($this, $paramPrefix);
-        }
-
         $left  = $processor->renderArgument($this->left, $paramPrefix, $paramIndex);
         $right = $processor->renderArgument($this->right, $paramPrefix, $paramIndex);
+
+        if ($this->specification !== null) {
+            return vsprintf($this->specification, [$left, $right]);
+        }
 
         return "{$left} {$this->operator} {$right}";
     }

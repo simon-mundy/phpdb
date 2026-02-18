@@ -8,8 +8,6 @@ use Closure;
 use PhpDb\Adapter\Driver\DriverInterface;
 use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Adapter\Platform\PlatformInterface;
-use PhpDb\Sql\Part\Literal;
-use PhpDb\Sql\Part\PartInterface;
 use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Part\Table;
 use PhpDb\Sql\Part\Where as WherePart;
@@ -83,19 +81,6 @@ class Delete extends AbstractPreparableSql
     protected function getStatementKeyword(): string
     {
         return 'DELETE FROM';
-    }
-
-    /** @return PartInterface[] */
-    protected function getParts(): array
-    {
-        $parts = [
-            new Literal($this->getStatementKeyword()),
-            $this->table,
-        ];
-
-        if ($this->where !== null) $parts[] = $this->where;
-
-        return $parts;
     }
 
     public function buildSqlString(

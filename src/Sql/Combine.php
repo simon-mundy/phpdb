@@ -8,6 +8,8 @@ use Override;
 use PhpDb\Adapter\Driver\DriverInterface;
 use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Adapter\Platform\PlatformInterface;
+use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\PlatformDecoratorInterface;
 
 use function array_key_exists;
 use function array_keys;
@@ -112,9 +114,19 @@ class Combine extends AbstractPreparableSql
             return '';
         }
 
+        if ($this instanceof PlatformDecoratorInterface) {
+            $this->localizeVariables();
+            $decorator = $this;
+        } else {
+            $decorator = null;
+        }
+
+        $processor = new SqlProcessor($platform, $driver, $parameterContainer, $decorator);
+        $processor->setParamPrefix($this->processInfo['paramPrefix']);
+
         $parts = [];
         foreach ($this->combine as $i => $combine) {
-            $select = $this->processSubSelect($combine['select'], $platform, $driver, $parameterContainer);
+            $select = $processor->processSubSelect($combine['select']);
 
             if ($i === 0) {
                 $parts[] = "({$select})";
