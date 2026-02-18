@@ -28,7 +28,7 @@ class Delete extends AbstractPreparableSql
 
     protected Table $table;
 
-    protected WherePart $where;
+    protected ?WherePart $where = null;
 
     /**
      * Constructor
@@ -36,7 +36,6 @@ class Delete extends AbstractPreparableSql
     public function __construct(string|TableIdentifier|null $table = null)
     {
         $this->table = new Table();
-        $this->where = new WherePart();
 
         if ($table) {
             $this->from($table);
@@ -61,16 +60,18 @@ class Delete extends AbstractPreparableSql
         PredicateInterface|array|Closure|string|Where $predicate,
         string $combination = Predicate\PredicateSet::OP_AND
     ): static {
-        $this->where->addPredicates($predicate, $combination);
+        ($this->where ??= new WherePart())->addPredicates($predicate, $combination);
         return $this;
     }
 
     public function getRawState(?string $key = null): mixed
     {
+        $where = $this->where ??= new WherePart();
+
         $rawState = [
             'emptyWhereProtection' => $this->emptyWhereProtection,
             'table'                => $this->table->get(),
-            'where'                => $this->where->model ??= new Where(),
+            'where'                => $where->model ??= new Where(),
         ];
         return $key !== null && array_key_exists($key, $rawState) ? $rawState[$key] : $rawState;
     }
@@ -87,11 +88,14 @@ class Delete extends AbstractPreparableSql
     /** @return PartInterface[] */
     protected function getParts(): array
     {
-        return [
+        $parts = [
             new Literal($this->getStatementKeyword()),
             $this->table,
-            $this->where,
         ];
+
+        if ($this->where !== null) $parts[] = $this->where;
+
+        return $parts;
     }
 
     public function buildSqlString(
@@ -112,9 +116,11 @@ class Delete extends AbstractPreparableSql
         // Render inline: DELETE FROM table [WHERE ...]
         $sql = $this->getStatementKeyword() . ' ' . $this->table->toSql($processor);
 
-        $whereSql = $this->where->toSql($processor);
-        if ($whereSql !== null) {
-            $sql .= ' ' . $whereSql;
+        if ($this->where !== null) {
+            $whereSql = $this->where->toSql($processor);
+            if ($whereSql !== null) {
+                $sql .= ' ' . $whereSql;
+            }
         }
 
         return $sql;
@@ -127,7 +133,8 @@ class Delete extends AbstractPreparableSql
     public function __get(string $name): ?Where
     {
         if (strtolower($name) === 'where') {
-            return $this->where->model ??= new Where();
+            $where = $this->where ??= new WherePart();
+            return $where->model ??= new Where();
         }
 
         return null;
@@ -136,6 +143,6 @@ class Delete extends AbstractPreparableSql
     public function __clone()
     {
         $this->table = clone $this->table;
-        $this->where = clone $this->where;
+        if ($this->where !== null) $this->where = clone $this->where;
     }
 }

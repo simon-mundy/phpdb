@@ -33,8 +33,9 @@ use function vsprintf;
  */
 class SqlPartProcessor
 {
-    /** @var array{paramPrefix: string, subselectCount: int} */
-    private array $processInfo = ['paramPrefix' => '', 'subselectCount' => 0];
+    private string $paramPrefix = '';
+
+    private int $subselectCount = 0;
 
     private array $instanceParameterIndex = [];
 
@@ -50,12 +51,12 @@ class SqlPartProcessor
 
     public function getParamPrefix(): string
     {
-        return $this->processInfo['paramPrefix'];
+        return $this->paramPrefix;
     }
 
     public function setParamPrefix(string $prefix): void
     {
-        $this->processInfo['paramPrefix'] = $prefix;
+        $this->paramPrefix = $prefix;
     }
 
     /**
@@ -67,7 +68,7 @@ class SqlPartProcessor
     public function renderParameter(Parameter $param, ?string $nameOverride = null): string
     {
         if ($this->parameterContainer instanceof ParameterContainer) {
-            $name = $this->processInfo['paramPrefix'] . ($nameOverride ?? $param->getPreferredName() ?? 'param');
+            $name = $this->paramPrefix . ($nameOverride ?? $param->getPreferredName() ?? 'param');
             $this->parameterContainer->offsetSet($name, $param->getValue(), $param->getTypeHint());
 
             return $this->driver->formatParameterName($name);
@@ -96,7 +97,7 @@ class SqlPartProcessor
                 ? 'expr' . self::$runtimeExpressionPrefix++ . 'Param'
                 : '';
         } else {
-            $namedParameterPrefix = $this->processInfo['paramPrefix']
+            $namedParameterPrefix = $this->paramPrefix
                 . str_replace([' ', "\t", "\n", "\r"], '__', $namedParameterPrefix);
         }
 
@@ -151,17 +152,17 @@ class SqlPartProcessor
 
         if ($this->parameterContainer instanceof ParameterContainer) {
             $processInfoContext = $decorator instanceof PlatformDecoratorInterface ? $subselect : $decorator;
-            $this->processInfo['subselectCount']++;
-            $processInfoContext->processInfo['subselectCount'] = $this->processInfo['subselectCount'];
+            $this->subselectCount++;
+            $processInfoContext->processInfo['subselectCount'] = $this->subselectCount;
             $processInfoContext->processInfo['paramPrefix']    = 'subselect'
                 . $processInfoContext->processInfo['subselectCount'];
 
-            $sql                                     = $decorator->buildSqlString(
+            $sql = $decorator->buildSqlString(
                 $this->platform,
                 $this->driver,
                 $this->parameterContainer
             );
-            $this->processInfo['subselectCount'] = $decorator->processInfo['subselectCount'];
+            $this->subselectCount = $decorator->processInfo['subselectCount'];
 
             return $sql;
         }

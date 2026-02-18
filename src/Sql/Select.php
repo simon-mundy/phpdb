@@ -107,25 +107,25 @@ class Select extends AbstractPreparableSql
 
     protected Table $table;
 
-    protected Quantifier $quantifier;
+    protected ?Quantifier $quantifier = null;
 
     protected Columns $columns;
 
-    protected Joins $joins;
+    protected ?Joins $joins = null;
 
-    protected WherePart $where;
+    protected ?WherePart $where = null;
 
-    protected GroupBy $groupBy;
+    protected ?GroupBy $groupBy = null;
 
-    protected HavingPart $having;
+    protected ?HavingPart $having = null;
 
-    protected OrderBy $orderBy;
+    protected ?OrderBy $orderBy = null;
 
-    protected Limit $limit;
+    protected ?Limit $limit = null;
 
-    protected Offset $offset;
+    protected ?Offset $offset = null;
 
-    protected CombinePart $combine;
+    protected ?CombinePart $combine = null;
 
     /**
      * Constructor
@@ -133,16 +133,7 @@ class Select extends AbstractPreparableSql
     public function __construct(array|string|TableIdentifier|null $table = null)
     {
         $this->table = new Table();
-        $this->quantifier = new Quantifier();
         $this->columns = new Columns();
-        $this->joins = new Joins();
-        $this->where = new WherePart();
-        $this->groupBy = new GroupBy();
-        $this->having = new HavingPart();
-        $this->orderBy = new OrderBy();
-        $this->limit = new Limit();
-        $this->offset = new Offset();
-        $this->combine = new CombinePart();
 
         if ($table) {
             $this->from($table);
@@ -179,7 +170,7 @@ class Select extends AbstractPreparableSql
      */
     public function quantifier(ExpressionInterface|string $quantifier): static
     {
-        $this->quantifier->set($quantifier);
+        ($this->quantifier ??= new Quantifier())->set($quantifier);
         return $this;
     }
 
@@ -212,7 +203,7 @@ class Select extends AbstractPreparableSql
         array|string $columns = self::SQL_STAR,
         string $type = self::JOIN_INNER
     ): static {
-        $this->joins->join($name, $on, $columns, $type);
+        ($this->joins ??= new Joins())->join($name, $on, $columns, $type);
 
         return $this;
     }
@@ -227,14 +218,14 @@ class Select extends AbstractPreparableSql
         PredicateInterface|array|string|Closure $predicate,
         string $combination = Predicate\PredicateSet::OP_AND
     ): self {
-        $this->where->addPredicates($predicate, $combination);
+        ($this->where ??= new WherePart())->addPredicates($predicate, $combination);
 
         return $this;
     }
 
     public function group(mixed $group): static
     {
-        $this->groupBy->add($group);
+        ($this->groupBy ??= new GroupBy())->add($group);
 
         return $this;
     }
@@ -248,14 +239,14 @@ class Select extends AbstractPreparableSql
         Having|PredicateInterface|array|Closure|string $predicate,
         string $combination = Predicate\PredicateSet::OP_AND
     ): static {
-        $this->having->addPredicates($predicate, $combination);
+        ($this->having ??= new HavingPart())->addPredicates($predicate, $combination);
 
         return $this;
     }
 
     public function order(ExpressionInterface|array|string $order): static
     {
-        $this->orderBy->add($order);
+        ($this->orderBy ??= new OrderBy())->add($order);
 
         return $this;
     }
@@ -273,7 +264,7 @@ class Select extends AbstractPreparableSql
             ));
         }
 
-        $this->limit->set($limit);
+        ($this->limit ??= new Limit())->set($limit);
         return $this;
     }
 
@@ -290,7 +281,7 @@ class Select extends AbstractPreparableSql
             ));
         }
 
-        $this->offset->set($offset);
+        ($this->offset ??= new Offset())->set($offset);
         return $this;
     }
 
@@ -299,13 +290,13 @@ class Select extends AbstractPreparableSql
      */
     public function combine(Select $select, string $type = self::COMBINE_UNION, string $modifier = ''): static
     {
-        if (! $this->combine->isEmpty()) {
+        if ($this->combine !== null && ! $this->combine->isEmpty()) {
             throw new Exception\InvalidArgumentException(
                 'This Select object is already combined and cannot be combined with multiple Selects objects'
             );
         }
 
-        $this->combine->set($select, $type, $modifier);
+        ($this->combine ??= new CombinePart())->set($select, $type, $modifier);
         return $this;
     }
 
@@ -325,34 +316,34 @@ class Select extends AbstractPreparableSql
                 $this->table->set(null);
                 break;
             case self::QUANTIFIER:
-                $this->quantifier->set(null);
+                $this->quantifier = null;
                 break;
             case self::COLUMNS:
                 $this->columns->set([]);
                 break;
             case self::JOINS:
-                $this->joins->reset();
+                $this->joins = null;
                 break;
             case self::WHERE:
-                $this->where->model = null;
+                $this->where = null;
                 break;
             case self::GROUP:
-                $this->groupBy->reset();
+                $this->groupBy = null;
                 break;
             case self::HAVING:
-                $this->having->model = null;
+                $this->having = null;
                 break;
             case self::LIMIT:
-                $this->limit->set(null);
+                $this->limit = null;
                 break;
             case self::OFFSET:
-                $this->offset->set(null);
+                $this->offset = null;
                 break;
             case self::ORDER:
-                $this->orderBy->reset();
+                $this->orderBy = null;
                 break;
             case self::COMBINE:
-                $this->combine->reset();
+                $this->combine = null;
                 break;
         }
 
@@ -361,18 +352,22 @@ class Select extends AbstractPreparableSql
 
     public function getRawState(?string $key = null): mixed
     {
+        $joins  = $this->joins ??= new Joins();
+        $where  = $this->where ??= new WherePart();
+        $having = $this->having ??= new HavingPart();
+
         $rawState = [
             self::TABLE      => $this->table->get(),
-            self::QUANTIFIER => $this->quantifier->get(),
+            self::QUANTIFIER => $this->quantifier?->get(),
             self::COLUMNS    => $this->columns->get(),
-            self::JOINS      => $this->joins->model ??= new Join(),
-            self::WHERE      => $this->where->model ??= new Where(),
-            self::ORDER      => $this->orderBy->get(),
-            self::GROUP      => $this->groupBy->get(),
-            self::HAVING     => $this->having->model ??= new Having(),
-            self::LIMIT      => $this->limit->get(),
-            self::OFFSET     => $this->offset->get(),
-            self::COMBINE    => $this->combine->get(),
+            self::JOINS      => $joins->model ??= new Join(),
+            self::WHERE      => $where->model ??= new Where(),
+            self::ORDER      => $this->orderBy?->get() ?? [],
+            self::GROUP      => $this->groupBy?->get() ?? [],
+            self::HAVING     => $having->model ??= new Having(),
+            self::LIMIT      => $this->limit?->get(),
+            self::OFFSET     => $this->offset?->get(),
+            self::COMBINE    => $this->combine?->get() ?? [],
         ];
         return $key !== null && array_key_exists($key, $rawState) ? $rawState[$key] : $rawState;
     }
@@ -388,44 +383,30 @@ class Select extends AbstractPreparableSql
     /** @return PartInterface[] */
     protected function getParts(): array
     {
+        $hasCombine = $this->combine !== null && ! $this->combine->isEmpty();
         $parts = [];
 
         // Statement start paren (when combined)
-        if (! $this->combine->isEmpty()) {
+        if ($hasCombine) {
             $parts[] = new Literal('(');
         }
 
         // SELECT [QUANTIFIER] columns [FROM table]
         $parts[] = new SelectClause($this->quantifier, $this->columns, $this->table);
 
-        // JOINS
-        $parts[] = $this->joins;
-
-        // WHERE
-        $parts[] = $this->where;
-
-        // GROUP BY
-        $parts[] = $this->groupBy;
-
-        // HAVING
-        $parts[] = $this->having;
-
-        // ORDER BY
-        $parts[] = $this->orderBy;
-
-        // LIMIT
-        $parts[] = $this->limit;
-
-        // OFFSET
-        $parts[] = $this->offset;
+        if ($this->joins !== null) $parts[] = $this->joins;
+        if ($this->where !== null) $parts[] = $this->where;
+        if ($this->groupBy !== null) $parts[] = $this->groupBy;
+        if ($this->having !== null) $parts[] = $this->having;
+        if ($this->orderBy !== null) $parts[] = $this->orderBy;
+        if ($this->limit !== null) $parts[] = $this->limit;
+        if ($this->offset !== null) $parts[] = $this->offset;
 
         // Statement end paren (when combined)
-        if (! $this->combine->isEmpty()) {
+        if ($hasCombine) {
             $parts[] = new Literal(')');
+            $parts[] = $this->combine;
         }
-
-        // COMBINE (UNION/EXCEPT/INTERSECT)
-        $parts[] = $this->combine;
 
         return $parts;
     }
@@ -445,18 +426,22 @@ class Select extends AbstractPreparableSql
         $this->columns->setFromTablePrefix($fromTablePrefix);
 
         // Resolve join column info for column rendering using pre-built JoinSpecs
-        $joinColumnInfo = [];
-        foreach ($this->joins->getSpecs() as $spec) {
-            $joinTableName = $spec->alias ?? $spec->table;
-            $resolvedJoinName = $processor->resolveTable($joinTableName);
+        if ($this->joins !== null) {
+            $joinColumnInfo = [];
+            foreach ($this->joins->getSpecs() as $spec) {
+                $joinTableName = $spec->alias ?? $spec->table;
+                $resolvedJoinName = $processor->resolveTable($joinTableName);
 
-            $joinColumnInfo[] = [
-                'name'    => $resolvedJoinName,
-                'columns' => $spec->columns,
-            ];
+                $joinColumnInfo[] = [
+                    'prefix'     => $resolvedJoinName,
+                    'columnRefs' => $spec->columnRefs,
+                ];
+            }
+
+            $this->columns->setJoinColumnGroups($joinColumnInfo);
+        } else {
+            $this->columns->setJoinColumnGroups([]);
         }
-
-        $this->columns->setJoinColumnInfo($joinColumnInfo);
     }
 
     public function buildSqlString(
@@ -477,14 +462,16 @@ class Select extends AbstractPreparableSql
         $this->preparePartsForBuild($processor);
 
         // Render inline: avoid getParts() array and SelectClause/Literal allocations
-        $hasCombine = ! $this->combine->isEmpty();
+        $hasCombine = $this->combine !== null && ! $this->combine->isEmpty();
 
         // SELECT [QUANTIFIER] columns [FROM table]
         $selectParts = ['SELECT'];
 
-        $quantifierSql = $this->quantifier->toSql($processor);
-        if ($quantifierSql !== null) {
-            $selectParts[] = $quantifierSql;
+        if ($this->quantifier !== null) {
+            $quantifierSql = $this->quantifier->toSql($processor);
+            if ($quantifierSql !== null) {
+                $selectParts[] = $quantifierSql;
+            }
         }
 
         $columnsSql = $this->columns->toSql($processor);
@@ -500,56 +487,61 @@ class Select extends AbstractPreparableSql
 
         $sql = ($hasCombine ? '( ' : '') . implode(' ', $selectParts);
 
-        // JOINS
-        $partSql = $this->joins->toSql($processor);
-        if ($partSql !== null) {
-            $sql .= ' ' . $partSql;
+        if ($this->joins !== null) {
+            $partSql = $this->joins->toSql($processor);
+            if ($partSql !== null) {
+                $sql .= ' ' . $partSql;
+            }
         }
 
-        // WHERE
-        $partSql = $this->where->toSql($processor);
-        if ($partSql !== null) {
-            $sql .= ' ' . $partSql;
+        if ($this->where !== null) {
+            $partSql = $this->where->toSql($processor);
+            if ($partSql !== null) {
+                $sql .= ' ' . $partSql;
+            }
         }
 
-        // GROUP BY
-        $partSql = $this->groupBy->toSql($processor);
-        if ($partSql !== null) {
-            $sql .= ' ' . $partSql;
+        if ($this->groupBy !== null) {
+            $partSql = $this->groupBy->toSql($processor);
+            if ($partSql !== null) {
+                $sql .= ' ' . $partSql;
+            }
         }
 
-        // HAVING
-        $partSql = $this->having->toSql($processor);
-        if ($partSql !== null) {
-            $sql .= ' ' . $partSql;
+        if ($this->having !== null) {
+            $partSql = $this->having->toSql($processor);
+            if ($partSql !== null) {
+                $sql .= ' ' . $partSql;
+            }
         }
 
-        // ORDER BY
-        $partSql = $this->orderBy->toSql($processor);
-        if ($partSql !== null) {
-            $sql .= ' ' . $partSql;
+        if ($this->orderBy !== null) {
+            $partSql = $this->orderBy->toSql($processor);
+            if ($partSql !== null) {
+                $sql .= ' ' . $partSql;
+            }
         }
 
-        // LIMIT
-        $partSql = $this->limit->toSql($processor);
-        if ($partSql !== null) {
-            $sql .= ' ' . $partSql;
+        if ($this->limit !== null) {
+            $partSql = $this->limit->toSql($processor);
+            if ($partSql !== null) {
+                $sql .= ' ' . $partSql;
+            }
         }
 
-        // OFFSET
-        $partSql = $this->offset->toSql($processor);
-        if ($partSql !== null) {
-            $sql .= ' ' . $partSql;
+        if ($this->offset !== null) {
+            $partSql = $this->offset->toSql($processor);
+            if ($partSql !== null) {
+                $sql .= ' ' . $partSql;
+            }
         }
 
         if ($hasCombine) {
             $sql .= ' )';
-        }
-
-        // COMBINE (UNION/EXCEPT/INTERSECT)
-        $partSql = $this->combine->toSql($processor);
-        if ($partSql !== null) {
-            $sql .= ' ' . $partSql;
+            $partSql = $this->combine->toSql($processor);
+            if ($partSql !== null) {
+                $sql .= ' ' . $partSql;
+            }
         }
 
         return $sql;
@@ -562,12 +554,19 @@ class Select extends AbstractPreparableSql
      */
     public function __get(string $name): Where|Join|Having
     {
-        return match (strtolower($name)) {
-            'where' => $this->where->model ??= new Where(),
-            'having' => $this->having->model ??= new Having(),
-            'joins' => $this->joins->model ??= new Join(),
-            default => throw new Exception\InvalidArgumentException('Not a valid magic property for this object'),
-        };
+        switch (strtolower($name)) {
+            case 'where':
+                $part = $this->where ??= new WherePart();
+                return $part->model ??= new Where();
+            case 'having':
+                $part = $this->having ??= new HavingPart();
+                return $part->model ??= new Having();
+            case 'joins':
+                $part = $this->joins ??= new Joins();
+                return $part->model ??= new Join();
+            default:
+                throw new Exception\InvalidArgumentException('Not a valid magic property for this object');
+        }
     }
 
     /**
@@ -580,15 +579,15 @@ class Select extends AbstractPreparableSql
     public function __clone()
     {
         $this->table = clone $this->table;
-        $this->quantifier = clone $this->quantifier;
         $this->columns = clone $this->columns;
-        $this->joins = clone $this->joins;
-        $this->where = clone $this->where;
-        $this->groupBy = clone $this->groupBy;
-        $this->having = clone $this->having;
-        $this->orderBy = clone $this->orderBy;
-        $this->limit = clone $this->limit;
-        $this->offset = clone $this->offset;
-        $this->combine = clone $this->combine;
+        if ($this->quantifier !== null) $this->quantifier = clone $this->quantifier;
+        if ($this->joins !== null) $this->joins = clone $this->joins;
+        if ($this->where !== null) $this->where = clone $this->where;
+        if ($this->groupBy !== null) $this->groupBy = clone $this->groupBy;
+        if ($this->having !== null) $this->having = clone $this->having;
+        if ($this->orderBy !== null) $this->orderBy = clone $this->orderBy;
+        if ($this->limit !== null) $this->limit = clone $this->limit;
+        if ($this->offset !== null) $this->offset = clone $this->offset;
+        if ($this->combine !== null) $this->combine = clone $this->combine;
     }
 }

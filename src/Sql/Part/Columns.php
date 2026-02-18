@@ -45,47 +45,52 @@ class Columns extends AbstractPart
 
     public function toSql(SqlPartProcessor $processor): ?string
     {
-        // Build a flat render list: [prefix, ColumnRef] pairs
-        $renderList = [];
-
-        foreach ($this->columnRefs as $ref) {
-            $renderList[] = [$this->fromTablePrefix, $ref];
-        }
-
-        $separator = $processor->platform->getIdentifierSeparator();
-        foreach ($this->joinColumnGroups as $group) {
-            $joinPrefix = $group['prefix'] . $separator;
-            foreach ($group['columns'] as $ref) {
-                $renderList[] = [$joinPrefix, $ref];
-            }
-        }
-
-        // Render all columns in a single loop
         $columnFragments = [];
         $exprCounter     = 1;
+        $fromPrefix      = $this->fromTablePrefix;
 
-        foreach ($renderList as [$prefix, $ref]) {
-            if ($ref->isStar) {
-                $columnFragments[] = $prefix . '*';
-                continue;
-            }
+        foreach ($this->columnRefs as $ref) {
+            $this->renderColumnRef($ref, $fromPrefix, $processor, $columnFragments, $exprCounter);
+        }
 
-            $columnSql = match ($ref->arg->getType()) {
-                ArgumentType::Identifier => $prefix . $processor->platform->quoteIdentifierInFragment($ref->arg->getValue()),
-                ArgumentType::Select     => $processor->processExpression($ref->arg->getValue(), $ref->alias ?? 'column'),
-                ArgumentType::Literal    => $ref->arg->getValue(),
-            };
-
-            if ($ref->alias !== null) {
-                $columnFragments[] = $columnSql . ' AS ' . $processor->platform->quoteIdentifier($ref->alias);
-            } elseif ($ref->containsAlias) {
-                $columnFragments[] = $columnSql;
-            } else {
-                $columnFragments[] = $columnSql . ' AS Expression' . $exprCounter++;
+        if ($this->joinColumnGroups !== []) {
+            $separator = $processor->platform->getIdentifierSeparator();
+            foreach ($this->joinColumnGroups as $group) {
+                $joinPrefix = $group['prefix'] . $separator;
+                foreach ($group['columnRefs'] as $ref) {
+                    $this->renderColumnRef($ref, $joinPrefix, $processor, $columnFragments, $exprCounter);
+                }
             }
         }
 
         return implode(', ', $columnFragments);
+    }
+
+    private function renderColumnRef(
+        ColumnRef $ref,
+        string $prefix,
+        SqlPartProcessor $processor,
+        array &$fragments,
+        int &$exprCounter,
+    ): void {
+        if ($ref->isStar) {
+            $fragments[] = $prefix . '*';
+            return;
+        }
+
+        $columnSql = match ($ref->arg->getType()) {
+            ArgumentType::Identifier => $prefix . $processor->platform->quoteIdentifierInFragment($ref->arg->getValue()),
+            ArgumentType::Select     => $processor->processExpression($ref->arg->getValue(), $ref->alias ?? 'column'),
+            ArgumentType::Literal    => $ref->arg->getValue(),
+        };
+
+        if ($ref->alias !== null) {
+            $fragments[] = $columnSql . ' AS ' . $processor->platform->quoteIdentifier($ref->alias);
+        } elseif ($ref->containsAlias) {
+            $fragments[] = $columnSql;
+        } else {
+            $fragments[] = $columnSql . ' AS Expression' . $exprCounter++;
+        }
     }
 
     public function isEmpty(): bool
@@ -143,21 +148,14 @@ class Columns extends AbstractPart
     }
 
     /**
-     * Set join column info for resolving join columns.
-     * Normalizes raw join column data into ColumnRef[] grouped by table prefix.
+     * Set pre-normalized join column groups.
+     * Each entry has 'prefix' (resolved table name) and 'columnRefs' (ColumnRef[]).
      *
-     * @param array<int, array{name: string, columns: array}> $joinColumnInfo
+     * @param array<int, array{prefix: string, columnRefs: ColumnRef[]}> $groups
      */
-    public function setJoinColumnInfo(array $joinColumnInfo): void
+    public function setJoinColumnGroups(array $groups): void
     {
-        $this->joinColumnGroups = [];
-        foreach ($joinColumnInfo as $info) {
-            $columnRefs = [];
-            foreach ($info['columns'] as $key => $column) {
-                $columnRefs[] = new ColumnRef($key, $column);
-            }
-            $this->joinColumnGroups[] = ['prefix' => $info['name'], 'columns' => $columnRefs];
-        }
+        $this->joinColumnGroups = $groups;
     }
 
     /**

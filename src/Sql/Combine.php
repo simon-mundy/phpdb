@@ -12,10 +12,9 @@ use PhpDb\Adapter\Platform\PlatformInterface;
 use function array_key_exists;
 use function array_keys;
 use function array_merge;
+use function implode;
 use function is_array;
-use function str_replace;
 use function strtoupper;
-use function trim;
 
 /**
  * Combine SQL statement - allows combining multiple select statements into one
@@ -31,11 +30,6 @@ class Combine extends AbstractPreparableSql
     final public const COMBINE_EXCEPT = 'except';
 
     final public const COMBINE_INTERSECT = 'intersect';
-
-    /** @var string[] */
-    protected array $specifications = [
-        self::COMBINE => '%1$s (%2$s) ',
-    ];
 
     /** @var array<array{select: Select, type: string, modifier: string}> */
     private array $combine = [];
@@ -118,24 +112,21 @@ class Combine extends AbstractPreparableSql
             return '';
         }
 
-        $sql = '';
+        $parts = [];
         foreach ($this->combine as $i => $combine) {
-            $type   = $i === 0
-                ? ''
-                : strtoupper(
-                    $combine['modifier']
-                        ? "{$combine['type']} {$combine['modifier']}"
-                        : $combine['type']
-                );
             $select = $this->processSubSelect($combine['select'], $platform, $driver, $parameterContainer);
-            $sql   .= str_replace(
-                ['%1$s', '%2$s'],
-                [$type, $select],
-                $this->specifications[self::COMBINE]
-            );
+
+            if ($i === 0) {
+                $parts[] = "({$select})";
+            } else {
+                $type = $combine['modifier']
+                    ? strtoupper("{$combine['type']} {$combine['modifier']}")
+                    : strtoupper($combine['type']);
+                $parts[] = "{$type} ({$select})";
+            }
         }
 
-        return trim($sql, ' ');
+        return implode(' ', $parts);
     }
 
     public function alignColumns(): static

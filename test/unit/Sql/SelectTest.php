@@ -205,11 +205,10 @@ final class SelectTest extends TestCase
         $mockExpression = $this->getMockBuilder(ExpressionInterface::class)
             ->getMock();
 
+        $this->expectException(InvalidArgumentException::class);
+
         $select = new Select();
         $select->join(['foo' => $mockExpression], 'x = y');
-
-        $this->expectException(InvalidArgumentException::class);
-        $select->getSqlString(new Sql92());
     }
 
     #[TestDox('unit test: Test where() returns Select object (is chainable)')]

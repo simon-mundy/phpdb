@@ -36,9 +36,9 @@ class Update extends AbstractPreparableSql
 
     protected SetPart $set;
 
-    protected WherePart $where;
+    protected ?WherePart $where = null;
 
-    protected JoinsPart $joins;
+    protected ?JoinsPart $joins = null;
 
     /**
      * Constructor
@@ -47,8 +47,6 @@ class Update extends AbstractPreparableSql
     {
         $this->table = new Table();
         $this->set   = new SetPart();
-        $this->where = new WherePart();
-        $this->joins = new JoinsPart();
 
         if ($table) {
             $this->table($table);
@@ -86,7 +84,7 @@ class Update extends AbstractPreparableSql
         PredicateInterface|array|Closure|string|Where $predicate,
         string $combination = Predicate\PredicateSet::OP_AND
     ): static {
-        $this->where->addPredicates($predicate, $combination);
+        ($this->where ??= new WherePart())->addPredicates($predicate, $combination);
         return $this;
     }
 
@@ -97,18 +95,21 @@ class Update extends AbstractPreparableSql
      */
     public function join(array|string|TableIdentifier $name, string $on, string $type = Join::JOIN_INNER): static
     {
-        $this->joins->join($name, $on, [], $type);
+        ($this->joins ??= new JoinsPart())->join($name, $on, [], $type);
         return $this;
     }
 
     public function getRawState(?string $key = null): mixed
     {
+        $where = $this->where ??= new WherePart();
+        $joins = $this->joins ??= new JoinsPart();
+
         $rawState = [
             'emptyWhereProtection' => $this->emptyWhereProtection,
             'table'                => $this->table->get(),
             'set'                  => $this->set->toArray(),
-            'where'                => $this->where->model ??= new Where(),
-            'joins'                => $this->joins->model ??= new Join(),
+            'where'                => $where->model ??= new Where(),
+            'joins'                => $joins->model ??= new Join(),
         ];
         return $key !== null && array_key_exists($key, $rawState) ? $rawState[$key] : $rawState;
     }
@@ -125,13 +126,16 @@ class Update extends AbstractPreparableSql
     /** @return PartInterface[] */
     protected function getParts(): array
     {
-        return [
+        $parts = [
             new Literal($this->getStatementKeyword()),
             $this->table,
-            $this->joins,
-            $this->set,
-            $this->where,
         ];
+
+        if ($this->joins !== null) $parts[] = $this->joins;
+        $parts[] = $this->set;
+        if ($this->where !== null) $parts[] = $this->where;
+
+        return $parts;
     }
 
     public function buildSqlString(
@@ -152,9 +156,11 @@ class Update extends AbstractPreparableSql
         // Render inline: UPDATE table [JOINS] SET ... [WHERE ...]
         $sql = $this->getStatementKeyword() . ' ' . $this->table->toSql($processor);
 
-        $joinsSql = $this->joins->toSql($processor);
-        if ($joinsSql !== null) {
-            $sql .= ' ' . $joinsSql;
+        if ($this->joins !== null) {
+            $joinsSql = $this->joins->toSql($processor);
+            if ($joinsSql !== null) {
+                $sql .= ' ' . $joinsSql;
+            }
         }
 
         $setSql = $this->set->toSql($processor);
@@ -162,9 +168,11 @@ class Update extends AbstractPreparableSql
             $sql .= ' ' . $setSql;
         }
 
-        $whereSql = $this->where->toSql($processor);
-        if ($whereSql !== null) {
-            $sql .= ' ' . $whereSql;
+        if ($this->where !== null) {
+            $whereSql = $this->where->toSql($processor);
+            if ($whereSql !== null) {
+                $sql .= ' ' . $whereSql;
+            }
         }
 
         return $sql;
@@ -177,7 +185,8 @@ class Update extends AbstractPreparableSql
     public function __get(string $name): ?Where
     {
         if (strtolower($name) === 'where') {
-            return $this->where->model ??= new Where();
+            $where = $this->where ??= new WherePart();
+            return $where->model ??= new Where();
         }
 
         return null;
@@ -187,7 +196,7 @@ class Update extends AbstractPreparableSql
     {
         $this->table = clone $this->table;
         $this->set   = clone $this->set;
-        $this->where = clone $this->where;
-        $this->joins = clone $this->joins;
+        if ($this->where !== null) $this->where = clone $this->where;
+        if ($this->joins !== null) $this->joins = clone $this->joins;
     }
 }

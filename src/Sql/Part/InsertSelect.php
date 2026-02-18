@@ -7,7 +7,6 @@ namespace PhpDb\Sql\Part;
 use PhpDb\Sql\Select;
 
 use function array_keys;
-use function array_map;
 use function implode;
 
 /**
@@ -36,9 +35,11 @@ class InsertSelect extends AbstractPart
 
         $selectSql = $processor->processSubSelect($this->select);
 
-        $columnNames = array_keys($this->columns);
-        $columns     = array_map([$processor->platform, 'quoteIdentifier'], $columnNames);
-        $columnsSql  = implode(', ', $columns);
+        $columns = [];
+        foreach (array_keys($this->columns) as $name) {
+            $columns[] = $processor->platform->quoteIdentifier($name);
+        }
+        $columnsSql = implode(', ', $columns);
 
         $tableSql = $processor->resolveTable($this->table->get());
 
