@@ -25,7 +25,7 @@ class Joins extends AbstractPart
     /** @var JoinSpec[] Normalized join specifications, built at join() time */
     private array $specs = [];
 
-    public function toSql(SqlPartProcessor $processor): ?string
+    public function toSql(SqlProcessor $processor): ?string
     {
         if ($this->specs === []) {
             return null;
@@ -47,7 +47,7 @@ class Joins extends AbstractPart
             $renderedTable = $processor->renderTable($joinName, $quotedAlias);
 
             if ($spec->isExpressionOn) {
-                $onClause = $processor->processExpression(
+                $onClause = $processor->renderExpression(
                     $spec->on,
                     'join' . ($j + 1) . 'part'
                 );

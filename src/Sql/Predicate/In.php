@@ -11,6 +11,7 @@ use PhpDb\Sql\Argument\Select as ArgumentSelect;
 use PhpDb\Sql\Argument\Values;
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\Exception\InvalidArgumentException;
+use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Select;
 
 class In extends AbstractExpression implements PredicateInterface
@@ -98,5 +99,18 @@ class In extends AbstractExpression implements PredicateInterface
             'spec'   => $this->specification ?? "{$identifierSpec} {$this->operator} {$valueSetSpec}",
             'values' => [$this->identifier, $this->valueSet],
         ];
+    }
+
+    #[Override]
+    public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
+    {
+        if ($this->specification !== null) {
+            return $processor->processExpression($this, $paramPrefix);
+        }
+
+        $id       = $processor->renderArgument($this->identifier, $paramPrefix, $paramIndex);
+        $valueSet = $processor->renderArgument($this->valueSet, $paramPrefix, $paramIndex);
+
+        return "{$id} {$this->operator} {$valueSet}";
     }
 }

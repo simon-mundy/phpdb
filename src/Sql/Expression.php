@@ -8,6 +8,7 @@ use Override;
 use PhpDb\Sql\Argument\Select as SelectArgument;
 use PhpDb\Sql\Argument\Value;
 use PhpDb\Sql\Argument\Values;
+use PhpDb\Sql\Part\SqlProcessor;
 
 use function array_slice;
 use function array_unique;
@@ -17,6 +18,7 @@ use function func_num_args;
 use function is_array;
 use function preg_match_all;
 use function str_replace;
+use function vsprintf;
 
 class Expression extends AbstractExpression
 {
@@ -137,5 +139,35 @@ class Expression extends AbstractExpression
             'spec'   => $specification,
             'values' => $parameters,
         ];
+    }
+
+    #[Override]
+    public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
+    {
+        $parameters      = $this->parameters;
+        $parametersCount = count($parameters);
+        $specification   = str_replace('%', '%%', $this->expression);
+
+        if ($parametersCount === 0) {
+            return str_replace('%%', '%', $specification);
+        }
+
+        $specification = str_replace(self::PLACEHOLDER, '%s', $specification, $count);
+
+        if ($count !== $parametersCount) {
+            preg_match_all('/:\w*/', $specification, $matches);
+            if ($parametersCount !== count(array_unique($matches[0]))) {
+                throw new Exception\RuntimeException(
+                    'The number of replacements in the expression does not match the number of parameters'
+                );
+            }
+        }
+
+        $values = [];
+        foreach ($parameters as $argument) {
+            $values[] = $processor->renderArgument($argument, $paramPrefix, $paramIndex);
+        }
+
+        return vsprintf($specification, $values);
     }
 }

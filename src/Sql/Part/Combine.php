@@ -15,7 +15,7 @@ class Combine extends AbstractPart
 {
     private array $combine = [];
 
-    public function toSql(SqlPartProcessor $processor): ?string
+    public function toSql(SqlProcessor $processor): ?string
     {
         if ($this->combine === []) {
             return null;

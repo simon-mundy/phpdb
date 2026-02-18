@@ -20,7 +20,7 @@ use PhpDb\Sql\Part\OrderBy;
 use PhpDb\Sql\Part\PartInterface;
 use PhpDb\Sql\Part\Quantifier;
 use PhpDb\Sql\Part\SelectClause;
-use PhpDb\Sql\Part\SqlPartProcessor;
+use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Part\Table;
 use PhpDb\Sql\Part\Where as WherePart;
 use PhpDb\Sql\Platform\PlatformDecoratorInterface;
@@ -414,7 +414,7 @@ class Select extends AbstractPreparableSql
     /**
      * Prepare the column parts for building by resolving the table prefix and join column info.
      */
-    protected function preparePartsForBuild(SqlPartProcessor $processor): void
+    protected function preparePartsForBuild(SqlProcessor $processor): void
     {
         // Resolve the table prefix for column prefixing
         if ($this->columns->getPrefixColumnsWithTable() && $this->table->get() !== null) {
@@ -456,7 +456,7 @@ class Select extends AbstractPreparableSql
             $decorator = null;
         }
 
-        $processor = new SqlPartProcessor($platform, $driver, $parameterContainer, $decorator);
+        $processor = new SqlProcessor($platform, $driver, $parameterContainer, $decorator);
         $processor->setParamPrefix($this->processInfo['paramPrefix']);
 
         $this->preparePartsForBuild($processor);

@@ -43,7 +43,7 @@ class Columns extends AbstractPart
         $this->normalizeColumns();
     }
 
-    public function toSql(SqlPartProcessor $processor): ?string
+    public function toSql(SqlProcessor $processor): ?string
     {
         $columnFragments = [];
         $exprCounter     = 1;
@@ -69,7 +69,7 @@ class Columns extends AbstractPart
     private function renderColumnRef(
         ColumnRef $ref,
         string $prefix,
-        SqlPartProcessor $processor,
+        SqlProcessor $processor,
         array &$fragments,
         int &$exprCounter,
     ): void {

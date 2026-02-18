@@ -10,6 +10,7 @@ use PhpDb\Sql\Argument\Identifier;
 use PhpDb\Sql\Argument\Value;
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\Exception\InvalidArgumentException;
+use PhpDb\Sql\Part\SqlProcessor;
 
 class Like extends AbstractExpression implements PredicateInterface
 {
@@ -86,5 +87,18 @@ class Like extends AbstractExpression implements PredicateInterface
             'spec'   => $this->specification ?? "{$identifierSpec} {$this->operator} {$likeSpec}",
             'values' => [$this->identifier, $this->like],
         ];
+    }
+
+    #[Override]
+    public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
+    {
+        if ($this->specification !== null) {
+            return $processor->processExpression($this, $paramPrefix);
+        }
+
+        $id   = $processor->renderArgument($this->identifier, $paramPrefix, $paramIndex);
+        $like = $processor->renderArgument($this->like, $paramPrefix, $paramIndex);
+
+        return "{$id} {$this->operator} {$like}";
     }
 }

@@ -6,6 +6,7 @@ namespace PhpDb\Sql\Ddl\Constraint;
 
 use Override;
 use PhpDb\Sql\Argument\Identifier;
+use PhpDb\Sql\Part\SqlProcessor;
 
 use function array_fill;
 use function count;
@@ -93,5 +94,11 @@ abstract class AbstractConstraint implements ConstraintInterface
             'spec'   => implode(' ', $specParts),
             'values' => $values,
         ];
+    }
+
+    #[Override]
+    public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
+    {
+        return $processor->processExpression($this, $paramPrefix);
     }
 }

@@ -14,7 +14,7 @@ class Literal extends AbstractPart
     {
     }
 
-    public function toSql(SqlPartProcessor $processor): ?string
+    public function toSql(SqlProcessor $processor): ?string
     {
         return $this->literal;
     }

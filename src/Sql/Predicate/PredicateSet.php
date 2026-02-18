@@ -9,6 +9,7 @@ use Countable;
 use Override;
 use PhpDb\Sql\Exception;
 use PhpDb\Sql\Expression;
+use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Predicate\Expression as PredicateExpression;
 use ReturnTypeWillChange;
 
@@ -218,5 +219,38 @@ class PredicateSet implements PredicateInterface, Countable
     public function count(): int
     {
         return count($this->predicates);
+    }
+
+    #[Override]
+    public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
+    {
+        $predicateCount = count($this->predicates);
+
+        if ($predicateCount === 0) {
+            return '';
+        }
+
+        if ($predicateCount === 1) {
+            [$operator, $predicate] = $this->predicates[0];
+            $sql = $predicate->renderSql($processor, $paramPrefix, $paramIndex);
+
+            return $predicate instanceof self ? "({$sql})" : $sql;
+        }
+
+        $parts = [];
+        $first = true;
+
+        foreach ($this->predicates as [$operator, $predicate]) {
+            $sql = $predicate->renderSql($processor, $paramPrefix, $paramIndex);
+
+            if ($predicate instanceof self) {
+                $sql = "({$sql})";
+            }
+
+            $parts[] = $first ? $sql : "{$operator} {$sql}";
+            $first   = false;
+        }
+
+        return implode(' ', $parts);
     }
 }

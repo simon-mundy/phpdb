@@ -9,6 +9,7 @@ use PhpDb\Sql\Argument\Identifier;
 use PhpDb\Sql\Argument\Literal;
 use PhpDb\Sql\Argument\Value;
 use PhpDb\Sql\Ddl\Constraint\ConstraintInterface;
+use PhpDb\Sql\Part\SqlProcessor;
 
 use function implode;
 
@@ -133,5 +134,11 @@ class Column implements ColumnInterface
             'spec'   => implode(' ', $specParts),
             'values' => $values,
         ];
+    }
+
+    #[Override]
+    public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
+    {
+        return $processor->processExpression($this, $paramPrefix);
     }
 }

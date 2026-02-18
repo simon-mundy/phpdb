@@ -16,7 +16,7 @@ class Table extends AbstractPart
 {
     private ?TableRef $ref = null;
 
-    public function toSql(SqlPartProcessor $processor): ?string
+    public function toSql(SqlProcessor $processor): ?string
     {
         if ($this->ref === null) {
             return null;
@@ -66,7 +66,7 @@ class Table extends AbstractPart
      * Get the quoted table prefix for column prefixing (e.g. "table".)
      * Returns the alias if one is set, otherwise the table name.
      */
-    public function getQuotedPrefix(SqlPartProcessor $processor): string
+    public function getQuotedPrefix(SqlProcessor $processor): string
     {
         if ($this->ref === null) {
             return '';

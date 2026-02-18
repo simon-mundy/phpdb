@@ -17,7 +17,7 @@ class SelectClause extends AbstractPart
     ) {
     }
 
-    public function toSql(SqlPartProcessor $processor): string
+    public function toSql(SqlProcessor $processor): string
     {
         $parts = ['SELECT'];
 

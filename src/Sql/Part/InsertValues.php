@@ -36,7 +36,7 @@ class InsertValues extends AbstractPart
         $this->table = $table;
     }
 
-    public function toSql(SqlPartProcessor $processor): ?string
+    public function toSql(SqlProcessor $processor): ?string
     {
         if ($this->hasSelect) {
             return null;

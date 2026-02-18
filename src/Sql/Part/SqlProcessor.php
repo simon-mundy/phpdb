@@ -28,10 +28,10 @@ use function str_replace;
 use function vsprintf;
 
 /**
- * Shared processing service used by all Part objects to render expressions,
- * resolve tables/columns, and bind parameters.
+ * Central SQL rendering service used by Part objects and Expressions
+ * to render arguments, resolve tables/columns, and bind parameters.
  */
-class SqlPartProcessor
+class SqlProcessor
 {
     private string $paramPrefix = '';
 
@@ -199,6 +199,98 @@ class SqlPartProcessor
     public function renderTable(string $table, ?string $alias = null): string
     {
         return $alias ? "{$table} AS {$alias}" : $table;
+    }
+
+    /**
+     * Render an ExpressionInterface directly via its renderSql() method.
+     * Sets up parameter prefix and index, then delegates to the expression.
+     */
+    public function renderExpression(
+        ExpressionInterface $expression,
+        ?string $namedParameterPrefix = null
+    ): string {
+        if ($namedParameterPrefix === null || $namedParameterPrefix === '') {
+            $namedParameterPrefix = $this->parameterContainer
+                ? 'expr' . self::$runtimeExpressionPrefix++ . 'Param'
+                : '';
+        } else {
+            $namedParameterPrefix = $this->paramPrefix
+                . str_replace([' ', "\t", "\n", "\r"], '__', $namedParameterPrefix);
+        }
+
+        if (! isset($this->instanceParameterIndex[$namedParameterPrefix])) {
+            $this->instanceParameterIndex[$namedParameterPrefix] = 1;
+        }
+
+        $paramIndex = &$this->instanceParameterIndex[$namedParameterPrefix];
+
+        return $expression->renderSql($this, $namedParameterPrefix, $paramIndex);
+    }
+
+    /**
+     * Render a single ArgumentInterface to its SQL representation.
+     * Centralises type dispatch so expressions can render arguments
+     * without knowing about quoting, binding, or subselect handling.
+     */
+    public function renderArgument(
+        ArgumentInterface $argument,
+        string $paramPrefix,
+        int &$paramIndex,
+    ): string {
+        return match (true) {
+            $argument instanceof Value => $this->parameterContainer instanceof ParameterContainer
+                ? $this->processExpressionParameterName(
+                    $argument->getValue(),
+                    $paramPrefix,
+                    $paramIndex,
+                )
+                : $this->platform->quoteValue((string) $argument->getValue()),
+            $argument instanceof Identifier => $this->platform->quoteIdentifierInFragment($argument->getValue()),
+            $argument instanceof Literal => $argument->getValue(),
+            $argument instanceof Values => $this->renderValuesArgument($argument, $paramPrefix, $paramIndex),
+            $argument instanceof Identifiers => $this->processIdentifiersArgument($argument),
+            $argument instanceof SelectArgument => $this->renderSelectArgument($argument, $paramPrefix, $paramIndex),
+            default => throw new Exception\InvalidArgumentException('Unknown argument type'),
+        };
+    }
+
+    /**
+     * Render a Values argument as a parenthesised comma-separated list: (val1, val2, val3)
+     */
+    private function renderValuesArgument(Values $argument, string $paramPrefix, int &$paramIndex): string
+    {
+        $values          = $argument->getValue();
+        $processedValues = [];
+
+        if ($this->parameterContainer instanceof ParameterContainer) {
+            foreach ($values as $value) {
+                $processedValues[] = $this->processExpressionParameterName($value, $paramPrefix, $paramIndex);
+            }
+        } else {
+            foreach ($values as $value) {
+                $processedValues[] = $this->platform->quoteValue((string) $value);
+            }
+        }
+
+        return '(' . implode(', ', $processedValues) . ')';
+    }
+
+    /**
+     * Render a SelectArgument: wraps Select in (...), renders ExpressionInterface via renderSql().
+     */
+    private function renderSelectArgument(SelectArgument $argument, string $paramPrefix, int &$paramIndex): string
+    {
+        $value = $argument->getValue();
+
+        if ($value instanceof Select) {
+            return '(' . $this->processSubSelect($value) . ')';
+        }
+
+        if ($value instanceof ExpressionInterface) {
+            return $value->renderSql($this, $paramPrefix, $paramIndex);
+        }
+
+        throw new \ValueError('Invalid SelectArgument value');
     }
 
     /**

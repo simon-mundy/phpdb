@@ -10,6 +10,7 @@ use PhpDb\Sql\AbstractExpression;
 use PhpDb\Sql\Argument\Identifier;
 use PhpDb\Sql\Argument\Value;
 use PhpDb\Sql\ArgumentInterface;
+use PhpDb\Sql\Part\SqlProcessor;
 
 class Between extends AbstractExpression implements PredicateInterface
 {
@@ -127,5 +128,19 @@ class Between extends AbstractExpression implements PredicateInterface
             'spec'   => $this->specification ?? $spec,
             'values' => [$this->identifier, $this->minValue, $this->maxValue],
         ];
+    }
+
+    #[Override]
+    public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
+    {
+        if ($this->specification !== null) {
+            return $processor->processExpression($this, $paramPrefix);
+        }
+
+        $id  = $processor->renderArgument($this->identifier, $paramPrefix, $paramIndex);
+        $min = $processor->renderArgument($this->minValue, $paramPrefix, $paramIndex);
+        $max = $processor->renderArgument($this->maxValue, $paramPrefix, $paramIndex);
+
+        return "{$id} {$this->operator} {$min} AND {$max}";
     }
 }

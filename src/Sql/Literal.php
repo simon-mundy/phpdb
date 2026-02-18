@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PhpDb\Sql;
 
 use Override;
+use PhpDb\Sql\Part\SqlProcessor;
 
 use function str_replace;
 
@@ -34,5 +35,11 @@ class Literal implements ExpressionInterface
             'spec'   => str_replace('%', '%%', $this->literal),
             'values' => [],
         ];
+    }
+
+    #[Override]
+    public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
+    {
+        return $this->literal;
     }
 }

@@ -26,7 +26,7 @@ class OrderBy extends AbstractPart
     /** @var OrderSpec[] */
     private array $order = [];
 
-    public function toSql(SqlPartProcessor $processor): ?string
+    public function toSql(SqlProcessor $processor): ?string
     {
         if ($this->order === []) {
             return null;

@@ -9,6 +9,7 @@ use PhpDb\Sql\AbstractExpression;
 use PhpDb\Sql\Argument\Identifier;
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\Exception\InvalidArgumentException;
+use PhpDb\Sql\Part\SqlProcessor;
 
 class IsNull extends AbstractExpression implements PredicateInterface
 {
@@ -60,5 +61,17 @@ class IsNull extends AbstractExpression implements PredicateInterface
             'spec'   => $this->specification ?? "{$identifierSpec} {$this->operator}",
             'values' => [$this->identifier],
         ];
+    }
+
+    #[Override]
+    public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
+    {
+        if ($this->specification !== null) {
+            return $processor->processExpression($this, $paramPrefix);
+        }
+
+        $id = $processor->renderArgument($this->identifier, $paramPrefix, $paramIndex);
+
+        return "{$id} {$this->operator}";
     }
 }

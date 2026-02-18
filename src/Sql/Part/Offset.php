@@ -15,7 +15,7 @@ class Offset extends AbstractPart
 {
     private ?Parameter $offset = null;
 
-    public function toSql(SqlPartProcessor $processor): ?string
+    public function toSql(SqlProcessor $processor): ?string
     {
         if ($this->offset === null) {
             return null;

@@ -17,13 +17,13 @@ class Where extends AbstractPart
 {
     public ?WhereModel $model = null;
 
-    public function toSql(SqlPartProcessor $processor): ?string
+    public function toSql(SqlProcessor $processor): ?string
     {
         if ($this->model === null || $this->model->count() === 0) {
             return null;
         }
 
-        return 'WHERE ' . $processor->processExpression($this->model, 'where');
+        return 'WHERE ' . $processor->renderExpression($this->model, 'where');
     }
 
     public function isEmpty(): bool

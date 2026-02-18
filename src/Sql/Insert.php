@@ -14,7 +14,7 @@ use PhpDb\Sql\Argument\Select as SelectArgument;
 use PhpDb\Sql\Part\InsertSelect;
 use PhpDb\Sql\Part\InsertValues;
 use PhpDb\Sql\Part\PartInterface;
-use PhpDb\Sql\Part\SqlPartProcessor;
+use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Part\Table;
 use PhpDb\Sql\Platform\PlatformDecoratorInterface;
 
@@ -179,7 +179,7 @@ class Insert extends AbstractPreparableSql
             $this->localizeVariables();
 
             // Decorator path: use Part objects for platform-specific rendering
-            $processor = new SqlPartProcessor($platform, $driver, $parameterContainer, $this);
+            $processor = new SqlProcessor($platform, $driver, $parameterContainer, $this);
             $processor->setParamPrefix($this->processInfo['paramPrefix']);
 
             $sqls = [];
@@ -194,7 +194,7 @@ class Insert extends AbstractPreparableSql
         }
 
         // Fast path: render inline without Part objects
-        $processor = new SqlPartProcessor($platform, $driver, $parameterContainer);
+        $processor = new SqlProcessor($platform, $driver, $parameterContainer);
         $processor->setParamPrefix($this->processInfo['paramPrefix']);
 
         $keyword  = $this->getStatementKeyword();

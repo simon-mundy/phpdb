@@ -12,6 +12,7 @@ use PhpDb\Sql\Argument\Value;
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\Exception\InvalidArgumentException;
 use PhpDb\Sql\ExpressionInterface;
+use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\SqlInterface;
 
 class Operator extends AbstractExpression implements PredicateInterface
@@ -151,5 +152,18 @@ class Operator extends AbstractExpression implements PredicateInterface
             'spec'   => $this->specification ?? "{$leftSpec} {$this->operator} {$rightSpec}",
             'values' => [$this->left, $this->right],
         ];
+    }
+
+    #[Override]
+    public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
+    {
+        if ($this->specification !== null) {
+            return $processor->processExpression($this, $paramPrefix);
+        }
+
+        $left  = $processor->renderArgument($this->left, $paramPrefix, $paramIndex);
+        $right = $processor->renderArgument($this->right, $paramPrefix, $paramIndex);
+
+        return "{$left} {$this->operator} {$right}";
     }
 }

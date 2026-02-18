@@ -12,7 +12,7 @@ use PhpDb\Sql\Part\Joins as JoinsPart;
 use PhpDb\Sql\Part\Literal;
 use PhpDb\Sql\Part\PartInterface;
 use PhpDb\Sql\Part\Set as SetPart;
-use PhpDb\Sql\Part\SqlPartProcessor;
+use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Part\Table;
 use PhpDb\Sql\Part\Where as WherePart;
 use PhpDb\Sql\Platform\PlatformDecoratorInterface;
@@ -150,7 +150,7 @@ class Update extends AbstractPreparableSql
             $decorator = null;
         }
 
-        $processor = new SqlPartProcessor($platform, $driver, $parameterContainer, $decorator);
+        $processor = new SqlProcessor($platform, $driver, $parameterContainer, $decorator);
         $processor->setParamPrefix($this->processInfo['paramPrefix']);
 
         // Render inline: UPDATE table [JOINS] SET ... [WHERE ...]
