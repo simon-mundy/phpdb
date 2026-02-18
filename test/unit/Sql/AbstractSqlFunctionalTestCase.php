@@ -161,8 +161,8 @@ abstract class AbstractSqlFunctionalTestCase extends TestCase
                 'sqlObject' => self::insert('foo')->select(self::select('foo')->where(['x' => 'y'])),
                 'expected'  => [
                     'sql92' => [
-                        'string'     => 'INSERT INTO "foo"  SELECT "foo".* FROM "foo" WHERE "x" = \'y\'',
-                        'prepare'    => 'INSERT INTO "foo"  SELECT "foo".* FROM "foo" WHERE "x" = ?',
+                        'string'     => 'INSERT INTO "foo" SELECT "foo".* FROM "foo" WHERE "x" = \'y\'',
+                        'prepare'    => 'INSERT INTO "foo" SELECT "foo".* FROM "foo" WHERE "x" = ?',
                         'parameters' => ['subselect1where1' => 'y'],
                     ],
                 ],

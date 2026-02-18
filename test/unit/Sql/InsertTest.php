@@ -225,7 +225,7 @@ final class InsertTest extends TestCase
         $this->insert->into('foo')->select($select->from('bar'));
 
         self::assertEquals(
-            'INSERT INTO "foo"  SELECT "bar".* FROM "bar"',
+            'INSERT INTO "foo" SELECT "bar".* FROM "bar"',
             $this->insert->getSqlString(new TrustingSql92Platform())
         );
 

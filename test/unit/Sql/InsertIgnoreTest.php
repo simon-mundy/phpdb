@@ -206,7 +206,7 @@ final class InsertIgnoreTest extends TestCase
         $this->insert->into('foo')->select($select->from('bar'));
 
         self::assertEquals(
-            'INSERT IGNORE INTO "foo"  SELECT "bar".* FROM "bar"',
+            'INSERT IGNORE INTO "foo" SELECT "bar".* FROM "bar"',
             $this->insert->getSqlString(new TrustingSql92Platform())
         );
 

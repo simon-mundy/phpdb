@@ -20,24 +20,25 @@ use function sprintf;
  * Wraps a Join model and renders all JOIN clauses.
  * Used by Select and Update.
  *
- * Raw join data from the Join model is normalized to JoinSpec[] at render time.
- * The rendering loop uses typed access on JoinSpec — no instanceof/is_array cascades.
+ * JoinSpecs are normalized at join() time. The rendering loop uses typed access
+ * on JoinSpec — no instanceof/is_array cascades or per-render allocations.
  */
 class Joins extends AbstractPart
 {
     public ?Join $model = null;
 
+    /** @var JoinSpec[] Normalized join specifications, built at join() time */
+    private array $specs = [];
+
     public function toSql(SqlPartProcessor $processor): ?string
     {
-        if ($this->model === null || $this->model->count() === 0) {
+        if ($this->specs === []) {
             return null;
         }
 
         $joinSqlParts = [];
 
-        foreach ($this->model->getJoins() as $j => $rawJoin) {
-            $spec = new JoinSpec($rawJoin);
-
+        foreach ($this->specs as $j => $spec) {
             $joinName  = $this->resolveJoinTable($spec, $processor);
             $quotedAlias = $spec->alias !== null
                 ? $processor->platform->quoteIdentifier($spec->alias)
@@ -65,7 +66,13 @@ class Joins extends AbstractPart
 
     public function isEmpty(): bool
     {
-        return $this->model === null || $this->model->count() === 0;
+        return $this->specs === [];
+    }
+
+    /** @return JoinSpec[] */
+    public function getSpecs(): array
+    {
+        return $this->specs;
     }
 
     /**
@@ -79,6 +86,16 @@ class Joins extends AbstractPart
     ): void {
         $this->model ??= new Join();
         $this->model->join($name, $on, $columns, $type);
+
+        // Normalize eagerly — the last join added is the one we just created
+        $rawJoins = $this->model->getJoins();
+        $this->specs[] = new JoinSpec($rawJoins[count($rawJoins) - 1]);
+    }
+
+    public function reset(): void
+    {
+        $this->model = null;
+        $this->specs = [];
     }
 
     public function __clone()

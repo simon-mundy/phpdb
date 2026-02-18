@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace PhpDb\Sql;
 
 use PhpDb\Adapter\Driver\DriverInterface;
+use PhpDb\Adapter\Driver\PdoDriverInterface;
 use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Adapter\Platform\PlatformInterface;
+use PhpDb\Sql\Argument\Literal as LiteralArgument;
+use PhpDb\Sql\Argument\Parameter;
+use PhpDb\Sql\Argument\Select as SelectArgument;
 use PhpDb\Sql\Part\InsertSelect;
 use PhpDb\Sql\Part\InsertValues;
 use PhpDb\Sql\Part\PartInterface;
@@ -20,6 +24,7 @@ use function array_key_exists;
 use function array_keys;
 use function array_values;
 use function count;
+use function implode;
 use function range;
 
 class Insert extends AbstractPreparableSql
@@ -170,21 +175,82 @@ class Insert extends AbstractPreparableSql
         ?DriverInterface $driver = null,
         ?ParameterContainer $parameterContainer = null
     ): string {
-        $this->localizeVariables();
+        if ($this instanceof PlatformDecoratorInterface) {
+            $this->localizeVariables();
 
-        $decorator = $this instanceof PlatformDecoratorInterface ? $this : null;
-        $processor = new SqlPartProcessor($platform, $driver, $parameterContainer, $decorator);
+            // Decorator path: use Part objects for platform-specific rendering
+            $processor = new SqlPartProcessor($platform, $driver, $parameterContainer, $this);
+            $processor->setParamPrefix($this->processInfo['paramPrefix']);
+
+            $sqls = [];
+            foreach ($this->getParts() as $part) {
+                $sql = $part->toSql($processor);
+                if ($sql !== null) {
+                    $sqls[] = $sql;
+                }
+            }
+
+            return implode(' ', $sqls);
+        }
+
+        // Fast path: render inline without Part objects
+        $processor = new SqlPartProcessor($platform, $driver, $parameterContainer);
         $processor->setParamPrefix($this->processInfo['paramPrefix']);
 
-        $sqls = [];
-        foreach ($this->getParts() as $part) {
-            $sql = $part->toSql($processor);
-            if ($sql !== null) {
-                $sqls[] = $sql;
+        $keyword  = $this->getStatementKeyword();
+        $tableSql = $processor->resolveTable($this->table->get());
+
+        if ($this->select !== null) {
+            $selectSql  = $processor->processSubSelect($this->select);
+            $columnNames = array_keys($this->columns);
+            if ($columnNames !== []) {
+                $columns = [];
+                foreach ($columnNames as $col) {
+                    $columns[] = $platform->quoteIdentifier($col);
+                }
+                return $keyword . ' ' . $tableSql . ' (' . implode(', ', $columns) . ') ' . $selectSql;
+            }
+            return $keyword . ' ' . $tableSql . ' ' . $selectSql;
+        }
+
+        if ($this->columns === []) {
+            throw new Exception\InvalidArgumentException('values or select should be present');
+        }
+
+        $columns     = [];
+        $values      = [];
+        $i           = 0;
+        $isPdoDriver = $driver instanceof PdoDriverInterface;
+        $paramPrefix = $this->processInfo['paramPrefix'];
+
+        foreach ($this->columns as $column => $value) {
+            $columns[] = $platform->quoteIdentifier($column);
+
+            if ($value instanceof ArgumentInterface) {
+                $values[] = match ($value->getType()) {
+                    ArgumentType::Parameter => $processor->renderParameter($value, $isPdoDriver ? 'c_' . $i++ : null),
+                    ArgumentType::Select    => $processor->processExpression($value->getValue()),
+                    ArgumentType::Literal   => $value->getValue(),
+                    default                 => $platform->quoteValue((string) $value->getValue()),
+                };
+            } elseif ($value instanceof Select) {
+                $values[] = $processor->processExpression(new SelectArgument($value));
+            } elseif ($value instanceof ExpressionInterface) {
+                $values[] = $processor->processExpression($value);
+            } elseif ($value === null) {
+                $values[] = 'NULL';
+            } elseif ($parameterContainer instanceof ParameterContainer) {
+                $name = $paramPrefix . ($isPdoDriver ? 'c_' . $i++ : $column);
+                $parameterContainer->offsetSet($name, $value);
+                $values[] = $driver->formatParameterName($name);
+            } else {
+                $values[] = $platform->quoteValue((string) $value);
             }
         }
 
-        return implode(' ', $sqls);
+        return $keyword . ' ' . $tableSql
+            . ' (' . implode(', ', $columns) . ')'
+            . ' VALUES (' . implode(', ', $values) . ')';
     }
 
     /**

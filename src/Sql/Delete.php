@@ -99,21 +99,25 @@ class Delete extends AbstractPreparableSql
         ?DriverInterface $driver = null,
         ?ParameterContainer $parameterContainer = null
     ): string {
-        $this->localizeVariables();
+        if ($this instanceof PlatformDecoratorInterface) {
+            $this->localizeVariables();
+            $decorator = $this;
+        } else {
+            $decorator = null;
+        }
 
-        $decorator = $this instanceof PlatformDecoratorInterface ? $this : null;
         $processor = new SqlPartProcessor($platform, $driver, $parameterContainer, $decorator);
         $processor->setParamPrefix($this->processInfo['paramPrefix']);
 
-        $sqls = [];
-        foreach ($this->getParts() as $part) {
-            $sql = $part->toSql($processor);
-            if ($sql !== null) {
-                $sqls[] = $sql;
-            }
+        // Render inline: DELETE FROM table [WHERE ...]
+        $sql = $this->getStatementKeyword() . ' ' . $this->table->toSql($processor);
+
+        $whereSql = $this->where->toSql($processor);
+        if ($whereSql !== null) {
+            $sql .= ' ' . $whereSql;
         }
 
-        return implode(' ', $sqls);
+        return $sql;
     }
 
     /**

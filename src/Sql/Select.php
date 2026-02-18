@@ -331,7 +331,7 @@ class Select extends AbstractPreparableSql
                 $this->columns->set([]);
                 break;
             case self::JOINS:
-                $this->joins->model = null;
+                $this->joins->reset();
                 break;
             case self::WHERE:
                 $this->where->model = null;
@@ -444,11 +444,9 @@ class Select extends AbstractPreparableSql
 
         $this->columns->setFromTablePrefix($fromTablePrefix);
 
-        // Resolve join column info for column rendering
+        // Resolve join column info for column rendering using pre-built JoinSpecs
         $joinColumnInfo = [];
-        $joinsModel = $this->joins->model;
-        foreach ($joinsModel?->getJoins() ?? [] as $rawJoin) {
-            $spec = new Part\JoinSpec($rawJoin);
+        foreach ($this->joins->getSpecs() as $spec) {
             $joinTableName = $spec->alias ?? $spec->table;
             $resolvedJoinName = $processor->resolveTable($joinTableName);
 
@@ -466,23 +464,95 @@ class Select extends AbstractPreparableSql
         ?DriverInterface $driver = null,
         ?ParameterContainer $parameterContainer = null
     ): string {
-        $this->localizeVariables();
+        if ($this instanceof PlatformDecoratorInterface) {
+            $this->localizeVariables();
+            $decorator = $this;
+        } else {
+            $decorator = null;
+        }
 
-        $decorator = $this instanceof PlatformDecoratorInterface ? $this : null;
         $processor = new SqlPartProcessor($platform, $driver, $parameterContainer, $decorator);
         $processor->setParamPrefix($this->processInfo['paramPrefix']);
 
         $this->preparePartsForBuild($processor);
 
-        $sqls = [];
-        foreach ($this->getParts() as $part) {
-            $sql = $part->toSql($processor);
-            if ($sql !== null) {
-                $sqls[] = $sql;
-            }
+        // Render inline: avoid getParts() array and SelectClause/Literal allocations
+        $hasCombine = ! $this->combine->isEmpty();
+
+        // SELECT [QUANTIFIER] columns [FROM table]
+        $selectParts = ['SELECT'];
+
+        $quantifierSql = $this->quantifier->toSql($processor);
+        if ($quantifierSql !== null) {
+            $selectParts[] = $quantifierSql;
         }
 
-        return implode(' ', $sqls);
+        $columnsSql = $this->columns->toSql($processor);
+        if ($columnsSql !== null) {
+            $selectParts[] = $columnsSql;
+        }
+
+        $tableSql = $this->table->toSql($processor);
+        if ($tableSql !== null) {
+            $selectParts[] = 'FROM';
+            $selectParts[] = $tableSql;
+        }
+
+        $sql = ($hasCombine ? '( ' : '') . implode(' ', $selectParts);
+
+        // JOINS
+        $partSql = $this->joins->toSql($processor);
+        if ($partSql !== null) {
+            $sql .= ' ' . $partSql;
+        }
+
+        // WHERE
+        $partSql = $this->where->toSql($processor);
+        if ($partSql !== null) {
+            $sql .= ' ' . $partSql;
+        }
+
+        // GROUP BY
+        $partSql = $this->groupBy->toSql($processor);
+        if ($partSql !== null) {
+            $sql .= ' ' . $partSql;
+        }
+
+        // HAVING
+        $partSql = $this->having->toSql($processor);
+        if ($partSql !== null) {
+            $sql .= ' ' . $partSql;
+        }
+
+        // ORDER BY
+        $partSql = $this->orderBy->toSql($processor);
+        if ($partSql !== null) {
+            $sql .= ' ' . $partSql;
+        }
+
+        // LIMIT
+        $partSql = $this->limit->toSql($processor);
+        if ($partSql !== null) {
+            $sql .= ' ' . $partSql;
+        }
+
+        // OFFSET
+        $partSql = $this->offset->toSql($processor);
+        if ($partSql !== null) {
+            $sql .= ' ' . $partSql;
+        }
+
+        if ($hasCombine) {
+            $sql .= ' )';
+        }
+
+        // COMBINE (UNION/EXCEPT/INTERSECT)
+        $partSql = $this->combine->toSql($processor);
+        if ($partSql !== null) {
+            $sql .= ' ' . $partSql;
+        }
+
+        return $sql;
     }
 
     /**

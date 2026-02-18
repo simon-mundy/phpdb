@@ -139,21 +139,35 @@ class Update extends AbstractPreparableSql
         ?DriverInterface $driver = null,
         ?ParameterContainer $parameterContainer = null
     ): string {
-        $this->localizeVariables();
+        if ($this instanceof PlatformDecoratorInterface) {
+            $this->localizeVariables();
+            $decorator = $this;
+        } else {
+            $decorator = null;
+        }
 
-        $decorator = $this instanceof PlatformDecoratorInterface ? $this : null;
         $processor = new SqlPartProcessor($platform, $driver, $parameterContainer, $decorator);
         $processor->setParamPrefix($this->processInfo['paramPrefix']);
 
-        $sqls = [];
-        foreach ($this->getParts() as $part) {
-            $sql = $part->toSql($processor);
-            if ($sql !== null) {
-                $sqls[] = $sql;
-            }
+        // Render inline: UPDATE table [JOINS] SET ... [WHERE ...]
+        $sql = $this->getStatementKeyword() . ' ' . $this->table->toSql($processor);
+
+        $joinsSql = $this->joins->toSql($processor);
+        if ($joinsSql !== null) {
+            $sql .= ' ' . $joinsSql;
         }
 
-        return implode(' ', $sqls);
+        $setSql = $this->set->toSql($processor);
+        if ($setSql !== null) {
+            $sql .= ' ' . $setSql;
+        }
+
+        $whereSql = $this->where->toSql($processor);
+        if ($whereSql !== null) {
+            $sql .= ' ' . $whereSql;
+        }
+
+        return $sql;
     }
 
     /**
