@@ -83,11 +83,9 @@ class CreateTable extends AbstractDdl
     public function buildSqlString(
         PlatformInterface $platform,
         ?DriverInterface $driver = null,
-        ?ParameterContainer $parameterContainer = null
+        ?ParameterContainer $parameterContainer = null,
+        ?PlatformDecoratorInterface $decorator = null,
     ): string {
-        $this->localizeVariables();
-
-        $decorator = $this instanceof PlatformDecoratorInterface ? $this : null;
         $processor = new SqlProcessor($platform, $driver, $parameterContainer, $decorator);
         $processor->setParamPrefix($this->processInfo['paramPrefix']);
 

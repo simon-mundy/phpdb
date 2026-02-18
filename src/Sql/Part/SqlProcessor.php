@@ -78,31 +78,35 @@ class SqlProcessor
      */
     public function processSubSelect(Select $subselect): string
     {
+        $decorator = null;
         if ($this->decorator !== null) {
             $decorator = clone $this->decorator;
             $decorator->setSubject($subselect);
-        } else {
-            $decorator = $subselect;
         }
 
         if ($this->parameterContainer instanceof ParameterContainer) {
-            $processInfoContext = $decorator instanceof PlatformDecoratorInterface ? $subselect : $decorator;
             $this->subselectCount++;
-            $processInfoContext->processInfo['subselectCount'] = $this->subselectCount;
-            $processInfoContext->processInfo['paramPrefix']    = 'subselect'
-                . $processInfoContext->processInfo['subselectCount'];
+            $subselect->processInfo['subselectCount'] = $this->subselectCount;
+            $subselect->processInfo['paramPrefix']    = 'subselect'
+                . $subselect->processInfo['subselectCount'];
 
-            $sql                  = $decorator->buildSqlString(
+            $sql                  = $subselect->buildSqlString(
                 $this->platform,
                 $this->driver,
-                $this->parameterContainer
+                $this->parameterContainer,
+                $decorator,
             );
-            $this->subselectCount = $decorator->processInfo['subselectCount'];
+            $this->subselectCount = $subselect->processInfo['subselectCount'];
 
             return $sql;
         }
 
-        return $decorator->buildSqlString($this->platform, $this->driver, $this->parameterContainer);
+        return $subselect->buildSqlString(
+            $this->platform,
+            $this->driver,
+            $this->parameterContainer,
+            $decorator,
+        );
     }
 
     /**

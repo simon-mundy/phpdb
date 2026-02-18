@@ -11,12 +11,8 @@ use PhpDb\Adapter\Platform\PlatformInterface;
 use PhpDb\Adapter\Platform\Sql92 as DefaultAdapterPlatform;
 use PhpDb\Sql\Platform\PlatformDecoratorInterface;
 
-use function get_object_vars;
-
 abstract class AbstractSql implements SqlInterface
 {
-    protected SqlInterface|PreparableSqlInterface|null $subject = null;
-
     /**
      * Information used during processing
      *
@@ -38,22 +34,9 @@ abstract class AbstractSql implements SqlInterface
     public function buildSqlString(
         PlatformInterface $platform,
         ?DriverInterface $driver = null,
-        ?ParameterContainer $parameterContainer = null
+        ?ParameterContainer $parameterContainer = null,
+        ?PlatformDecoratorInterface $decorator = null,
     ): string {
         return '';
-    }
-
-    /**
-     * Copy variables from the subject into the local properties
-     */
-    protected function localizeVariables(): void
-    {
-        if (! $this instanceof PlatformDecoratorInterface) {
-            return;
-        }
-
-        foreach (get_object_vars($this->subject) as $name => $value) {
-            $this->{$name} = $value;
-        }
     }
 }

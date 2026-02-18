@@ -117,7 +117,7 @@ class Column implements ColumnInterface
             $defaultArg = $this->default instanceof ArgumentInterface
                 ? $this->default
                 : new Value($this->default);
-            $sql .= ' DEFAULT ' . $processor->renderArgument($defaultArg, $paramPrefix, $paramIndex);
+            $sql       .= ' DEFAULT ' . $processor->renderArgument($defaultArg, $paramPrefix, $paramIndex);
         }
 
         foreach ($this->constraints as $constraint) {

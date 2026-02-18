@@ -107,17 +107,11 @@ class Combine extends AbstractPreparableSql
     public function buildSqlString(
         PlatformInterface $platform,
         ?DriverInterface $driver = null,
-        ?ParameterContainer $parameterContainer = null
+        ?ParameterContainer $parameterContainer = null,
+        ?PlatformDecoratorInterface $decorator = null,
     ): string {
         if (! $this->combine) {
             return '';
-        }
-
-        if ($this instanceof PlatformDecoratorInterface) {
-            $this->localizeVariables();
-            $decorator = $this;
-        } else {
-            $decorator = null;
         }
 
         $processor = new SqlProcessor($platform, $driver, $parameterContainer, $decorator);
