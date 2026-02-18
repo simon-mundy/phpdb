@@ -29,11 +29,12 @@ class Limit extends AbstractPart
         return $this->limit === null;
     }
 
-    public function set(string|int|null $limit): void
+    public function set(string|int|null $limit): static
     {
         $this->limit = $limit === null
             ? null
             : new Parameter($limit, preferredName: 'limit', typeHint: ParameterContainer::TYPE_INTEGER);
+        return $this;
     }
 
     public function get(): string|int|null

@@ -111,13 +111,14 @@ class Columns extends AbstractPart
         return $this->rawColumns === [];
     }
 
-    public function set(array $columns): void
+    public function set(array $columns): static
     {
         $this->rawColumns = $columns;
         $this->normalizeColumns();
+        return $this;
     }
 
-    public function add(array|ExpressionInterface|string $column, ?string $alias = null): void
+    public function add(array|ExpressionInterface|string $column, ?string $alias = null): static
     {
         if (is_array($column)) {
             $key    = key($column);
@@ -132,6 +133,7 @@ class Columns extends AbstractPart
             $this->rawColumns[] = $column;
             $this->columnRefs[] = new ColumnRef(count($this->columnRefs), $column);
         }
+        return $this;
     }
 
     /**
@@ -142,9 +144,10 @@ class Columns extends AbstractPart
         return $this->rawColumns;
     }
 
-    public function setPrefixColumnsWithTable(bool $prefix): void
+    public function setPrefixColumnsWithTable(bool $prefix): static
     {
         $this->prefixColumnsWithTable = $prefix;
+        return $this;
     }
 
     public function getPrefixColumnsWithTable(): bool
@@ -155,9 +158,10 @@ class Columns extends AbstractPart
     /**
      * Set the table prefix for column resolution (e.g. "table".)
      */
-    public function setFromTablePrefix(string $prefix): void
+    public function setFromTablePrefix(string $prefix): static
     {
         $this->fromTablePrefix = $prefix;
+        return $this;
     }
 
     /**
@@ -165,9 +169,10 @@ class Columns extends AbstractPart
      *
      * @param JoinSpec[] $specs
      */
-    public function setJoinSpecs(array $specs): void
+    public function setJoinSpecs(array $specs): static
     {
         $this->joinSpecs = $specs;
+        return $this;
     }
 
     /**

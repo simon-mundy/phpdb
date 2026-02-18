@@ -43,7 +43,7 @@ class GroupBy extends AbstractPart
         return $this->group === null;
     }
 
-    public function add(mixed $group): void
+    public function add(mixed $group): static
     {
         if (is_array($group)) {
             foreach ($group as $g) {
@@ -52,6 +52,7 @@ class GroupBy extends AbstractPart
         } else {
             $this->group[] = new ColumnRef(0, $group);
         }
+        return $this;
     }
 
     /**
@@ -70,8 +71,9 @@ class GroupBy extends AbstractPart
         return $result;
     }
 
-    public function reset(): void
+    public function reset(): static
     {
         $this->group = null;
+        return $this;
     }
 }

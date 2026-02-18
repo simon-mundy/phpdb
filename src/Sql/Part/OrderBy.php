@@ -21,8 +21,8 @@ use function str_contains;
  */
 class OrderBy extends AbstractPart
 {
-    public const ORDER_ASCENDING  = 'ASC';
-    public const ORDER_DESCENDING = 'DESC';
+    final public const ORDER_ASCENDING  = 'ASC';
+    final public const ORDER_DESCENDING = 'DESC';
 
     /** @var OrderSpec[] */
     private array $order = [];
@@ -51,7 +51,7 @@ class OrderBy extends AbstractPart
         return $this->order === [];
     }
 
-    public function add(ExpressionInterface|array|string $order): void
+    public function add(ExpressionInterface|array|string $order): static
     {
         if (is_string($order)) {
             $order = str_contains($order, ',') ? preg_split('#,\s+#', $order) : (array) $order;
@@ -74,6 +74,7 @@ class OrderBy extends AbstractPart
                 $this->order[] = new OrderSpec($v);
             }
         }
+        return $this;
     }
 
     /**
@@ -93,8 +94,9 @@ class OrderBy extends AbstractPart
         return $result;
     }
 
-    public function reset(): void
+    public function reset(): static
     {
         $this->order = [];
+        return $this;
     }
 }

@@ -37,7 +37,7 @@ class Quantifier extends AbstractPart
         return $this->quantifier === null;
     }
 
-    public function set(string|ExpressionInterface|null $quantifier): void
+    public function set(string|ExpressionInterface|null $quantifier): static
     {
         if ($quantifier === null) {
             $this->quantifier = null;
@@ -46,6 +46,7 @@ class Quantifier extends AbstractPart
         } else {
             $this->quantifier = new Literal($quantifier);
         }
+        return $this;
     }
 
     /**

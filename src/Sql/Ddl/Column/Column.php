@@ -7,12 +7,13 @@ namespace PhpDb\Sql\Ddl\Column;
 use Override;
 use PhpDb\Sql\Argument\Identifier;
 use PhpDb\Sql\Argument\Value;
+use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\Ddl\Constraint\ConstraintInterface;
 use PhpDb\Sql\Part\SqlProcessor;
 
 class Column implements ColumnInterface
 {
-    protected string|int|null $default;
+    protected string|int|ArgumentInterface|null $default;
 
     protected bool $isNullable = false;
 
@@ -63,14 +64,14 @@ class Column implements ColumnInterface
         return $this->isNullable;
     }
 
-    public function setDefault(string|int|null $default): static
+    public function setDefault(string|int|ArgumentInterface|null $default): static
     {
         $this->default = $default;
         return $this;
     }
 
     #[Override]
-    public function getDefault(): string|int|null
+    public function getDefault(): string|int|ArgumentInterface|null
     {
         return $this->default;
     }
@@ -113,7 +114,10 @@ class Column implements ColumnInterface
         }
 
         if ($this->default !== null) {
-            $sql .= ' DEFAULT ' . $processor->renderArgument(new Value($this->default), $paramPrefix, $paramIndex);
+            $defaultArg = $this->default instanceof ArgumentInterface
+                ? $this->default
+                : new Value($this->default);
+            $sql .= ' DEFAULT ' . $processor->renderArgument($defaultArg, $paramPrefix, $paramIndex);
         }
 
         foreach ($this->constraints as $constraint) {

@@ -16,7 +16,6 @@ use function array_keys;
 use function array_merge;
 use function implode;
 use function is_array;
-use function strtoupper;
 
 /**
  * Combine SQL statement - allows combining multiple select statements into one
@@ -27,11 +26,11 @@ class Combine extends AbstractPreparableSql
 
     final public const COMBINE = 'combine';
 
-    final public const COMBINE_UNION = 'union';
+    final public const COMBINE_UNION = 'UNION';
 
-    final public const COMBINE_EXCEPT = 'except';
+    final public const COMBINE_EXCEPT = 'EXCEPT';
 
-    final public const COMBINE_INTERSECT = 'intersect';
+    final public const COMBINE_INTERSECT = 'INTERSECT';
 
     /** @var array<array{select: Select, type: string, modifier: string}> */
     private array $combine = [];
@@ -132,8 +131,8 @@ class Combine extends AbstractPreparableSql
                 $parts[] = "({$select})";
             } else {
                 $type    = $combine['modifier']
-                    ? strtoupper("{$combine['type']} {$combine['modifier']}")
-                    : strtoupper($combine['type']);
+                    ? "{$combine['type']} {$combine['modifier']}"
+                    : $combine['type'];
                 $parts[] = "{$type} ({$select})";
             }
         }

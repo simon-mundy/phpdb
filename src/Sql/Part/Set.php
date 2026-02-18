@@ -66,7 +66,7 @@ class Set extends AbstractPart
      * @throws Exception\InvalidArgumentException
      */
     // phpcs:ignore Generic.NamingConventions.ConstructorName
-    public function set(array $values, string|int $flag = 'set'): void
+    public function set(array $values, string|int $flag = 'set'): static
     {
         $this->model ??= [];
 
@@ -81,6 +81,7 @@ class Set extends AbstractPart
 
             $this->model[$k] = $this->normalizeValue($k, $v);
         }
+        return $this;
     }
 
     /**

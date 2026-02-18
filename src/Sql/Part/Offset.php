@@ -29,11 +29,12 @@ class Offset extends AbstractPart
         return $this->offset === null;
     }
 
-    public function set(string|int|null $offset): void
+    public function set(string|int|null $offset): static
     {
         $this->offset = $offset === null
             ? null
             : new Parameter($offset, preferredName: 'offset', typeHint: ParameterContainer::TYPE_INTEGER);
+        return $this;
     }
 
     public function get(): string|int|null

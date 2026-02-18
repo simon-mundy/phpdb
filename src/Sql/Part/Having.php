@@ -36,13 +36,14 @@ class Having extends AbstractPart
     public function addPredicates(
         PredicateInterface|HavingModel|array|Closure|string $predicate,
         string $combination = PredicateSet::OP_AND
-    ): void {
+    ): static {
         if ($predicate instanceof HavingModel) {
             $this->model = $predicate;
         } else {
             $this->model ??= new HavingModel();
             $this->model->addPredicates($predicate, $combination);
         }
+        return $this;
     }
 
     public function __clone()

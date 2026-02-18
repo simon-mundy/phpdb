@@ -21,6 +21,7 @@ use function strtolower;
 
 /**
  * @property Where $where
+ * @property Join $joins
  */
 class Update extends AbstractPreparableSql
 {
@@ -91,8 +92,11 @@ class Update extends AbstractPreparableSql
      *
      * @throws Exception\InvalidArgumentException
      */
-    public function join(array|string|TableIdentifier $name, string $on, string $type = Join::JOIN_INNER): static
-    {
+    public function join(
+        array|string|TableIdentifier $name,
+        PredicateInterface|string $on,
+        string $type = Join::JOIN_INNER
+    ): static {
         ($this->joins ??= new JoinsPart())->join($name, $on, [], $type);
         return $this;
     }
@@ -154,16 +158,19 @@ class Update extends AbstractPreparableSql
 
     /**
      * Variable overloading
-     * Proxies to "where" only
      */
-    public function __get(string $name): ?Where
+    public function __get(string $name): Where|Join|null
     {
-        if (strtolower($name) === 'where') {
-            $where                 = $this->where ??= new WherePart();
-            return $where->model ??= new Where();
+        switch (strtolower($name)) {
+            case 'where':
+                $where = $this->where ??= new WherePart();
+                return $where->model ??= new Where();
+            case 'joins':
+                $joins = $this->joins ??= new JoinsPart();
+                return $joins->model ??= new Join();
+            default:
+                return null;
         }
-
-        return null;
     }
 
     public function __clone()

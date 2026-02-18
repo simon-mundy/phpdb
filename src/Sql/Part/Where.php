@@ -37,13 +37,14 @@ class Where extends AbstractPart
     public function addPredicates(
         PredicateInterface|WhereModel|array|Closure|string $predicate,
         string $combination = PredicateSet::OP_AND
-    ): void {
+    ): static {
         if ($predicate instanceof WhereModel) {
             $this->model = $predicate;
         } else {
             $this->model ??= new WhereModel();
             $this->model->addPredicates($predicate, $combination);
         }
+        return $this;
     }
 
     public function __clone()

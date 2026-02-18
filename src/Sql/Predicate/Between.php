@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace PhpDb\Sql\Predicate;
 
-use LogicException;
 use Override;
 use PhpDb\Sql\AbstractExpression;
 use PhpDb\Sql\Argument\Identifier;
 use PhpDb\Sql\Argument\Value;
 use PhpDb\Sql\ArgumentInterface;
+use PhpDb\Sql\Exception;
 use PhpDb\Sql\Part\SqlProcessor;
 
 use function vsprintf;
@@ -109,15 +109,15 @@ class Between extends AbstractExpression implements PredicateInterface
     public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
     {
         if (! $this->identifier instanceof ArgumentInterface) {
-            throw new LogicException('Identifier must be specified');
+            throw new Exception\InvalidArgumentException('Identifier must be specified');
         }
 
         if (! $this->minValue instanceof ArgumentInterface) {
-            throw new LogicException('minValue must be specified');
+            throw new Exception\InvalidArgumentException('minValue must be specified');
         }
 
         if (! $this->maxValue instanceof ArgumentInterface) {
-            throw new LogicException('maxValue must be specified');
+            throw new Exception\InvalidArgumentException('maxValue must be specified');
         }
 
         $id  = $processor->renderArgument($this->identifier, $paramPrefix, $paramIndex);

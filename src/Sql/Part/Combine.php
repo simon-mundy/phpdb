@@ -6,8 +6,6 @@ namespace PhpDb\Sql\Part;
 
 use PhpDb\Sql\Select;
 
-use function strtoupper;
-
 /**
  * Holds and renders UNION/EXCEPT/INTERSECT clause for SELECT statements.
  */
@@ -25,7 +23,7 @@ class Combine extends AbstractPart
             ? "{$this->combine['type']} {$this->combine['modifier']}"
             : $this->combine['type'];
 
-        return strtoupper($type) . ' ( '
+        return $type . ' ( '
             . $processor->processSubSelect($this->combine['select'])
             . ' )';
     }
@@ -35,13 +33,14 @@ class Combine extends AbstractPart
         return $this->combine === [];
     }
 
-    public function set(Select $select, string $type, string $modifier = ''): void
+    public function set(Select $select, string $type, string $modifier = ''): static
     {
         $this->combine = [
             'select'   => $select,
             'type'     => $type,
             'modifier' => $modifier,
         ];
+        return $this;
     }
 
     public function get(): array
@@ -49,8 +48,9 @@ class Combine extends AbstractPart
         return $this->combine;
     }
 
-    public function reset(): void
+    public function reset(): static
     {
         $this->combine = [];
+        return $this;
     }
 }

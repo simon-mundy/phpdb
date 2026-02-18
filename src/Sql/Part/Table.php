@@ -37,13 +37,14 @@ class Table extends AbstractPart
         return $this->ref === null;
     }
 
-    public function set(string|array|TableIdentifier|Select|null $table): void
+    public function set(string|array|TableIdentifier|Select|null $table): static
     {
         if ($table === null) {
             $this->ref = null;
         } else {
             $this->ref = new TableRef($table);
         }
+        return $this;
     }
 
     /**

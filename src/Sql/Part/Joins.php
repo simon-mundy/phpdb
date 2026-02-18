@@ -84,19 +84,21 @@ class Joins extends AbstractPart
         PredicateInterface|string $on,
         array|string $columns = Select::SQL_STAR,
         string $type = Join::JOIN_INNER
-    ): void {
+    ): static {
         $this->model ??= new Join();
         $this->model->join($name, $on, $columns, $type);
 
         // Normalize eagerly — the last join added is the one we just created
         $rawJoins      = $this->model->getJoins();
         $this->specs[] = new JoinSpec($rawJoins[count($rawJoins) - 1]);
+        return $this;
     }
 
-    public function reset(): void
+    public function reset(): static
     {
         $this->model = null;
         $this->specs = [];
+        return $this;
     }
 
     public function __clone()

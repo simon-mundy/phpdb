@@ -93,11 +93,11 @@ class Select extends AbstractPreparableSql
 
     final public const COMBINE = 'combine';
 
-    final public const COMBINE_UNION = 'union';
+    final public const COMBINE_UNION = 'UNION';
 
-    final public const COMBINE_EXCEPT = 'except';
+    final public const COMBINE_EXCEPT = 'EXCEPT';
 
-    final public const COMBINE_INTERSECT = 'intersect';
+    final public const COMBINE_INTERSECT = 'INTERSECT';
 
     protected bool $tableReadOnly = false;
 
@@ -213,7 +213,7 @@ class Select extends AbstractPreparableSql
     public function where(
         PredicateInterface|array|string|Closure $predicate,
         string $combination = Predicate\PredicateSet::OP_AND
-    ): self {
+    ): static {
         ($this->where ??= new WherePart())->addPredicates($predicate, $combination);
 
         return $this;
@@ -413,21 +413,27 @@ class Select extends AbstractPreparableSql
         if (($partSql = $this->joins?->toSql($processor)) !== null) {
             $sql .= ' ' . $partSql;
         }
+
         if (($partSql = $this->where?->toSql($processor)) !== null) {
             $sql .= ' ' . $partSql;
         }
+
         if (($partSql = $this->groupBy?->toSql($processor)) !== null) {
             $sql .= ' ' . $partSql;
         }
+
         if (($partSql = $this->having?->toSql($processor)) !== null) {
             $sql .= ' ' . $partSql;
         }
+
         if (($partSql = $this->orderBy?->toSql($processor)) !== null) {
             $sql .= ' ' . $partSql;
         }
+
         if (($partSql = $this->limit?->toSql($processor)) !== null) {
             $sql .= ' ' . $partSql;
         }
+
         if (($partSql = $this->offset?->toSql($processor)) !== null) {
             $sql .= ' ' . $partSql;
         }
