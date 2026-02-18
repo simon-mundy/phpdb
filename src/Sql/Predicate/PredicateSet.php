@@ -179,10 +179,25 @@ class PredicateSet implements PredicateInterface, Countable
         }
 
         if ($predicateCount === 1) {
-            [$operator, $predicate] = $this->predicates[0];
-            $sql = $predicate->renderSql($processor, $paramPrefix, $paramIndex);
+            [, $predicate] = $this->predicates[0];
+            $sql           = $predicate->renderSql($processor, $paramPrefix, $paramIndex);
 
             return $predicate instanceof self ? "({$sql})" : $sql;
+        }
+
+        if ($predicateCount === 2) {
+            [, $p1]     = $this->predicates[0];
+            [$op2, $p2] = $this->predicates[1];
+            $sql1       = $p1->renderSql($processor, $paramPrefix, $paramIndex);
+            $sql2       = $p2->renderSql($processor, $paramPrefix, $paramIndex);
+            if ($p1 instanceof self) {
+                $sql1 = "({$sql1})";
+            }
+            if ($p2 instanceof self) {
+                $sql2 = "({$sql2})";
+            }
+
+            return "{$sql1} {$op2} {$sql2}";
         }
 
         $parts = [];

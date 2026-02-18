@@ -65,7 +65,7 @@ class OrderBy extends AbstractPart
                 $this->order[] = new OrderSpec($k, $v);
             } elseif (str_contains($v, ' ')) {
                 // 'column DESC'
-                [$col, $dir] = explode(' ', $v, 2);
+                [$col, $dir]   = explode(' ', $v, 2);
                 $this->order[] = new OrderSpec($col, $dir);
             } else {
                 // 'column' (no direction)

@@ -129,7 +129,7 @@ class Select extends AbstractPreparableSql
      */
     public function __construct(array|string|TableIdentifier|null $table = null)
     {
-        $this->table = new Table();
+        $this->table   = new Table();
         $this->columns = new Columns();
 
         if ($table) {
@@ -357,8 +357,8 @@ class Select extends AbstractPreparableSql
             self::TABLE      => $this->table->get(),
             self::QUANTIFIER => $this->quantifier?->get(),
             self::COLUMNS    => $this->columns->get(),
-            self::JOINS      => $joins->model ??= new Join(),
-            self::WHERE      => $where->model ??= new Where(),
+            self::JOINS      => $joins->model  ??= new Join(),
+            self::WHERE      => $where->model  ??= new Where(),
             self::ORDER      => $this->orderBy?->get() ?? [],
             self::GROUP      => $this->groupBy?->get() ?? [],
             self::HAVING     => $having->model ??= new Having(),
@@ -395,7 +395,7 @@ class Select extends AbstractPreparableSql
         if ($this->joins !== null) {
             $joinColumnInfo = [];
             foreach ($this->joins->getSpecs() as $spec) {
-                $joinTableName = $spec->alias ?? $spec->table;
+                $joinTableName    = $spec->alias ?? $spec->table;
                 $resolvedJoinName = $processor->resolveTable($joinTableName);
 
                 $joinColumnInfo[] = [
@@ -502,7 +502,7 @@ class Select extends AbstractPreparableSql
         }
 
         if ($hasCombine) {
-            $sql .= ' )';
+            $sql    .= ' )';
             $partSql = $this->combine->toSql($processor);
             if ($partSql !== null) {
                 $sql .= ' ' . $partSql;
@@ -543,16 +543,34 @@ class Select extends AbstractPreparableSql
      */
     public function __clone()
     {
-        $this->table = clone $this->table;
+        $this->table   = clone $this->table;
         $this->columns = clone $this->columns;
-        if ($this->quantifier !== null) $this->quantifier = clone $this->quantifier;
-        if ($this->joins !== null) $this->joins = clone $this->joins;
-        if ($this->where !== null) $this->where = clone $this->where;
-        if ($this->groupBy !== null) $this->groupBy = clone $this->groupBy;
-        if ($this->having !== null) $this->having = clone $this->having;
-        if ($this->orderBy !== null) $this->orderBy = clone $this->orderBy;
-        if ($this->limit !== null) $this->limit = clone $this->limit;
-        if ($this->offset !== null) $this->offset = clone $this->offset;
-        if ($this->combine !== null) $this->combine = clone $this->combine;
+        if ($this->quantifier !== null) {
+            $this->quantifier = clone $this->quantifier;
+        }
+        if ($this->joins !== null) {
+            $this->joins = clone $this->joins;
+        }
+        if ($this->where !== null) {
+            $this->where = clone $this->where;
+        }
+        if ($this->groupBy !== null) {
+            $this->groupBy = clone $this->groupBy;
+        }
+        if ($this->having !== null) {
+            $this->having = clone $this->having;
+        }
+        if ($this->orderBy !== null) {
+            $this->orderBy = clone $this->orderBy;
+        }
+        if ($this->limit !== null) {
+            $this->limit = clone $this->limit;
+        }
+        if ($this->offset !== null) {
+            $this->offset = clone $this->offset;
+        }
+        if ($this->combine !== null) {
+            $this->combine = clone $this->combine;
+        }
     }
 }

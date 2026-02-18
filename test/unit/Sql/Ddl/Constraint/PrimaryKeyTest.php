@@ -17,9 +17,9 @@ final class PrimaryKeyTest extends TestCase
     {
         $pk = new PrimaryKey('foo');
 
-        $processor = new SqlProcessor(new TrustingSql92Platform());
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql = $pk->renderSql($processor, '', $paramIndex);
+        $sql        = $pk->renderSql($processor, '', $paramIndex);
 
         self::assertEquals('PRIMARY KEY ("foo")', $sql);
     }

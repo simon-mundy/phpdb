@@ -7,7 +7,9 @@ namespace PhpDb\Sql\Part;
 use PhpDb\Sql\Select;
 use PhpDb\Sql\TableIdentifier;
 
+use function current;
 use function is_array;
+use function key;
 
 /**
  * Normalized table reference with optional alias.

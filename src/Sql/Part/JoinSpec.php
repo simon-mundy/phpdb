@@ -11,6 +11,7 @@ use PhpDb\Sql\Predicate\PredicateInterface;
 use PhpDb\Sql\Select;
 use PhpDb\Sql\TableIdentifier;
 
+use function current;
 use function get_debug_type;
 use function is_array;
 use function is_string;
@@ -37,7 +38,12 @@ final readonly class JoinSpec
     public array $columnRefs;
 
     /**
-     * @param array{name: array|string|TableIdentifier, on: PredicateInterface|string, columns: array, type: string} $join
+     * @param array{
+     *     name: array|string|TableIdentifier,
+     *     on: PredicateInterface|string,
+     *     columns: array,
+     *     type: string,
+     * } $join
      */
     public function __construct(array $join)
     {
@@ -45,13 +51,13 @@ final readonly class JoinSpec
 
         if (is_array($name)) {
             $this->alias = key($name);
-            $table = current($name);
+            $table       = current($name);
         } else {
             $this->alias = null;
-            $table = $name;
+            $table       = $name;
         }
 
-        $this->table = $table;
+        $this->table     = $table;
         $this->tableType = match (true) {
             $table instanceof Expression       => JoinTableType::Expression,
             $table instanceof TableIdentifier  => JoinTableType::TableIdentifier,

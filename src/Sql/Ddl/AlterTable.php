@@ -12,6 +12,7 @@ use PhpDb\Sql\Platform\PlatformDecoratorInterface;
 use PhpDb\Sql\TableIdentifier;
 
 use function array_key_exists;
+use function implode;
 use function rtrim;
 
 class AlterTable extends AbstractDdl

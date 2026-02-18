@@ -10,7 +10,6 @@ use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ExpressionInterface;
 
 use function strcasecmp;
-use function strtoupper;
 use function trim;
 
 /**

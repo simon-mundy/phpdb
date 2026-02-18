@@ -45,9 +45,9 @@ final readonly class ColumnRef
     ) {
         // Star column — no alias
         if ($column === $star) {
-            $this->arg = new Literal('*');
-            $this->alias = null;
-            $this->isStar = true;
+            $this->arg           = new Literal('*');
+            $this->alias         = null;
+            $this->isStar        = true;
             $this->containsAlias = false;
             return;
         }
@@ -63,7 +63,7 @@ final readonly class ColumnRef
 
         // Explicit alias from string key
         if (is_string($key)) {
-            $this->alias = $key;
+            $this->alias         = $key;
             $this->containsAlias = false;
             return;
         }
@@ -72,12 +72,12 @@ final readonly class ColumnRef
         if ($column instanceof ExpressionInterface) {
             $this->containsAlias = $column instanceof Expression
                 && stripos($column->getExpression(), ' as ') !== false;
-            $this->alias = null;
+            $this->alias         = null;
             return;
         }
 
         // String column at integer key — auto-alias with the column name itself
-        $this->alias = $column;
+        $this->alias         = $column;
         $this->containsAlias = false;
     }
 }

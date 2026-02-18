@@ -7,7 +7,6 @@ namespace PhpDbTest\Sql;
 use PhpDb\Adapter\Driver\DriverInterface;
 use PhpDb\Adapter\Driver\StatementInterface;
 use PhpDb\Adapter\ParameterContainer;
-use PhpDb\Adapter\Platform\Sql92;
 use PhpDb\Sql\Argument;
 use PhpDb\Sql\Argument\Identifier;
 use PhpDb\Sql\Argument\Value;
@@ -1133,8 +1132,8 @@ final class SelectTest extends TestCase
 
         $select48combined = new Select();
         $select48         = $select48combined->from(['sub' => $select48])->order('id DESC');
-        $sqlPrep48 = 'SELECT "sub".* FROM (( SELECT "foo".* FROM "foo" WHERE a = b ) UNION ( SELECT "bar".* FROM "bar" WHERE c = d )) AS "sub" ORDER BY "id" DESC';
-        $sqlStr48  = 'SELECT "sub".* FROM (( SELECT "foo".* FROM "foo" WHERE a = b ) UNION ( SELECT "bar".* FROM "bar" WHERE c = d )) AS "sub" ORDER BY "id" DESC';
+        $sqlPrep48        = 'SELECT "sub".* FROM (( SELECT "foo".* FROM "foo" WHERE a = b ) UNION ( SELECT "bar".* FROM "bar" WHERE c = d )) AS "sub" ORDER BY "id" DESC';
+        $sqlStr48         = 'SELECT "sub".* FROM (( SELECT "foo".* FROM "foo" WHERE a = b ) UNION ( SELECT "bar".* FROM "bar" WHERE c = d )) AS "sub" ORDER BY "id" DESC';
 
         //Expression as joinName
         $select49 = new Select();
@@ -1177,7 +1176,7 @@ final class SelectTest extends TestCase
         $subSelect53->from('bar')->columns(['id'])->limit(10)->offset(9);
         $select53 = new Select();
         $select53->from('foo')->where(new In('bar_id', $subSelect53))->limit(11)->offset(12);
-        $params53 = ['limit' => 11, 'offset' => 12, 'subselect1limit' => 10, 'subselect1offset' => 9];
+        $params53  = ['limit' => 11, 'offset' => 12, 'subselect1limit' => 10, 'subselect1offset' => 9];
         $sqlPrep53 = 'SELECT "foo".* FROM "foo" WHERE "bar_id" IN (SELECT "bar"."id" AS "id" FROM "bar" LIMIT :subselect1limit OFFSET :subselect1offset) LIMIT :limit OFFSET :offset';
         $sqlStr53  = 'SELECT "foo".* FROM "foo" WHERE "bar_id" IN (SELECT "bar"."id" AS "id" FROM "bar" LIMIT \'10\' OFFSET \'9\') LIMIT \'11\' OFFSET \'12\'';
 

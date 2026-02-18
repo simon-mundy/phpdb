@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace PhpDbTest\Sql\Predicate;
 
 use PhpDb\Sql\Argument;
-use PhpDb\Sql\ArgumentInterface;
-use PhpDb\Sql\ArgumentType;
 use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Predicate\NotIn;
 use PhpDb\Sql\Select;

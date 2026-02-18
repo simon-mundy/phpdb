@@ -131,7 +131,7 @@ class Combine extends AbstractPreparableSql
             if ($i === 0) {
                 $parts[] = "({$select})";
             } else {
-                $type = $combine['modifier']
+                $type    = $combine['modifier']
                     ? strtoupper("{$combine['type']} {$combine['modifier']}")
                     : strtoupper($combine['type']);
                 $parts[] = "{$type} ({$select})";

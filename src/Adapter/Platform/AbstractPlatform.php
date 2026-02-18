@@ -11,10 +11,12 @@ use PhpDb\Adapter\Exception\VunerablePlatformQuoteException;
 
 use function addcslashes;
 use function array_map;
+use function ctype_alnum;
 use function implode;
 use function preg_split;
 use function str_replace;
 use function strtolower;
+use function strtr;
 
 use const PREG_SPLIT_DELIM_CAPTURE;
 use const PREG_SPLIT_NO_EMPTY;
@@ -44,6 +46,10 @@ abstract class AbstractPlatform implements PlatformInterface
     {
         if (! $this->quoteIdentifiers) {
             return $identifier;
+        }
+
+        if ($additionalSafeWords === [] && ctype_alnum(strtr($identifier, ['_' => 'a', '$' => 'a']))) {
+            return $this->quoteIdentifier[0] . $identifier . $this->quoteIdentifier[1];
         }
 
         $safeWords = self::SAFE_WORDS;

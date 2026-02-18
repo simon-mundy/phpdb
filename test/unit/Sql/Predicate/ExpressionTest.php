@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace PhpDbTest\Sql\Predicate;
 
-use PhpDb\Sql\Argument;
 use PhpDb\Sql\Argument\Select;
 use PhpDb\Sql\Argument\Value;
 use PhpDb\Sql\ArgumentInterface;

@@ -36,7 +36,7 @@ final class IntegerTest extends TestCase
         $column->addConstraint(new PrimaryKey());
 
         $paramIndex = 1;
-        $sql = $column->renderSql($processor, '', $paramIndex);
+        $sql        = $column->renderSql($processor, '', $paramIndex);
 
         self::assertEquals('"foo" INTEGER NOT NULL PRIMARY KEY', $sql);
     }

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace PhpDb\Sql\Part;
 
 use PhpDb\Sql\ArgumentType;
-use PhpDb\Sql\ExpressionInterface;
 
 use function implode;
 use function is_array;

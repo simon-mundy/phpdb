@@ -8,6 +8,8 @@ use PhpDb\Adapter\Driver\DriverInterface;
 use PhpDb\Adapter\Driver\PdoDriverInterface;
 use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Adapter\Platform\PlatformInterface;
+use PhpDb\Sql\Argument\NullValue;
+use PhpDb\Sql\Argument\Parameter;
 use PhpDb\Sql\Argument\Select as SelectArgument;
 use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Part\Table;
@@ -16,7 +18,6 @@ use PhpDb\Sql\Platform\PlatformDecoratorInterface;
 use function array_flip;
 use function array_key_exists;
 use function array_keys;
-use function array_values;
 use function count;
 use function implode;
 use function range;
@@ -92,16 +93,19 @@ class Insert extends AbstractPreparableSql
 
         if ($flag === self::VALUES_SET) {
             if ($this->isAssocativeArray($values)) {
-                $this->columns = $values;
+                $this->columns = [];
+                foreach ($values as $column => $value) {
+                    $this->columns[$column] = $this->normalizeValue($column, $value);
+                }
             } else {
                 $i = 0;
-                foreach ($this->columns as $column => $_) {
-                    $this->columns[$column] = $values[$i++] ?? null;
+                foreach (array_keys($this->columns) as $column) {
+                    $this->columns[$column] = $this->normalizeValue($column, $values[$i++] ?? null);
                 }
             }
         } else {
             foreach ($values as $column => $value) {
-                $this->columns[$column] = $value;
+                $this->columns[$column] = $this->normalizeValue($column, $value);
             }
         }
 
@@ -131,10 +135,15 @@ class Insert extends AbstractPreparableSql
      */
     public function getRawState(?string $key = null): TableIdentifier|string|array
     {
+        $values = [];
+        foreach ($this->columns as $arg) {
+            $values[] = $arg instanceof ArgumentInterface ? $arg->getValue() : $arg;
+        }
+
         $rawState = [
             'table'   => $this->table->get(),
             'columns' => array_keys($this->columns),
-            'values'  => array_values($this->columns),
+            'values'  => $values,
         ];
         return $key !== null && array_key_exists($key, $rawState) ? $rawState[$key] : $rawState;
     }
@@ -167,7 +176,7 @@ class Insert extends AbstractPreparableSql
         $tableSql = $processor->resolveTable($this->table->get());
 
         if ($this->select !== null) {
-            $selectSql  = $processor->processSubSelect($this->select);
+            $selectSql   = $processor->processSubSelect($this->select);
             $columnNames = array_keys($this->columns);
             if ($columnNames !== []) {
                 $columns = [];
@@ -187,31 +196,17 @@ class Insert extends AbstractPreparableSql
         $values      = [];
         $i           = 0;
         $isPdoDriver = $driver instanceof PdoDriverInterface;
-        $paramPrefix = $this->processInfo['paramPrefix'];
 
         foreach ($this->columns as $column => $value) {
             $columns[] = $platform->quoteIdentifier($column);
 
-            if ($value instanceof ArgumentInterface) {
-                $values[] = match ($value->getType()) {
-                    ArgumentType::Parameter => $processor->renderParameter($value, $isPdoDriver ? 'c_' . $i++ : null),
-                    ArgumentType::Select    => $processor->renderExpression($value->getValue()),
-                    ArgumentType::Literal   => $value->getValue(),
-                    default                 => $platform->quoteValue((string) $value->getValue()),
-                };
-            } elseif ($value instanceof Select) {
-                $values[] = '(' . $processor->processSubSelect($value) . ')';
-            } elseif ($value instanceof ExpressionInterface) {
-                $values[] = $processor->renderExpression($value);
-            } elseif ($value === null) {
-                $values[] = 'NULL';
-            } elseif ($parameterContainer instanceof ParameterContainer) {
-                $name = $paramPrefix . ($isPdoDriver ? 'c_' . $i++ : $column);
-                $parameterContainer->offsetSet($name, $value);
-                $values[] = $driver->formatParameterName($name);
-            } else {
-                $values[] = $platform->quoteValue((string) $value);
-            }
+            $values[] = match ($value->getType()) {
+                ArgumentType::Parameter => $processor->renderParameter($value, $isPdoDriver ? 'c_' . $i++ : null),
+                ArgumentType::Select    => $processor->renderExpression($value->getValue()),
+                ArgumentType::Literal   => $value->getValue(),
+                ArgumentType::Null      => 'NULL',
+                default                 => $platform->quoteValue((string) $value->getValue()),
+            };
         }
 
         return $keyword . ' ' . $tableSql
@@ -226,7 +221,7 @@ class Insert extends AbstractPreparableSql
      */
     public function __set(string $name, mixed $value): void
     {
-        $this->columns[$name] = $value;
+        $this->columns[$name] = $this->normalizeValue($name, $value);
     }
 
     /**
@@ -275,6 +270,28 @@ class Insert extends AbstractPreparableSql
             );
         }
 
-        return $this->columns[$name];
+        $value = $this->columns[$name];
+        return $value instanceof ArgumentInterface ? $value->getValue() : $value;
+    }
+
+    private function normalizeValue(string $column, mixed $value): ArgumentInterface
+    {
+        if ($value === null) {
+            return new NullValue();
+        }
+
+        if ($value instanceof ArgumentInterface) {
+            return $value;
+        }
+
+        if ($value instanceof Select) {
+            return new SelectArgument($value);
+        }
+
+        if ($value instanceof ExpressionInterface) {
+            return new SelectArgument($value);
+        }
+
+        return new Parameter($value, preferredName: $column);
     }
 }

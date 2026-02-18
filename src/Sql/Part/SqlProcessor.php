@@ -7,20 +7,13 @@ namespace PhpDb\Sql\Part;
 use PhpDb\Adapter\Driver\DriverInterface;
 use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Adapter\Platform\PlatformInterface;
-use PhpDb\Sql\Argument\Identifier;
-use PhpDb\Sql\Argument\Identifiers;
-use PhpDb\Sql\Argument\Literal;
 use PhpDb\Sql\Argument\Parameter;
-use PhpDb\Sql\Argument\Select as SelectArgument;
-use PhpDb\Sql\Argument\Value;
-use PhpDb\Sql\Argument\Values;
 use PhpDb\Sql\ArgumentInterface;
-use PhpDb\Sql\Exception;
+use PhpDb\Sql\ArgumentType;
 use PhpDb\Sql\ExpressionInterface;
 use PhpDb\Sql\Platform\PlatformDecoratorInterface;
 use PhpDb\Sql\Select;
 use PhpDb\Sql\TableIdentifier;
-use ValueError;
 
 use function implode;
 use function str_replace;
@@ -94,7 +87,7 @@ class SqlProcessor
             $processInfoContext->processInfo['paramPrefix']    = 'subselect'
                 . $processInfoContext->processInfo['subselectCount'];
 
-            $sql = $decorator->buildSqlString(
+            $sql                  = $decorator->buildSqlString(
                 $this->platform,
                 $this->driver,
                 $this->parameterContainer
@@ -146,6 +139,11 @@ class SqlProcessor
         ExpressionInterface $expression,
         ?string $namedParameterPrefix = null
     ): string {
+        if ($this->parameterContainer === null) {
+            $paramIndex = 0;
+            return $expression->renderSql($this, '', $paramIndex);
+        }
+
         $namedParameterPrefix = $this->resolveParamPrefix($namedParameterPrefix);
         $paramIndex           = &$this->instanceParameterIndex[$namedParameterPrefix];
 
@@ -162,27 +160,28 @@ class SqlProcessor
         string $paramPrefix,
         int &$paramIndex,
     ): string {
-        return match (true) {
-            $argument instanceof Value => $this->parameterContainer instanceof ParameterContainer
+        return match ($argument->getType()) {
+            ArgumentType::Value => $this->parameterContainer instanceof ParameterContainer
                 ? $this->processExpressionParameterName(
                     $argument->getValue(),
                     $paramPrefix,
                     $paramIndex,
                 )
                 : $this->platform->quoteValue((string) $argument->getValue()),
-            $argument instanceof Identifier => $this->platform->quoteIdentifierInFragment($argument->getValue()),
-            $argument instanceof Literal => $argument->getValue(),
-            $argument instanceof Values => $this->renderValuesArgument($argument, $paramPrefix, $paramIndex),
-            $argument instanceof Identifiers => $this->processIdentifiersArgument($argument),
-            $argument instanceof SelectArgument => $this->renderSelectArgument($argument, $paramPrefix, $paramIndex),
-            default => throw new Exception\InvalidArgumentException('Unknown argument type'),
+            ArgumentType::Identifier => $this->platform->quoteIdentifierInFragment($argument->getValue()),
+            ArgumentType::Literal => $argument->getValue(),
+            ArgumentType::Values => $this->renderValuesArgument($argument, $paramPrefix, $paramIndex),
+            ArgumentType::Identifiers => $this->processIdentifiersArgument($argument),
+            ArgumentType::Select => $this->renderSelectArgument($argument, $paramPrefix, $paramIndex),
+            ArgumentType::Parameter => $this->renderParameter($argument),
+            ArgumentType::Null => 'NULL',
         };
     }
 
     /**
      * Render a Values argument as a parenthesised comma-separated list: (val1, val2, val3)
      */
-    private function renderValuesArgument(Values $argument, string $paramPrefix, int &$paramIndex): string
+    private function renderValuesArgument(ArgumentInterface $argument, string $paramPrefix, int &$paramIndex): string
     {
         $values          = $argument->getValue();
         $processedValues = [];
@@ -203,7 +202,7 @@ class SqlProcessor
     /**
      * Render a SelectArgument: wraps Select in (...), renders ExpressionInterface via renderSql().
      */
-    private function renderSelectArgument(SelectArgument $argument, string $paramPrefix, int &$paramIndex): string
+    private function renderSelectArgument(ArgumentInterface $argument, string $paramPrefix, int &$paramIndex): string
     {
         $value = $argument->getValue();
 
@@ -215,7 +214,7 @@ class SqlProcessor
             return $value->renderSql($this, $paramPrefix, $paramIndex);
         }
 
-        throw new \ValueError('Invalid SelectArgument value');
+        throw new ValueError('Invalid SelectArgument value');
     }
 
     private function processIdentifiersArgument(ArgumentInterface $argument): string

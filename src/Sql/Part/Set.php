@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace PhpDb\Sql\Part;
 
-use Laminas\Stdlib\PriorityList;
 use PhpDb\Adapter\Driver\PdoDriverInterface;
-use PhpDb\Sql\Argument\Literal;
+use PhpDb\Sql\Argument\NullValue;
 use PhpDb\Sql\Argument\Parameter;
 use PhpDb\Sql\Argument\Select as SelectArgument;
 use PhpDb\Sql\ArgumentInterface;
@@ -16,7 +15,6 @@ use PhpDb\Sql\ExpressionInterface;
 use PhpDb\Sql\Select;
 
 use function implode;
-use function is_numeric;
 use function is_string;
 
 /**
@@ -25,11 +23,12 @@ use function is_string;
  */
 class Set extends AbstractPart
 {
-    public ?PriorityList $model = null;
+    /** @var array<string, ArgumentInterface>|null */
+    public ?array $model = null;
 
     public function toSql(SqlProcessor $processor): ?string
     {
-        if ($this->model === null || $this->model->count() === 0) {
+        if ($this->model === null || $this->model === []) {
             return null;
         }
 
@@ -38,7 +37,6 @@ class Set extends AbstractPart
         $isPdoDriver = $processor->driver instanceof PdoDriverInterface;
 
         foreach ($this->model as $column => $arg) {
-            /** @var ArgumentInterface $arg */
             $prefix = $processor->platform->quoteIdentifierInFragment($column) . ' = ';
 
             $setSql[] = $prefix . match ($arg->getType()) {
@@ -48,6 +46,7 @@ class Set extends AbstractPart
                 ),
                 ArgumentType::Select  => $processor->renderExpression($arg->getValue()),
                 ArgumentType::Literal => $arg->getValue(),
+                ArgumentType::Null    => 'NULL',
                 default               => $processor->platform->quoteValue((string) $arg->getValue()),
             };
         }
@@ -57,7 +56,7 @@ class Set extends AbstractPart
 
     public function isEmpty(): bool
     {
-        return $this->model === null || $this->model->count() === 0;
+        return $this->model === null || $this->model === [];
     }
 
     /**
@@ -66,21 +65,21 @@ class Set extends AbstractPart
      * @param string|int $flag One of VALUES_SET, VALUES_MERGE, or a numeric priority
      * @throws Exception\InvalidArgumentException
      */
+    // phpcs:ignore Generic.NamingConventions.ConstructorName
     public function set(array $values, string|int $flag = 'set'): void
     {
-        $this->initModel();
+        $this->model ??= [];
 
         if ($flag === 'set') {
-            $this->model->clear();
+            $this->model = [];
         }
 
-        $priority = is_numeric($flag) ? $flag : 0;
         foreach ($values as $k => $v) {
             if (! is_string($k)) {
                 throw new Exception\InvalidArgumentException('set() expects a string for the value key');
             }
 
-            $this->model->insert($k, $this->normalizeValue($k, $v), $priority);
+            $this->model[$k] = $this->normalizeValue($k, $v);
         }
     }
 
@@ -95,7 +94,6 @@ class Set extends AbstractPart
 
         $result = [];
         foreach ($this->model as $column => $arg) {
-            /** @var ArgumentInterface $arg */
             $result[$column] = $arg->getValue();
         }
         return $result;
@@ -103,17 +101,7 @@ class Set extends AbstractPart
 
     public function __clone()
     {
-        if ($this->model !== null) {
-            $this->model = clone $this->model;
-        }
-    }
-
-    private function initModel(): void
-    {
-        if ($this->model === null) {
-            $this->model = new PriorityList();
-            $this->model->isLIFO(false);
-        }
+        // Plain array of immutable value objects — no deep clone needed
     }
 
     /**
@@ -134,7 +122,7 @@ class Set extends AbstractPart
         }
 
         if ($value === null) {
-            return new Literal('NULL');
+            return new NullValue();
         }
 
         // Scalar — bind as parameter

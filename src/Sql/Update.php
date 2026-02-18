@@ -168,7 +168,7 @@ class Update extends AbstractPreparableSql
     public function __get(string $name): ?Where
     {
         if (strtolower($name) === 'where') {
-            $where = $this->where ??= new WherePart();
+            $where                 = $this->where ??= new WherePart();
             return $where->model ??= new Where();
         }
 
@@ -179,7 +179,11 @@ class Update extends AbstractPreparableSql
     {
         $this->table = clone $this->table;
         $this->set   = clone $this->set;
-        if ($this->where !== null) $this->where = clone $this->where;
-        if ($this->joins !== null) $this->joins = clone $this->joins;
+        if ($this->where !== null) {
+            $this->where = clone $this->where;
+        }
+        if ($this->joins !== null) {
+            $this->joins = clone $this->joins;
+        }
     }
 }

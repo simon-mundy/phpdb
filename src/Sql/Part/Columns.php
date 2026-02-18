@@ -8,8 +8,12 @@ use PhpDb\Sql\ArgumentType;
 use PhpDb\Sql\ExpressionInterface;
 use PhpDb\Sql\Select;
 
+use function count;
+use function current;
 use function implode;
+use function is_array;
 use function is_numeric;
+use function key;
 
 /**
  * Holds column definitions and renders the column list for SELECT statements.
@@ -79,9 +83,13 @@ class Columns extends AbstractPart
         }
 
         $columnSql = match ($ref->arg->getType()) {
-            ArgumentType::Identifier => $prefix . $processor->platform->quoteIdentifierInFragment($ref->arg->getValue()),
-            ArgumentType::Select     => $processor->renderExpression($ref->arg->getValue(), $ref->alias ?? 'column'),
-            ArgumentType::Literal    => $ref->arg->getValue(),
+            ArgumentType::Identifier => $prefix
+                . $processor->platform->quoteIdentifierInFragment($ref->arg->getValue()),
+            ArgumentType::Select => $processor->renderExpression(
+                $ref->arg->getValue(),
+                $ref->alias ?? 'column',
+            ),
+            ArgumentType::Literal => $ref->arg->getValue(),
         };
 
         if ($ref->alias !== null) {
@@ -114,7 +122,7 @@ class Columns extends AbstractPart
 
         if ($alias !== null) {
             $this->rawColumns[$alias] = $column;
-            $this->columnRefs[] = new ColumnRef($alias, $column);
+            $this->columnRefs[]       = new ColumnRef($alias, $column);
         } else {
             $this->rawColumns[] = $column;
             $this->columnRefs[] = new ColumnRef(count($this->columnRefs), $column);

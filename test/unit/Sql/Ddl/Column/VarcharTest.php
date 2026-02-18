@@ -33,7 +33,7 @@ final class VarcharTest extends TestCase
         $column->setDefault('bar');
 
         $paramIndex = 1;
-        $sql = $column->renderSql($processor, '', $paramIndex);
+        $sql        = $column->renderSql($processor, '', $paramIndex);
 
         self::assertEquals('"foo" VARCHAR(20) NOT NULL DEFAULT \'bar\'', $sql);
     }

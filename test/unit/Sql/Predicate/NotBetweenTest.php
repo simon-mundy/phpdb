@@ -6,8 +6,6 @@ namespace PhpDbTest\Sql\Predicate;
 
 use Override;
 use PhpDb\Sql\Argument;
-use PhpDb\Sql\ArgumentInterface;
-use PhpDb\Sql\ArgumentType;
 use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Predicate\NotBetween;
 use PhpDbTest\TestAsset\TrustingSql92Platform;

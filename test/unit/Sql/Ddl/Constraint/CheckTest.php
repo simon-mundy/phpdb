@@ -18,9 +18,9 @@ final class CheckTest extends TestCase
     {
         $check = new Check('id>0', 'foo');
 
-        $processor = new SqlProcessor(new TrustingSql92Platform());
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql = $check->renderSql($processor, '', $paramIndex);
+        $sql        = $check->renderSql($processor, '', $paramIndex);
 
         self::assertEquals('CONSTRAINT "foo" CHECK (id>0)', $sql);
     }

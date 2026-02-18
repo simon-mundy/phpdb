@@ -9,6 +9,7 @@ use PhpDb\Sql\Predicate\PredicateInterface;
 use PhpDb\Sql\Select;
 use PhpDb\Sql\TableIdentifier;
 
+use function count;
 use function implode;
 
 /**
@@ -88,7 +89,7 @@ class Joins extends AbstractPart
         $this->model->join($name, $on, $columns, $type);
 
         // Normalize eagerly — the last join added is the one we just created
-        $rawJoins = $this->model->getJoins();
+        $rawJoins      = $this->model->getJoins();
         $this->specs[] = new JoinSpec($rawJoins[count($rawJoins) - 1]);
     }
 
@@ -104,5 +105,4 @@ class Joins extends AbstractPart
             $this->model = clone $this->model;
         }
     }
-
 }

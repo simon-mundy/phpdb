@@ -118,7 +118,7 @@ class Delete extends AbstractPreparableSql
     public function __get(string $name): ?Where
     {
         if (strtolower($name) === 'where') {
-            $where = $this->where ??= new WherePart();
+            $where                 = $this->where ??= new WherePart();
             return $where->model ??= new Where();
         }
 
@@ -128,6 +128,8 @@ class Delete extends AbstractPreparableSql
     public function __clone()
     {
         $this->table = clone $this->table;
-        if ($this->where !== null) $this->where = clone $this->where;
+        if ($this->where !== null) {
+            $this->where = clone $this->where;
+        }
     }
 }

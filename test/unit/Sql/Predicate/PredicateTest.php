@@ -7,7 +7,6 @@ namespace PhpDbTest\Sql\Predicate;
 use ErrorException;
 use PhpDb\Adapter\Exception\VunerablePlatformQuoteException;
 use PhpDb\Adapter\Platform\Sql92;
-use PhpDb\Sql\Argument;
 use PhpDb\Sql\Expression;
 use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Predicate\Predicate;

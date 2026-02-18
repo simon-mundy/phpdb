@@ -17,9 +17,9 @@ final class UniqueKeyTest extends TestCase
     {
         $uk = new UniqueKey('foo', 'my_uk');
 
-        $processor = new SqlProcessor(new TrustingSql92Platform());
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql = $uk->renderSql($processor, '', $paramIndex);
+        $sql        = $uk->renderSql($processor, '', $paramIndex);
 
         self::assertEquals('CONSTRAINT "my_uk" UNIQUE ("foo")', $sql);
     }

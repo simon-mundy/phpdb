@@ -39,8 +39,8 @@ class LiteralTest extends TestCase
 
     public function testGetExpressionData(): void
     {
-        $literal   = new Literal('bar');
-        $processor = new SqlProcessor(new TrustingSql92Platform());
+        $literal    = new Literal('bar');
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
 
         $sql = $literal->renderSql($processor, '', $paramIndex);
@@ -50,8 +50,8 @@ class LiteralTest extends TestCase
 
     public function testGetExpressionDataWillEscapePercent(): void
     {
-        $literal   = new Literal('X LIKE "foo%"');
-        $processor = new SqlProcessor(new TrustingSql92Platform());
+        $literal    = new Literal('X LIKE "foo%"');
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
 
         // renderSql returns the literal as-is (no percent escaping needed in renderSql path)

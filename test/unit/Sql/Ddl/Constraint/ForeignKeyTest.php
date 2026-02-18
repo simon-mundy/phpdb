@@ -136,9 +136,9 @@ final class ForeignKeyTest extends TestCase
     {
         $fk = new ForeignKey('foo', 'bar', 'baz', 'bam', 'CASCADE', 'SET NULL');
 
-        $processor = new SqlProcessor(new TrustingSql92Platform());
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql = $fk->renderSql($processor, '', $paramIndex);
+        $sql        = $fk->renderSql($processor, '', $paramIndex);
 
         self::assertEquals(
             'CONSTRAINT "foo" FOREIGN KEY ("bar") REFERENCES "baz" ("bam") ON DELETE CASCADE ON UPDATE SET NULL',

@@ -7,6 +7,7 @@ namespace PhpDb\Sql;
 use PhpDb\Sql\Argument\Identifier;
 use PhpDb\Sql\Argument\Identifiers;
 use PhpDb\Sql\Argument\Literal;
+use PhpDb\Sql\Argument\NullValue;
 use PhpDb\Sql\Argument\Parameter;
 use PhpDb\Sql\Argument\Select;
 use PhpDb\Sql\Argument\Value;
@@ -22,6 +23,7 @@ use PhpDb\Sql\Argument\Values;
  * - Literal: Raw SQL fragments that are inserted as-is without modification
  * - Select: Subquery objects (Expression or SqlInterface instances)
  * - Parameter: Bound parameter values with explicit name and type hint (via renderParameter)
+ * - Null: SQL NULL value
  */
 enum ArgumentType: string
 {
@@ -32,4 +34,5 @@ enum ArgumentType: string
     case Literal     = Literal::class;
     case Select      = Select::class;
     case Parameter   = Parameter::class;
+    case Null        = NullValue::class;
 }

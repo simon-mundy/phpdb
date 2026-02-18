@@ -18,9 +18,9 @@ final class IndexTest extends TestCase
     {
         $uk = new Index('foo', 'my_uk');
 
-        $processor = new SqlProcessor(new TrustingSql92Platform());
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql = $uk->renderSql($processor, '', $paramIndex);
+        $sql        = $uk->renderSql($processor, '', $paramIndex);
 
         self::assertEquals('INDEX "my_uk"("foo")', $sql);
     }
@@ -29,9 +29,9 @@ final class IndexTest extends TestCase
     {
         $key = new Index(['foo', 'bar'], 'my_uk', [10, 5]);
 
-        $processor = new SqlProcessor(new TrustingSql92Platform());
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql = $key->renderSql($processor, '', $paramIndex);
+        $sql        = $key->renderSql($processor, '', $paramIndex);
 
         self::assertEquals('INDEX "my_uk"("foo"(10), "bar"(5))', $sql);
     }
@@ -40,9 +40,9 @@ final class IndexTest extends TestCase
     {
         $key = new Index(['foo', 'bar'], 'my_uk', [10]);
 
-        $processor = new SqlProcessor(new TrustingSql92Platform());
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql = $key->renderSql($processor, '', $paramIndex);
+        $sql        = $key->renderSql($processor, '', $paramIndex);
 
         self::assertEquals('INDEX "my_uk"("foo"(10), "bar")', $sql);
     }

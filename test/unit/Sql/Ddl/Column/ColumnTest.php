@@ -147,13 +147,13 @@ final class ColumnTest extends TestCase
         $column->setNullable(true);
 
         $paramIndex = 1;
-        $sql = $column->renderSql($processor, '', $paramIndex);
+        $sql        = $column->renderSql($processor, '', $paramIndex);
         self::assertEquals('"foo" INTEGER', $sql);
 
         $column->setDefault('bar');
 
         $paramIndex = 1;
-        $sql = $column->renderSql($processor, '', $paramIndex);
+        $sql        = $column->renderSql($processor, '', $paramIndex);
         self::assertEquals('"foo" INTEGER DEFAULT \'bar\'', $sql);
     }
 }
