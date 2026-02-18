@@ -36,7 +36,7 @@ class Joins extends AbstractPart
 
         foreach ($this->specs as $j => $spec) {
             $joinName = match ($spec->tableType) {
-                JoinTableType::Expression      => $spec->table->getExpression(),
+                JoinTableType::Expression      => $spec->table->getExpression(), // @phpstan-ignore method.nonObject
                 JoinTableType::TableIdentifier => $processor->resolveTable($spec->table),
                 JoinTableType::Select          => '(' . $processor->processSubSelect($spec->table) . ')',
                 JoinTableType::Identifier      => $processor->platform->quoteIdentifier($spec->table),

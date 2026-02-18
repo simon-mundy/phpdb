@@ -9,6 +9,7 @@ use PhpDb\Sql\Argument\Select as SelectArgument;
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ArgumentType;
 use PhpDb\Sql\ExpressionInterface;
+use ValueError;
 
 /**
  * Holds and renders a SELECT quantifier (DISTINCT, ALL, or expression).
@@ -27,6 +28,7 @@ class Quantifier extends AbstractPart
         return match ($this->quantifier->getType()) {
             ArgumentType::Literal => $this->quantifier->getValue(),
             ArgumentType::Select  => $processor->renderExpression($this->quantifier->getValue(), 'quantifier'),
+            default => throw new ValueError('Unexpected ArgumentType: ' . $this->quantifier->getType()->name),
         };
     }
 

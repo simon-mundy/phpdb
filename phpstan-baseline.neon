@@ -1,12 +1,6 @@
 parameters:
 	ignoreErrors:
 		-
-			message: '#^Variable \$paramSpecs might not be defined\.$#'
-			identifier: variable.undefined
-			count: 1
-			path: src/Sql/AbstractSql.php
-
-		-
 			message: '#^Cannot call method getAttribute\(\) on resource\.$#'
 			identifier: method.nonObject
 			count: 1

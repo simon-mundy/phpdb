@@ -14,6 +14,7 @@ use PhpDb\Sql\ExpressionInterface;
 use PhpDb\Sql\Platform\PlatformDecoratorInterface;
 use PhpDb\Sql\Select;
 use PhpDb\Sql\TableIdentifier;
+use ValueError;
 
 use function implode;
 use function str_replace;
@@ -254,7 +255,7 @@ class SqlProcessor
         int|float|string|bool $value,
         string $namedParameterPrefix,
         int &$expressionParamIndex,
-    ): ?string {
+    ): string {
         $name = $namedParameterPrefix . $expressionParamIndex++;
         $this->parameterContainer->offsetSet($name, $value);
 

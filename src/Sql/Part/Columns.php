@@ -7,6 +7,7 @@ namespace PhpDb\Sql\Part;
 use PhpDb\Sql\ArgumentType;
 use PhpDb\Sql\ExpressionInterface;
 use PhpDb\Sql\Select;
+use ValueError;
 
 use function count;
 use function current;
@@ -38,7 +39,7 @@ class Columns extends AbstractPart
      */
     private string $fromTablePrefix = '';
 
-    /** @var array<int, array{prefix: string, columns: ColumnRef[]}> Join column groups */
+    /** @var array<int, array{prefix: string, columnRefs: ColumnRef[]}> Join column groups */
     private array $joinColumnGroups = [];
 
     public function __construct()
@@ -90,6 +91,7 @@ class Columns extends AbstractPart
                 $ref->alias ?? 'column',
             ),
             ArgumentType::Literal => $ref->arg->getValue(),
+            default => throw new ValueError('Unexpected ArgumentType: ' . $ref->arg->getType()->name),
         };
 
         if ($ref->alias !== null) {

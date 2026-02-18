@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PhpDb\Sql\Part;
 
 use PhpDb\Sql\ArgumentType;
+use ValueError;
 
 use function implode;
 use function is_array;
@@ -30,6 +31,7 @@ class GroupBy extends AbstractPart
                 ArgumentType::Identifier => $processor->platform->quoteIdentifierInFragment($ref->arg->getValue()),
                 ArgumentType::Select     => $processor->renderExpression($ref->arg->getValue()),
                 ArgumentType::Literal    => $ref->arg->getValue(),
+                default => throw new ValueError('Unexpected ArgumentType: ' . $ref->arg->getType()->name),
             };
         }
 

@@ -17,11 +17,10 @@ use function is_array;
 use function is_string;
 use function key;
 use function sprintf;
-use function strtoupper;
 
 /**
  * Normalized join specification.
- * All type discrimination (array alias, table type, expression ON, direction normalization)
+ * All type discrimination (array alias, table type, expression ON)
  * happens at construction time.
  */
 final readonly class JoinSpec
@@ -37,14 +36,7 @@ final readonly class JoinSpec
     /** @var ColumnRef[] Pre-normalized column references */
     public array $columnRefs;
 
-    /**
-     * @param array{
-     *     name: array|string|TableIdentifier,
-     *     on: PredicateInterface|string,
-     *     columns: array,
-     *     type: string,
-     * } $join
-     */
+    /** @param array{name: array|string|TableIdentifier, on: PredicateInterface|string, columns: array, type: string} $join */
     public function __construct(array $join)
     {
         $name = $join['name'];
@@ -71,7 +63,7 @@ final readonly class JoinSpec
 
         $this->on             = $join['on'];
         $this->isExpressionOn = $join['on'] instanceof ExpressionInterface;
-        $this->type           = strtoupper($join['type']);
+        $this->type           = $join['type'];
         $this->columns        = $join['columns'];
 
         $refs = [];

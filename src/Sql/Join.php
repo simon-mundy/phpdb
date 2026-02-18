@@ -28,19 +28,19 @@ use function sprintf;
  */
 class Join implements Iterator, Countable
 {
-    final public const JOIN_INNER = 'inner';
+    final public const JOIN_INNER = 'INNER';
 
-    final public const JOIN_OUTER = 'outer';
+    final public const JOIN_OUTER = 'OUTER';
 
-    final public const JOIN_FULL_OUTER = 'full outer';
+    final public const JOIN_FULL_OUTER = 'FULL OUTER';
 
-    final public const JOIN_LEFT = 'left';
+    final public const JOIN_LEFT = 'LEFT';
 
-    final public const JOIN_RIGHT = 'right';
+    final public const JOIN_RIGHT = 'RIGHT';
 
-    final public const JOIN_RIGHT_OUTER = 'right outer';
+    final public const JOIN_RIGHT_OUTER = 'RIGHT OUTER';
 
-    final public const JOIN_LEFT_OUTER = 'left outer';
+    final public const JOIN_LEFT_OUTER = 'LEFT OUTER';
 
     /**
      * Current iterator position.

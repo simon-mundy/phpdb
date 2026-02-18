@@ -183,11 +183,11 @@ class Insert extends AbstractPreparableSql
             throw new Exception\InvalidArgumentException('values or select should be present');
         }
 
-        $columns       = [];
-        $values        = [];
-        $i             = 0;
-        $isPdoDriver   = $driver instanceof PdoDriverInterface;
-        $paramPrefix   = $this->processInfo['paramPrefix'];
+        $columns           = [];
+        $values            = [];
+        $i                 = 0;
+        $isPdoDriver       = $driver instanceof PdoDriverInterface;
+        $paramPrefix       = $this->processInfo['paramPrefix'];
         $hasParamContainer = $parameterContainer instanceof ParameterContainer;
 
         foreach ($this->columns as $column => $value) {

@@ -11,17 +11,10 @@ use PhpDb\Adapter\Exception\VunerablePlatformQuoteException;
 
 use function addcslashes;
 use function array_map;
-use function ctype_alnum;
-use function explode;
+use function ctype_alpha;
 use function implode;
-use function preg_split;
-use function str_contains;
+use function preg_replace;
 use function str_replace;
-use function strtolower;
-use function strtr;
-
-use const PREG_SPLIT_DELIM_CAPTURE;
-use const PREG_SPLIT_NO_EMPTY;
 
 /**
  * @property Driver\DriverInterface|Driver\PdoDriverInterface|PDO $driver
@@ -35,13 +28,16 @@ abstract class AbstractPlatform implements PlatformInterface
 
     protected bool $quoteIdentifiers = true;
 
-    protected string $quoteIdentifierFragmentPattern = '/([^0-9,a-zA-Z$_:])/i';
+    /** SQL keywords that must not be quoted in identifier fragments */
+    protected const KEYWORDS_PATTERN = 'AS|AND|OR|BETWEEN';
 
-    /** @var array<string, true> */
-    private const SAFE_WORDS = ['*' => true, ' ' => true, '.' => true, 'as' => true];
+    /** @var array<string, string> */
+    private array $identifierCache = [];
 
     /**
      * {@inheritDoc}
+     *
+     * @param string[] $additionalSafeWords
      */
     #[Override]
     public function quoteIdentifierInFragment(string $identifier, array $additionalSafeWords = []): string
@@ -51,45 +47,31 @@ abstract class AbstractPlatform implements PlatformInterface
         }
 
         if ($additionalSafeWords === []) {
-            $normalized = strtr($identifier, ['_' => 'a', '$' => 'a']);
-
-            // Simple identifier: actor_id → "actor_id"
-            if (ctype_alnum($normalized)) {
-                return $this->quoteIdentifier[0] . $identifier . $this->quoteIdentifier[1];
+            if (isset($this->identifierCache[$identifier])) {
+                return $this->identifierCache[$identifier];
             }
-
-            // Dotted identifier: film.film_id → "film"."film_id"
-            if (str_contains($normalized, '.') && ctype_alnum(str_replace('.', '', $normalized))) {
-                $q = $this->quoteIdentifier[0];
-                $qe = $this->quoteIdentifier[1];
-                return $q . implode($qe . '.' . $q, explode('.', $identifier)) . $qe;
+            $pattern = self::KEYWORDS_PATTERN;
+        } else {
+            $extra = [];
+            foreach ($additionalSafeWords as $word) {
+                if (ctype_alpha($word)) {
+                    $extra[] = $word;
+                }
             }
+            $pattern = $extra !== []
+                ? self::KEYWORDS_PATTERN . '|' . implode('|', $extra)
+                : self::KEYWORDS_PATTERN;
         }
 
-        $safeWords = self::SAFE_WORDS;
-        foreach ($additionalSafeWords as $sWord) {
-            $safeWords[strtolower($sWord)] = true;
-        }
-
-        $parts = preg_split(
-            $this->quoteIdentifierFragmentPattern,
-            $identifier,
-            -1,
-            PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY
+        /** @var string $result */
+        $result = preg_replace(
+            '/\b(?!(?:' . $pattern . ')\b)([a-zA-Z_]\w*+)(?!\s*\()/i',
+            $this->quoteIdentifier[0] . '$1' . $this->quoteIdentifier[1],
+            $identifier
         );
 
-        $quoteStart = $this->quoteIdentifier[0];
-        $quoteEnd   = $this->quoteIdentifier[1];
-        $quoteTo    = $this->quoteIdentifierTo;
-        $result     = '';
-
-        foreach ($parts as $part) {
-            $lowerPart = strtolower($part);
-            if (isset($safeWords[$lowerPart])) {
-                $result .= $part;
-            } else {
-                $result .= $quoteStart . str_replace($quoteStart, $quoteTo, $part) . $quoteEnd;
-            }
+        if ($additionalSafeWords === []) {
+            $this->identifierCache[$identifier] = $result;
         }
 
         return $result;
@@ -105,9 +87,10 @@ abstract class AbstractPlatform implements PlatformInterface
             return $identifier;
         }
 
-        return $this->quoteIdentifier[0]
-            . str_replace($this->quoteIdentifier[0], $this->quoteIdentifierTo, $identifier)
-            . $this->quoteIdentifier[1];
+        return $this->identifierCache[$identifier]
+            ??= $this->quoteIdentifier[0]
+                . str_replace($this->quoteIdentifier[0], $this->quoteIdentifierTo, $identifier)
+                . $this->quoteIdentifier[1];
     }
 
     /**

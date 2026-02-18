@@ -6,6 +6,7 @@ namespace PhpDb\Sql\Part;
 
 use PhpDb\Sql\ArgumentType;
 use PhpDb\Sql\ExpressionInterface;
+use ValueError;
 
 use function explode;
 use function implode;
@@ -38,6 +39,7 @@ class OrderBy extends AbstractPart
                 ArgumentType::Select     => $processor->renderExpression($spec->column->getValue()),
                 ArgumentType::Identifier => $processor->platform->quoteIdentifierInFragment($spec->column->getValue())
                                              . ' ' . $spec->direction,
+                default => throw new ValueError('Unexpected ArgumentType: ' . $spec->column->getType()->name),
             };
         }
 

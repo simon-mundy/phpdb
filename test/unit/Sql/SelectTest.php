@@ -635,7 +635,7 @@ final class SelectTest extends TestCase
         $joins = $select->getRawState(Select::JOINS);
         self::assertInstanceOf(Join::class, $joins);
         self::assertEquals(
-            [['name' => 'foo', 'on' => 'id = boo', 'columns' => ['*'], 'type' => 'inner']],
+            [['name' => 'foo', 'on' => 'id = boo', 'columns' => ['*'], 'type' => 'INNER']],
             $joins->getJoins()
         );
         $select->reset(Select::JOINS);
