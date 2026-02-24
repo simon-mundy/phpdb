@@ -4,22 +4,16 @@ declare(strict_types=1);
 
 namespace PhpDb\Adapter\Platform;
 
-use PhpDb\Sql\Platform\PlatformDecoratorInterface;
+use PhpDb\Sql\Strategy\SqlStrategyInterface;
 
 interface PlatformInterface
 {
     /**
-     * Get name
-     */
-    public function getName(): string;
-
-    /**
-     * Get Sql platform decorator
+     * Get Sql strategy
      *
-     * Returns a PhpDb\Sql\Platform\* instance
-     * PhpDb\Sql\Platform\AbstractPlatform implements this interface
+     * Returns a PhpDb\Sql\Strategy\SqlStrategyInterface instance
      */
-    public function getSqlPlatformDecorator(): PlatformDecoratorInterface;
+    public function getSqlStrategy(): SqlStrategyInterface;
 
     /**
      * Get quote identifier symbol

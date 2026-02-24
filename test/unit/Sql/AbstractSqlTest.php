@@ -15,7 +15,7 @@ use PhpDb\Sql\ExpressionInterface;
 use PhpDb\Sql\Predicate;
 use PhpDb\Sql\Select;
 use PhpDb\Sql\TableIdentifier;
-use PhpDbTest\TestAsset\TrustingSql92Platform;
+use PhpDbTest\TestAsset\TrustingStandardPlatform;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\IgnoreDeprecations;
@@ -212,7 +212,7 @@ final class AbstractSqlTest extends TestCase
         $result = $method->invoke(
             $this->abstractSql,
             null,
-            new TrustingSql92Platform(),
+            new TrustingStandardPlatform(),
             $this->mockDriver,
             null,
             null
@@ -232,7 +232,7 @@ final class AbstractSqlTest extends TestCase
         $result = $method->invoke(
             $this->abstractSql,
             $select,
-            new TrustingSql92Platform(),
+            new TrustingStandardPlatform(),
             $this->mockDriver,
             null,
             null
@@ -257,7 +257,7 @@ final class AbstractSqlTest extends TestCase
                 'isIdentifier' => true,
                 'fromTable'    => 'table.',
             ],
-            new TrustingSql92Platform(),
+            new TrustingStandardPlatform(),
             $this->mockDriver,
             null,
             null
@@ -278,7 +278,7 @@ final class AbstractSqlTest extends TestCase
         $result = $method->invoke(
             $this->abstractSql,
             $table,
-            new TrustingSql92Platform(),
+            new TrustingStandardPlatform(),
             $this->mockDriver,
             null
         );
@@ -298,7 +298,7 @@ final class AbstractSqlTest extends TestCase
         $result = $method->invoke(
             $this->abstractSql,
             $select,
-            new TrustingSql92Platform(),
+            new TrustingStandardPlatform(),
             $this->mockDriver,
             null
         );
@@ -322,7 +322,7 @@ final class AbstractSqlTest extends TestCase
         $result             = $method->invoke(
             $this->abstractSql,
             $select,
-            new TrustingSql92Platform(),
+            new TrustingStandardPlatform(),
             $this->mockDriver,
             $parameterContainer
         );
@@ -343,7 +343,7 @@ final class AbstractSqlTest extends TestCase
         $result = $method->invoke(
             $this->abstractSql,
             $select,
-            new TrustingSql92Platform(),
+            new TrustingStandardPlatform(),
             $this->mockDriver,
             null
         );
@@ -363,7 +363,7 @@ final class AbstractSqlTest extends TestCase
         return $method->invoke(
             $this->abstractSql,
             $expression,
-            new TrustingSql92Platform(),
+            new TrustingStandardPlatform(),
             $this->mockDriver,
             $parameterContainer,
             $namedParameterPrefix

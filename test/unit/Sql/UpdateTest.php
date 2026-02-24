@@ -25,7 +25,7 @@ use PhpDb\Sql\Update;
 use PhpDb\Sql\Where;
 use PhpDbTest\AdapterTestTrait;
 use PhpDbTest\DeprecatedAssertionsTrait;
-use PhpDbTest\TestAsset\TrustingSql92Platform;
+use PhpDbTest\TestAsset\TrustingStandardPlatform;
 use PhpDbTest\TestAsset\UpdateIgnore;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\Attributes\CoversNothing;
@@ -179,7 +179,7 @@ final class UpdateTest extends TestCase
         $update->where(['id1' => 'val1', 'id2' => 'val2']);
         self::assertEquals(
             'UPDATE "table" SET "fld1" = \'val1\' WHERE "id1" = \'val1\' AND "id2" = \'val2\'',
-            $update->getSqlString(new TrustingSql92Platform())
+            $update->getSqlString(new TrustingStandardPlatform())
         );
     }
 
@@ -247,7 +247,7 @@ final class UpdateTest extends TestCase
 
         self::assertEquals(
             'UPDATE "foo" SET "bar" = \'baz\', "boo" = NOW(), "bam" = NULL WHERE x = y',
-            $this->update->getSqlString(new TrustingSql92Platform())
+            $this->update->getSqlString(new TrustingStandardPlatform())
         );
 
         // with TableIdentifier
@@ -258,7 +258,7 @@ final class UpdateTest extends TestCase
 
         self::assertEquals(
             'UPDATE "sch"."foo" SET "bar" = \'baz\', "boo" = NOW(), "bam" = NULL WHERE x = y',
-            $this->update->getSqlString(new TrustingSql92Platform())
+            $this->update->getSqlString(new TrustingStandardPlatform())
         );
     }
 
@@ -272,7 +272,7 @@ final class UpdateTest extends TestCase
             ->where('x = y');
         self::assertEquals(
             'UPDATE "sch"."foo" SET "bar" = \'\', "boo" = \'test\', "bam" = \'1\' WHERE x = y',
-            $this->update->getSqlString(new TrustingSql92Platform())
+            $this->update->getSqlString(new TrustingStandardPlatform())
         );
     }
 
@@ -304,7 +304,7 @@ final class UpdateTest extends TestCase
             ]);
         self::assertEquals(
             'UPDATE "foo" SET "bar" = \'baz\' WHERE id = \'1\'',
-            $update2->getSqlString(new TrustingSql92Platform())
+            $update2->getSqlString(new TrustingStandardPlatform())
         );
     }
 
@@ -344,7 +344,7 @@ final class UpdateTest extends TestCase
 
         self::assertEquals(
             'UPDATE IGNORE "foo" SET "bar" = \'baz\', "boo" = NOW(), "bam" = NULL WHERE x = y',
-            $this->update->getSqlString(new TrustingSql92Platform())
+            $this->update->getSqlString(new TrustingStandardPlatform())
         );
 
         // with TableIdentifier
@@ -355,7 +355,7 @@ final class UpdateTest extends TestCase
 
         self::assertEquals(
             'UPDATE IGNORE "sch"."foo" SET "bar" = \'baz\', "boo" = NOW(), "bam" = NULL WHERE x = y',
-            $this->update->getSqlString(new TrustingSql92Platform())
+            $this->update->getSqlString(new TrustingStandardPlatform())
         );
     }
 
@@ -377,7 +377,7 @@ final class UpdateTest extends TestCase
         self::assertEquals(
             'UPDATE "Document" INNER JOIN "User" ON "User"."UserId" = "Document"."UserId" '
             . 'LEFT JOIN "Category" ON "Category"."CategoryId" = "Document"."CategoryId" SET "x" = \'y\'',
-            $this->update->getSqlString(new TrustingSql92Platform())
+            $this->update->getSqlString(new TrustingStandardPlatform())
         );
     }
 
@@ -403,7 +403,7 @@ final class UpdateTest extends TestCase
         self::assertEquals(
             'UPDATE "Document" INNER JOIN "User" ON "User"."UserId" = "Document"."UserId" '
             . 'LEFT JOIN "Category" ON "Category"."CategoryId" = "Document"."CategoryId" SET "Documents"."x" = \'y\'',
-            $this->update->getSqlString(new TrustingSql92Platform())
+            $this->update->getSqlString(new TrustingStandardPlatform())
         );
     }
 
@@ -457,7 +457,7 @@ final class UpdateTest extends TestCase
 
         self::assertEquals(
             'UPDATE "foo" SET "bar" = \'baz\'',
-            $this->update->getSqlString(new TrustingSql92Platform())
+            $this->update->getSqlString(new TrustingStandardPlatform())
         );
     }
 
@@ -489,7 +489,7 @@ final class UpdateTest extends TestCase
             ->set(['x' => 'y'])
             ->join(new TableIdentifier('bar', 'schema'), 'foo.id = bar.foo_id');
 
-        $sql = $this->update->getSqlString(new TrustingSql92Platform());
+        $sql = $this->update->getSqlString(new TrustingStandardPlatform());
         self::assertStringContainsString('JOIN "schema"."bar"', $sql);
     }
 

@@ -48,7 +48,10 @@ final class AdapterInterfaceFactory
         $driver = $container->build($driverClass, $adapterConfig);
 
         /** @var PlatformInterface $adapterPlatform */
-        $adapterPlatform = $container->build(PlatformInterface::class, ['driver' => $driver]);
+        $adapterPlatform = $container->build(PlatformInterface::class, [
+            'driver'       => $driver,
+            'sql_strategy' => $adapterConfig['sql_strategy'] ?? null,
+        ]);
 
         /** @var ProfilerInterface|null $profilerInterface */
         $profilerInterface = $container->has(ProfilerInterface::class)

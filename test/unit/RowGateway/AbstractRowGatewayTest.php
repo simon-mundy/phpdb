@@ -18,6 +18,7 @@ use PhpDb\RowGateway\Feature\FeatureSet;
 use PhpDb\RowGateway\RowGateway;
 use PhpDb\Sql\Select;
 use PhpDb\Sql\Sql;
+use PhpDb\Sql\Strategy\StandardSql92;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 use PHPUnit\Framework\Attributes\RequiresPhp;
@@ -72,12 +73,17 @@ final class AbstractRowGatewayTest extends TestCase
         $mockDriver->expects($this->any())->method('createStatement')->willReturn($mockStatement);
         $mockDriver->expects($this->any())->method('getConnection')->willReturn($mockConnection);
 
+        $mockPlatform = $this->getMockBuilder(PlatformInterface::class)->getMock();
+        $mockPlatform->expects($this->any())
+            ->method('getSqlStrategy')
+            ->willReturn(new StandardSql92());
+
         $this->mockAdapter = $this->getMockBuilder(Adapter::class)
             ->onlyMethods([])
             ->setConstructorArgs(
                 [
                     $mockDriver,
-                    $this->getMockBuilder(PlatformInterface::class)->getMock(),
+                    $mockPlatform,
                 ]
             )->getMock();
 

@@ -14,10 +14,10 @@ use PhpDb\Sql\Ddl\CreateTable;
 use PhpDb\Sql\Delete;
 use PhpDb\Sql\Expression;
 use PhpDb\Sql\Insert;
-use PhpDb\Sql\Platform\PlatformDecoratorInterface;
 use PhpDb\Sql\PreparableSqlInterface;
 use PhpDb\Sql\Select;
 use PhpDb\Sql\SqlInterface;
+use PhpDb\Sql\Strategy\TypeDecoratorInterface;
 use PhpDb\Sql\TableIdentifier;
 use PhpDb\Sql\Update;
 use PhpDbTest\TestAsset;
@@ -257,14 +257,15 @@ abstract class AbstractSqlFunctionalTestCase extends TestCase
         $sql = new Sql\Sql($this->resolveAdapter($platform));
 
         if (is_array($expected) && isset($expected['decorators'])) {
-            /** @var PlatformDecoratorInterface|array $decorator */
+            /** @var TypeDecoratorInterface|array $decorator */
             foreach ($expected['decorators'] as $type => $decorator) {
                 self::assertIsString($type);
                 $decorator = $this->resolveDecorator($decorator);
-                $this->assertInstanceOf(PlatformDecoratorInterface::class, $decorator);
+                $this->assertInstanceOf(TypeDecoratorInterface::class, $decorator);
 
-                $platform = $sql->getSqlPlatform();
+                $platform = $sql->getSqlStrategy();
                 $this->assertNotNull($platform);
+                $this->assertInstanceOf(Sql\Strategy\AbstractSqlStrategy::class, $platform);
                 $platform->setTypeDecorator($type, $decorator);
             }
         }
@@ -290,8 +291,8 @@ abstract class AbstractSqlFunctionalTestCase extends TestCase
     }
 
     protected function resolveDecorator(
-        PlatformDecoratorInterface|array $decorator
-    ): PlatformDecoratorInterface|MockObject|null {
+        TypeDecoratorInterface|array $decorator
+    ): TypeDecoratorInterface|MockObject|null {
         if (is_array($decorator)) {
             /** @var class-string $classString */
             $classString   = $decorator[0];
@@ -308,7 +309,7 @@ abstract class AbstractSqlFunctionalTestCase extends TestCase
     protected function resolveAdapter(string $platformName): Adapter\Adapter
     {
         // Only sql92 platform is supported after abstraction
-        $platform = new TestAsset\TrustingSql92Platform();
+        $platform = new TestAsset\TrustingStandardPlatform();
 
         $mockDriver = $this->getMockBuilder(DriverInterface::class)->getMock();
         $mockDriver->expects($this->any())

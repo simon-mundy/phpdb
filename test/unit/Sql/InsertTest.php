@@ -17,7 +17,7 @@ use PhpDb\Sql\TableIdentifier;
 use PhpDbTest\AdapterTestTrait;
 use PhpDbTest\DeprecatedAssertionsTrait;
 use PhpDbTest\TestAsset\Replace;
-use PhpDbTest\TestAsset\TrustingSql92Platform;
+use PhpDbTest\TestAsset\TrustingStandardPlatform;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Group;
@@ -206,7 +206,7 @@ final class InsertTest extends TestCase
 
         self::assertEquals(
             'INSERT INTO "foo" ("bar", "boo", "bam") VALUES (\'baz\', NOW(), NULL)',
-            $this->insert->getSqlString(new TrustingSql92Platform())
+            $this->insert->getSqlString(new TrustingStandardPlatform())
         );
 
         // with TableIdentifier
@@ -216,7 +216,7 @@ final class InsertTest extends TestCase
 
         self::assertEquals(
             'INSERT INTO "sch"."foo" ("bar", "boo", "bam") VALUES (\'baz\', NOW(), NULL)',
-            $this->insert->getSqlString(new TrustingSql92Platform())
+            $this->insert->getSqlString(new TrustingStandardPlatform())
         );
 
         // with Select
@@ -226,14 +226,14 @@ final class InsertTest extends TestCase
 
         self::assertEquals(
             'INSERT INTO "foo"  SELECT "bar".* FROM "bar"',
-            $this->insert->getSqlString(new TrustingSql92Platform())
+            $this->insert->getSqlString(new TrustingStandardPlatform())
         );
 
         // with Select and columns
         $this->insert->columns(['col1', 'col2']);
         self::assertEquals(
             'INSERT INTO "foo" ("col1", "col2") SELECT "bar".* FROM "bar"',
-            $this->insert->getSqlString(new TrustingSql92Platform())
+            $this->insert->getSqlString(new TrustingStandardPlatform())
         );
     }
 
@@ -246,7 +246,7 @@ final class InsertTest extends TestCase
             ->values(['val1', 'val2', 'val3']);
         self::assertEquals(
             'INSERT INTO "foo" ("col1", "col2", "col3") VALUES (\'val1\', \'val2\', \'val3\')',
-            $this->insert->getSqlString(new TrustingSql92Platform())
+            $this->insert->getSqlString(new TrustingStandardPlatform())
         );
     }
 
@@ -320,7 +320,7 @@ final class InsertTest extends TestCase
 
         self::assertEquals(
             'INSERT INTO "foo" ("bar", "boo", "bam", "qux") VALUES (\'baz\', NOW(), NULL, \'100\')',
-            $this->insert->getSqlString(new TrustingSql92Platform())
+            $this->insert->getSqlString(new TrustingStandardPlatform())
         );
     }
 
@@ -330,7 +330,7 @@ final class InsertTest extends TestCase
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('values or select should be present');
-        $this->insert->getSqlString(new TrustingSql92Platform());
+        $this->insert->getSqlString(new TrustingStandardPlatform());
     }
 
     public function testUnsetThrowsExceptionForNonExistentColumn(): void
@@ -399,7 +399,7 @@ final class InsertTest extends TestCase
 
         self::assertEquals(
             'REPLACE INTO "foo" ("bar", "boo", "bam") VALUES (\'baz\', NOW(), NULL)',
-            $replace->getSqlString(new TrustingSql92Platform())
+            $replace->getSqlString(new TrustingStandardPlatform())
         );
 
         // with TableIdentifier
@@ -409,7 +409,7 @@ final class InsertTest extends TestCase
 
         self::assertEquals(
             'REPLACE INTO "sch"."foo" ("bar", "boo", "bam") VALUES (\'baz\', NOW(), NULL)',
-            $replace->getSqlString(new TrustingSql92Platform())
+            $replace->getSqlString(new TrustingStandardPlatform())
         );
     }
 

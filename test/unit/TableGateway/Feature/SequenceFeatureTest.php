@@ -11,10 +11,11 @@ use PhpDb\Adapter\Driver\StatementInterface;
 use PhpDb\Adapter\Platform\PlatformInterface;
 use PhpDb\Exception\RuntimeException;
 use PhpDb\Sql\Insert;
+use PhpDb\Sql\Strategy\StandardSql92;
 use PhpDb\TableGateway\AbstractTableGateway;
 use PhpDb\TableGateway\Feature\SequenceFeature;
 use PhpDb\TableGateway\TableGateway;
-use PHPUnit\Framework\Attributes\DataProvider;
+use PhpDbTest\TableGateway\Feature\TestAsset\SequenceCapablePlatformInterface;
 use PHPUnit\Framework\MockObject\Exception;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -38,14 +39,19 @@ final class SequenceFeatureTest extends TestCase
         $this->feature = new SequenceFeature($this->primaryKeyField, self::$sequenceName);
     }
 
-    private function createTableGatewayWithPlatform(
-        string $platformName,
+    private function createTableGatewayWithSequencePlatform(
         int $sequenceValue = 2
     ): AbstractTableGateway&MockObject {
-        $platform = $this->createMock(PlatformInterface::class);
+        $platform = $this->createMock(SequenceCapablePlatformInterface::class);
         $platform->expects($this->any())
-            ->method('getName')
-            ->willReturn($platformName);
+            ->method('getSqlStrategy')
+            ->willReturn(new StandardSql92());
+        $platform->expects($this->any())
+            ->method('getNextSequenceValueSql')
+            ->willReturnCallback(fn($name) => 'SELECT NEXTVAL(\'"' . $name . '"\')');
+        $platform->expects($this->any())
+            ->method('getCurrentSequenceValueSql')
+            ->willReturnCallback(fn($name) => 'SELECT CURRVAL(\'"' . $name . '"\')');
         $platform->expects($this->any())
             ->method('quoteIdentifier')
             ->willReturnCallback(fn($name) => $name);
@@ -80,19 +86,13 @@ final class SequenceFeatureTest extends TestCase
         return $tableGateway;
     }
 
-    /**
-     * @throws Exception
-     */
-    #[DataProvider('nextSequenceIdProvider')]
-    public function testNextSequenceId(string $platformName, string $statementSql): void
+    private function createTableGatewayWithNonSequencePlatform(): AbstractTableGateway&MockObject
     {
         $platform = $this->createMock(PlatformInterface::class);
         $platform->expects($this->any())
-            ->method('getName')
-            ->willReturn($platformName);
-        $platform->expects($this->any())
-            ->method('quoteIdentifier')
-            ->willReturn(self::$sequenceName);
+            ->method('getSqlStrategy')
+            ->willReturn(new StandardSql92());
+
         $adapter = $this->getMockBuilder(Adapter::class)
             ->onlyMethods(['getPlatform', 'createStatement'])
             ->disableOriginalConstructor()
@@ -100,6 +100,30 @@ final class SequenceFeatureTest extends TestCase
         $adapter->expects($this->any())
             ->method('getPlatform')
             ->willReturn($platform);
+
+        /** @var AbstractTableGateway&MockObject $tableGateway */
+        $tableGateway = $this->getMockBuilder(TableGateway::class)
+            ->setConstructorArgs(['table', $adapter])
+            ->onlyMethods([])
+            ->getMock();
+
+        return $tableGateway;
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function testNextSequenceId(): void
+    {
+        $platform = $this->createMock(SequenceCapablePlatformInterface::class);
+        $platform->expects($this->any())
+            ->method('getSqlStrategy')
+            ->willReturn(new StandardSql92());
+        $platform->expects($this->once())
+            ->method('getNextSequenceValueSql')
+            ->with(self::$sequenceName)
+            ->willReturn('SELECT NEXTVAL(\'"' . self::$sequenceName . '"\')');
+
         $result = $this->createMock(ResultInterface::class);
         $result->expects($this->any())
             ->method('current')
@@ -110,10 +134,19 @@ final class SequenceFeatureTest extends TestCase
             ->willReturn($result);
         $statement->expects($this->any())
             ->method('prepare')
-            ->with($statementSql);
+            ->with('SELECT NEXTVAL(\'"' . self::$sequenceName . '"\')');
+
+        $adapter = $this->getMockBuilder(Adapter::class)
+            ->onlyMethods(['getPlatform', 'createStatement'])
+            ->disableOriginalConstructor()
+            ->getMock();
+        $adapter->expects($this->any())
+            ->method('getPlatform')
+            ->willReturn($platform);
         $adapter->expects($this->once())
             ->method('createStatement')
             ->willReturn($statement);
+
         $this->tableGateway = $this
             ->getMockBuilder(TableGateway::class)
             ->setConstructorArgs(['table', $adapter])
@@ -123,18 +156,9 @@ final class SequenceFeatureTest extends TestCase
         $this->feature->nextSequenceId();
     }
 
-    /** @psalm-return array<array-key, array{0: string, 1: string}> */
-    public static function nextSequenceIdProvider(): array
-    {
-        return [
-            ['PostgreSQL', 'SELECT NEXTVAL(\'"' . self::$sequenceName . '"\')'],
-            ['Oracle', 'SELECT ' . self::$sequenceName . '.NEXTVAL as "nextval" FROM dual'],
-        ];
-    }
-
     public function testPreInsertWhenPrimaryKeyAlreadyInValues(): void
     {
-        $tableGateway = $this->createTableGatewayWithPlatform('PostgreSQL');
+        $tableGateway = $this->createTableGatewayWithSequencePlatform();
         $this->feature->setTableGateway($tableGateway);
 
         $insert = new Insert('table');
@@ -151,7 +175,7 @@ final class SequenceFeatureTest extends TestCase
 
     public function testPreInsertGeneratesSequenceWhenPrimaryKeyNotInValues(): void
     {
-        $tableGateway = $this->createTableGatewayWithPlatform('PostgreSQL', 99);
+        $tableGateway = $this->createTableGatewayWithSequencePlatform(99);
         $this->feature->setTableGateway($tableGateway);
 
         $insert = new Insert('table');
@@ -171,7 +195,7 @@ final class SequenceFeatureTest extends TestCase
 
     public function testPostInsertSetsLastInsertValue(): void
     {
-        $tableGateway = $this->createTableGatewayWithPlatform('PostgreSQL', 123);
+        $tableGateway = $this->createTableGatewayWithSequencePlatform(123);
         $this->feature->setTableGateway($tableGateway);
 
         $insert = new Insert('table');
@@ -187,10 +211,9 @@ final class SequenceFeatureTest extends TestCase
         self::assertEquals(123, $tableGateway->lastInsertValue);
     }
 
-    #[DataProvider('lastSequenceIdProvider')]
-    public function testLastSequenceId(string $platformName): void
+    public function testLastSequenceId(): void
     {
-        $tableGateway = $this->createTableGatewayWithPlatform($platformName, 55);
+        $tableGateway = $this->createTableGatewayWithSequencePlatform(55);
         $this->feature->setTableGateway($tableGateway);
 
         $result = $this->feature->lastSequenceId();
@@ -198,40 +221,31 @@ final class SequenceFeatureTest extends TestCase
         self::assertEquals(55, $result);
     }
 
-    /** @psalm-return array<array-key, array{0: string}> */
-    public static function lastSequenceIdProvider(): array
-    {
-        return [
-            ['PostgreSQL'],
-            ['Oracle'],
-        ];
-    }
-
     public function testNextSequenceIdThrowsExceptionForUnsupportedPlatform(): void
     {
-        $tableGateway = $this->createTableGatewayWithPlatform('MySQL');
+        $tableGateway = $this->createTableGatewayWithNonSequencePlatform();
         $this->feature->setTableGateway($tableGateway);
 
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Unsupported platform for retrieving next sequence id');
+        $this->expectExceptionMessage('Platform does not support sequences');
 
         $this->feature->nextSequenceId();
     }
 
     public function testLastSequenceIdThrowsExceptionForUnsupportedPlatform(): void
     {
-        $tableGateway = $this->createTableGatewayWithPlatform('MySQL');
+        $tableGateway = $this->createTableGatewayWithNonSequencePlatform();
         $this->feature->setTableGateway($tableGateway);
 
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Unsupported platform for retrieving last sequence id');
+        $this->expectExceptionMessage('Platform does not support sequences');
 
         $this->feature->lastSequenceId();
     }
 
     public function testPostInsertDoesNotSetLastInsertValueWhenSequenceValueIsNull(): void
     {
-        $tableGateway = $this->createTableGatewayWithPlatform('PostgreSQL');
+        $tableGateway = $this->createTableGatewayWithSequencePlatform();
         $this->feature->setTableGateway($tableGateway);
 
         $lastInsertValueProp = new ReflectionProperty(AbstractTableGateway::class, 'lastInsertValue');
@@ -247,7 +261,7 @@ final class SequenceFeatureTest extends TestCase
 
     public function testPreInsertWithPrimaryKeyColumnButNullValue(): void
     {
-        $tableGateway = $this->createTableGatewayWithPlatform('PostgreSQL');
+        $tableGateway = $this->createTableGatewayWithSequencePlatform();
         $this->feature->setTableGateway($tableGateway);
 
         $insert = new Insert('table');
@@ -264,7 +278,7 @@ final class SequenceFeatureTest extends TestCase
 
     public function testPreInsertReturnsEarlyWhenNextSequenceIdReturnsNull(): void
     {
-        $tableGateway = $this->createTableGatewayWithPlatform('PostgreSQL');
+        $tableGateway = $this->createTableGatewayWithSequencePlatform();
 
         $feature = $this->getMockBuilder(SequenceFeature::class)
             ->setConstructorArgs([$this->primaryKeyField, self::$sequenceName])

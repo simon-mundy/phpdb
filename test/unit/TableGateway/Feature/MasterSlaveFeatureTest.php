@@ -9,7 +9,7 @@ use PhpDb\Adapter\AdapterInterface;
 use PhpDb\Adapter\Driver\DriverInterface;
 use PhpDb\Adapter\Driver\ResultInterface;
 use PhpDb\Adapter\Driver\StatementInterface;
-use PhpDb\Adapter\Platform\Sql92;
+use PhpDb\Adapter\Platform\Standard;
 use PhpDb\Sql\Sql;
 use PhpDb\TableGateway\Feature\MasterSlaveFeature;
 use PhpDb\TableGateway\TableGateway;
@@ -35,12 +35,12 @@ final class MasterSlaveFeatureTest extends TestCase
         $mockDriver = $this->getMockBuilder(DriverInterface::class)->onlyMethods([])->getMock();
         $mockDriver->expects($this->any())->method('createStatement')->willReturn(clone $this->mockStatement);
         $this->mockMasterAdapter->expects($this->any())->method('getDriver')->willReturn($mockDriver);
-        $this->mockMasterAdapter->expects($this->any())->method('getPlatform')->willReturn(new Sql92());
+        $this->mockMasterAdapter->expects($this->any())->method('getPlatform')->willReturn(new Standard());
 
         $mockDriver = $this->getMockBuilder(DriverInterface::class)->onlyMethods([])->getMock();
         $mockDriver->expects($this->any())->method('createStatement')->willReturn(clone $this->mockStatement);
         $this->mockSlaveAdapter->expects($this->any())->method('getDriver')->willReturn($mockDriver);
-        $this->mockSlaveAdapter->expects($this->any())->method('getPlatform')->willReturn(new Sql92());
+        $this->mockSlaveAdapter->expects($this->any())->method('getPlatform')->willReturn(new Standard());
 
         $this->feature = new MasterSlaveFeature($this->mockSlaveAdapter);
     }

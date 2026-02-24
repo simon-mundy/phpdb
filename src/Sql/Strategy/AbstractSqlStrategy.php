@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace PhpDb\Sql\Platform;
+namespace PhpDb\Sql\Strategy;
 
 use PhpDb\Adapter\AdapterInterface;
 use PhpDb\Adapter\Platform\PlatformInterface;
@@ -11,7 +11,7 @@ use PhpDb\Sql\Exception;
 use PhpDb\Sql\PreparableSqlInterface;
 use PhpDb\Sql\SqlInterface;
 
-class AbstractPlatform implements PlatformDecoratorInterface, PreparableSqlInterface, SqlInterface
+abstract class AbstractSqlStrategy implements SqlStrategyInterface
 {
     protected SqlInterface|PreparableSqlInterface $subject;
 
@@ -27,27 +27,25 @@ class AbstractPlatform implements PlatformDecoratorInterface, PreparableSqlInter
         return $this;
     }
 
-    public function setTypeDecorator(string $type, PlatformDecoratorInterface $decorator): void
+    public function setTypeDecorator(string $type, TypeDecoratorInterface $decorator): void
     {
         $this->decorators[$type] = $decorator;
     }
 
     public function getTypeDecorator(
         PreparableSqlInterface|SqlInterface $subject
-    ): PlatformDecoratorInterface|PreparableSqlInterface|SqlInterface {
-        foreach ($this->decorators as $type => $decorator) {
-            /** @phpstan-ignore-next-line instanceof with string class name is valid */
-            if ($subject instanceof $type) {
-                $decorator->setSubject($subject);
-                return $decorator;
-            }
+    ): TypeDecoratorInterface|PreparableSqlInterface|SqlInterface {
+        $subjectClass = $subject::class;
+        if (isset($this->decorators[$subjectClass])) {
+            $this->decorators[$subjectClass]->setSubject($subject);
+            return $this->decorators[$subjectClass];
         }
 
         return $subject;
     }
 
     /**
-     * @return array|PlatformDecoratorInterface[]
+     * @return array|TypeDecoratorInterface[]
      */
     public function getDecorators(): array
     {

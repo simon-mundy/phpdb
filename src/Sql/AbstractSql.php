@@ -8,14 +8,14 @@ use Override;
 use PhpDb\Adapter\Driver\DriverInterface;
 use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Adapter\Platform\PlatformInterface;
-use PhpDb\Adapter\Platform\Sql92 as DefaultAdapterPlatform;
+use PhpDb\Adapter\Platform\Standard as DefaultAdapterPlatform;
 use PhpDb\Sql\Argument\Identifier;
 use PhpDb\Sql\Argument\Identifiers;
 use PhpDb\Sql\Argument\Literal;
 use PhpDb\Sql\Argument\Select as SelectArgument;
 use PhpDb\Sql\Argument\Value;
 use PhpDb\Sql\Argument\Values;
-use PhpDb\Sql\Platform\PlatformDecoratorInterface;
+use PhpDb\Sql\Strategy\TypeDecoratorInterface;
 use ValueError;
 
 use function count;
@@ -363,7 +363,7 @@ abstract class AbstractSql implements SqlInterface
         ?DriverInterface $driver = null,
         ?ParameterContainer $parameterContainer = null
     ): string {
-        if ($this instanceof PlatformDecoratorInterface) {
+        if ($this instanceof TypeDecoratorInterface) {
             $decorator = clone $this;
             $decorator->setSubject($subselect);
         } else {
@@ -371,7 +371,7 @@ abstract class AbstractSql implements SqlInterface
         }
 
         if ($parameterContainer instanceof ParameterContainer) {
-            $processInfoContext = $decorator instanceof PlatformDecoratorInterface ? $subselect : $decorator;
+            $processInfoContext = $decorator instanceof TypeDecoratorInterface ? $subselect : $decorator;
             $this->processInfo['subselectCount']++;
             $processInfoContext->processInfo['subselectCount'] = $this->processInfo['subselectCount'];
             $processInfoContext->processInfo['paramPrefix']    = 'subselect'
@@ -516,7 +516,7 @@ abstract class AbstractSql implements SqlInterface
      */
     protected function localizeVariables(): void
     {
-        if (! $this instanceof PlatformDecoratorInterface) {
+        if (! $this instanceof TypeDecoratorInterface) {
             return;
         }
 

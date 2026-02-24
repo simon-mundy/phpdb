@@ -6,7 +6,7 @@ namespace PhpDbTest\Sql\Predicate;
 
 use ErrorException;
 use PhpDb\Adapter\Exception\VunerablePlatformQuoteException;
-use PhpDb\Adapter\Platform\Sql92;
+use PhpDb\Adapter\Platform\Standard;
 use PhpDb\Sql\Argument;
 use PhpDb\Sql\Expression;
 use PhpDb\Sql\Predicate\Predicate;
@@ -443,11 +443,11 @@ final class PredicateTest extends TestCase
         // ErrorHandler::start(E_USER_NOTICE);
 
         // try {
-        //     $string = $select->getSqlString(new Sql92());
+        //     $string = $select->getSqlString(new Standard());
         // } finally {
         //     ErrorHandler::stop();
         // }
         $this->expectException(VunerablePlatformQuoteException::class);
-        return $select->getSqlString(new Sql92());
+        return $select->getSqlString(new Standard());
     }
 }

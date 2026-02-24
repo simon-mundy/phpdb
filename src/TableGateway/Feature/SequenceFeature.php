@@ -6,6 +6,7 @@ namespace PhpDb\TableGateway\Feature;
 
 use PhpDb\Adapter\Driver\ResultInterface;
 use PhpDb\Adapter\Driver\StatementInterface;
+use PhpDb\Adapter\Platform\SequenceCapableInterface;
 use PhpDb\Exception\RuntimeException;
 use PhpDb\Sql\Insert;
 
@@ -58,16 +59,12 @@ class SequenceFeature extends AbstractFeature
      */
     public function nextSequenceId(): ?int
     {
-        $platform     = $this->tableGateway->adapter->getPlatform();
-        $platformName = $platform->getName();
+        $platform = $this->tableGateway->adapter->getPlatform();
+        if (! $platform instanceof SequenceCapableInterface) {
+            throw new RuntimeException('Platform does not support sequences');
+        }
 
-        $sql = match ($platformName) {
-            'Oracle'     => 'SELECT '
-                            . $platform->quoteIdentifier($this->sequenceName)
-                            . '.NEXTVAL as "nextval" FROM dual',
-            'PostgreSQL' => 'SELECT NEXTVAL(\'"' . $this->sequenceName . '"\')',
-            default      => throw new RuntimeException('Unsupported platform for retrieving next sequence id'),
-        };
+        $sql = $platform->getNextSequenceValueSql($this->sequenceName);
 
         $statement = $this->tableGateway->adapter->createStatement();
         $statement->prepare($sql);
@@ -84,17 +81,12 @@ class SequenceFeature extends AbstractFeature
      */
     public function lastSequenceId(): int
     {
-        $platform     = $this->tableGateway->adapter->getPlatform();
-        $platformName = $platform->getName();
+        $platform = $this->tableGateway->adapter->getPlatform();
+        if (! $platform instanceof SequenceCapableInterface) {
+            throw new RuntimeException('Platform does not support sequences');
+        }
 
-        // todo: Remove string usage
-        $sql = match ($platformName) {
-            'Oracle'     => 'SELECT '
-                            . $platform->quoteIdentifier($this->sequenceName)
-                            . '.CURRVAL as "currval" FROM dual',
-            'PostgreSQL' => 'SELECT LAST_INSERT_ROWID() as "currval"',
-            default => throw new RuntimeException('Unsupported platform for retrieving last sequence id'),
-        };
+        $sql = $platform->getCurrentSequenceValueSql($this->sequenceName);
 
         $statement = $this->tableGateway->adapter->createStatement();
         $statement->prepare($sql);

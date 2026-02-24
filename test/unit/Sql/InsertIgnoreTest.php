@@ -18,7 +18,7 @@ use PhpDb\Sql\TableIdentifier;
 use PhpDbTest\AdapterTestTrait;
 use PhpDbTest\DeprecatedAssertionsTrait;
 use PhpDbTest\TestAsset\Replace;
-use PhpDbTest\TestAsset\TrustingSql92Platform;
+use PhpDbTest\TestAsset\TrustingStandardPlatform;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 use PHPUnit\Framework\Attributes\RequiresPhp;
@@ -187,7 +187,7 @@ final class InsertIgnoreTest extends TestCase
 
         self::assertEquals(
             'INSERT IGNORE INTO "foo" ("bar", "boo", "bam") VALUES (\'baz\', NOW(), NULL)',
-            $this->insert->getSqlString(new TrustingSql92Platform())
+            $this->insert->getSqlString(new TrustingStandardPlatform())
         );
 
         // with TableIdentifier
@@ -197,7 +197,7 @@ final class InsertIgnoreTest extends TestCase
 
         self::assertEquals(
             'INSERT IGNORE INTO "sch"."foo" ("bar", "boo", "bam") VALUES (\'baz\', NOW(), NULL)',
-            $this->insert->getSqlString(new TrustingSql92Platform())
+            $this->insert->getSqlString(new TrustingStandardPlatform())
         );
 
         // with Select
@@ -207,14 +207,14 @@ final class InsertIgnoreTest extends TestCase
 
         self::assertEquals(
             'INSERT IGNORE INTO "foo"  SELECT "bar".* FROM "bar"',
-            $this->insert->getSqlString(new TrustingSql92Platform())
+            $this->insert->getSqlString(new TrustingStandardPlatform())
         );
 
         // with Select and columns
         $this->insert->columns(['col1', 'col2']);
         self::assertEquals(
             'INSERT IGNORE INTO "foo" ("col1", "col2") SELECT "bar".* FROM "bar"',
-            $this->insert->getSqlString(new TrustingSql92Platform())
+            $this->insert->getSqlString(new TrustingStandardPlatform())
         );
     }
 
@@ -227,7 +227,7 @@ final class InsertIgnoreTest extends TestCase
             ->values(['val1', 'val2', 'val3']);
         self::assertEquals(
             'INSERT IGNORE INTO "foo" ("col1", "col2", "col3") VALUES (\'val1\', \'val2\', \'val3\')',
-            $this->insert->getSqlString(new TrustingSql92Platform())
+            $this->insert->getSqlString(new TrustingStandardPlatform())
         );
     }
 
@@ -292,7 +292,7 @@ final class InsertIgnoreTest extends TestCase
 
         self::assertEquals(
             'INSERT IGNORE INTO "foo" ("bar", "boo", "bam", "qux") VALUES (\'baz\', NOW(), NULL, \'100\')',
-            $this->insert->getSqlString(new TrustingSql92Platform())
+            $this->insert->getSqlString(new TrustingStandardPlatform())
         );
     }
 
@@ -346,7 +346,7 @@ final class InsertIgnoreTest extends TestCase
 
         self::assertEquals(
             'REPLACE INTO "foo" ("bar", "boo", "bam") VALUES (\'baz\', NOW(), NULL)',
-            $replace->getSqlString(new TrustingSql92Platform())
+            $replace->getSqlString(new TrustingStandardPlatform())
         );
 
         // with TableIdentifier
@@ -356,7 +356,7 @@ final class InsertIgnoreTest extends TestCase
 
         self::assertEquals(
             'REPLACE INTO "sch"."foo" ("bar", "boo", "bam") VALUES (\'baz\', NOW(), NULL)',
-            $replace->getSqlString(new TrustingSql92Platform())
+            $replace->getSqlString(new TrustingStandardPlatform())
         );
     }
 }

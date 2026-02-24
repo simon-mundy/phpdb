@@ -6,7 +6,7 @@ namespace PhpDbTest\TestAsset;
 
 use PhpDb\Sql;
 
-final class SelectDecorator extends Sql\Select implements Sql\Platform\PlatformDecoratorInterface
+final class SelectDecorator extends Sql\Select implements Sql\Strategy\TypeDecoratorInterface
 {
     /**
      * @return $this Provides a fluent interface

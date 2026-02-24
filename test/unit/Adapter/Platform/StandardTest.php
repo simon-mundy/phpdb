@@ -6,23 +6,22 @@ namespace PhpDbTest\Adapter\Platform;
 
 use Override;
 use PhpDb\Adapter\Exception\VunerablePlatformQuoteException;
-use PhpDb\Adapter\Platform\Sql92;
+use PhpDb\Adapter\Platform\Standard;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\TestCase;
 
-#[CoversMethod(Sql92::class, 'getName')]
-#[CoversMethod(Sql92::class, 'getQuoteIdentifierSymbol')]
-#[CoversMethod(Sql92::class, 'quoteIdentifier')]
-#[CoversMethod(Sql92::class, 'quoteIdentifierChain')]
-#[CoversMethod(Sql92::class, 'getQuoteValueSymbol')]
-#[CoversMethod(Sql92::class, 'quoteValue')]
-#[CoversMethod(Sql92::class, 'quoteTrustedValue')]
-#[CoversMethod(Sql92::class, 'quoteValueList')]
-#[CoversMethod(Sql92::class, 'getIdentifierSeparator')]
-#[CoversMethod(Sql92::class, 'quoteIdentifierInFragment')]
-final class Sql92Test extends TestCase
+#[CoversMethod(Standard::class, 'getQuoteIdentifierSymbol')]
+#[CoversMethod(Standard::class, 'quoteIdentifier')]
+#[CoversMethod(Standard::class, 'quoteIdentifierChain')]
+#[CoversMethod(Standard::class, 'getQuoteValueSymbol')]
+#[CoversMethod(Standard::class, 'quoteValue')]
+#[CoversMethod(Standard::class, 'quoteTrustedValue')]
+#[CoversMethod(Standard::class, 'quoteValueList')]
+#[CoversMethod(Standard::class, 'getIdentifierSeparator')]
+#[CoversMethod(Standard::class, 'quoteIdentifierInFragment')]
+final class StandardTest extends TestCase
 {
-    protected Sql92 $platform;
+    protected Standard $platform;
 
     /**
      * Sets up the fixture, for example, opens a network connection.
@@ -31,12 +30,7 @@ final class Sql92Test extends TestCase
     #[Override]
     protected function setUp(): void
     {
-        $this->platform = new Sql92();
-    }
-
-    public function testGetName(): void
-    {
-        self::assertEquals('SQL92', $this->platform->getName());
+        $this->platform = new Standard();
     }
 
     public function testGetQuoteIdentifierSymbol(): void

@@ -8,6 +8,8 @@ use Override;
 use PDO;
 use PhpDb\Adapter\Driver;
 use PhpDb\Adapter\Exception\VunerablePlatformQuoteException;
+use PhpDb\Sql\Strategy\SqlStrategyInterface;
+use PhpDb\Sql\Strategy\StandardSql92;
 
 use function addcslashes;
 use function array_map;
@@ -24,6 +26,19 @@ use const PREG_SPLIT_NO_EMPTY;
  */
 abstract class AbstractPlatform implements PlatformInterface
 {
+    protected ?SqlStrategyInterface $sqlStrategy = null;
+
+    #[Override]
+    public function getSqlStrategy(): SqlStrategyInterface
+    {
+        return $this->sqlStrategy ??= $this->createDefaultSqlStrategy();
+    }
+
+    protected function createDefaultSqlStrategy(): SqlStrategyInterface
+    {
+        return new StandardSql92();
+    }
+
     /** @var string[] */
     protected array $quoteIdentifier = ['"', '"'];
 

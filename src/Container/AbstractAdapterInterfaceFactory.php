@@ -75,7 +75,10 @@ final class AbstractAdapterInterfaceFactory implements AbstractFactoryInterface
         $driver = $container->build($driverClass, $this->config[$requestedName]);
 
         /** @var PlatformInterface $platform */
-        $platform = $container->build(PlatformInterface::class, ['driver' => $driver]);
+        $platform = $container->build(PlatformInterface::class, [
+            'driver'       => $driver,
+            'sql_strategy' => $this->config[$requestedName]['sql_strategy'] ?? null,
+        ]);
 
         /** @var ResultSetInterface|null $resultSet */
         $resultSet = $container->has(ResultSetInterface::class)

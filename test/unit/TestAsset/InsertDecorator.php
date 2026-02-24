@@ -6,7 +6,7 @@ namespace PhpDbTest\TestAsset;
 
 use PhpDb\Sql;
 
-final class InsertDecorator extends Sql\Insert implements Sql\Platform\PlatformDecoratorInterface
+final class InsertDecorator extends Sql\Insert implements Sql\Strategy\TypeDecoratorInterface
 {
     public Sql\SqlInterface|Sql\PreparableSqlInterface|null $subject;
 

@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace PhpDbTest\TestAsset;
 
 use Override;
-use PhpDb\Adapter\Platform\Sql92;
+use PhpDb\Adapter\Platform\Standard;
 
-final class TrustingSql92Platform extends Sql92
+final class TrustingStandardPlatform extends Standard
 {
     /**
      * {@inheritDoc}

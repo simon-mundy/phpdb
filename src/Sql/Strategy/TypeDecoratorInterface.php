@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace PhpDb\Sql\Platform;
+namespace PhpDb\Sql\Strategy;
 
 use PhpDb\Sql\PreparableSqlInterface;
 use PhpDb\Sql\SqlInterface;
 
-interface PlatformDecoratorInterface
+interface TypeDecoratorInterface
 {
     public function setSubject(
         SqlInterface|PreparableSqlInterface|null $subject
-    ): PlatformDecoratorInterface;
+    ): TypeDecoratorInterface;
 }

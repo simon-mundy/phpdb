@@ -7,7 +7,7 @@ namespace PhpDbTest\Sql;
 use PhpDb\Adapter\Driver\DriverInterface;
 use PhpDb\Adapter\Driver\StatementInterface;
 use PhpDb\Adapter\ParameterContainer;
-use PhpDb\Adapter\Platform\Sql92;
+use PhpDb\Adapter\Platform\Standard;
 use PhpDb\Sql\Argument;
 use PhpDb\Sql\Argument\Identifier;
 use PhpDb\Sql\Argument\Value;
@@ -25,7 +25,7 @@ use PhpDb\Sql\Select;
 use PhpDb\Sql\TableIdentifier;
 use PhpDb\Sql\Where;
 use PhpDbTest\AdapterTestTrait;
-use PhpDbTest\TestAsset\TrustingSql92Platform;
+use PhpDbTest\TestAsset\TrustingStandardPlatform;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
@@ -228,7 +228,7 @@ final class SelectTest extends TestCase
         $mr = $sr->getMethod('processJoins');
 
         $this->expectException(InvalidArgumentException::class);
-        $mr->invokeArgs($select, [new Sql92(), $mockDriver, $parameterContainer]);
+        $mr->invokeArgs($select, [new Standard(), $mockDriver, $parameterContainer]);
     }
 
     #[TestDox('unit test: Test where() returns Select object (is chainable)')]
@@ -434,7 +434,7 @@ final class SelectTest extends TestCase
         $method = $sr->getMethod('processOrder');
         self::assertEquals(
             [[['RAND()']]],
-            $method->invokeArgs($select, [new TrustingSql92Platform()])
+            $method->invokeArgs($select, [new TrustingStandardPlatform()])
         );
 
         $select = new Select();
@@ -449,7 +449,7 @@ final class SelectTest extends TestCase
         $method = $sr->getMethod('processOrder');
         self::assertEquals(
             [[['"rating" < \'10\'']]],
-            $method->invokeArgs($select, [new TrustingSql92Platform()])
+            $method->invokeArgs($select, [new TrustingStandardPlatform()])
         );
     }
 
@@ -460,7 +460,7 @@ final class SelectTest extends TestCase
         $select->order('name  desc');
         self::assertEquals(
             'SELECT * ORDER BY "name" DESC',
-            $select->getSqlString(new TrustingSql92Platform())
+            $select->getSqlString(new TrustingStandardPlatform())
         );
     }
 
@@ -761,7 +761,7 @@ final class SelectTest extends TestCase
 
         self::assertEquals(
             'SELECT "foo".*, "bar".* FROM "foo" INNER JOIN "bar" ON "foo"."id" = "bar"."fooid"',
-            $select->getSqlString(new TrustingSql92Platform())
+            $select->getSqlString(new TrustingStandardPlatform())
         );
     }
 
@@ -771,7 +771,7 @@ final class SelectTest extends TestCase
                     a variety of provided arguments [uses data provider]')]
     public function testGetSqlString(Select $select, mixed $unused, mixed $unused2, string $expectedSqlString): void
     {
-        self::assertEquals($expectedSqlString, $select->getSqlString(new TrustingSql92Platform()));
+        self::assertEquals($expectedSqlString, $select->getSqlString(new TrustingStandardPlatform()));
     }
 
     #[TestDox('unit test: Test __get() returns expected objects magically')]
@@ -829,7 +829,7 @@ final class SelectTest extends TestCase
         foreach ($internalTests as $method => $expected) {
             $mr = $sr->getMethod($method);
             /** @psalm-suppress MixedAssignment */
-            $return = $mr->invokeArgs($select, [new Sql92(), $mockDriver, $parameterContainer]);
+            $return = $mr->invokeArgs($select, [new Standard(), $mockDriver, $parameterContainer]);
             self::assertEquals($expected, $return);
         }
     }

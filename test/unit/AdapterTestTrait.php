@@ -7,7 +7,7 @@ namespace PhpDbTest;
 use PhpDb\Adapter\Adapter;
 use PhpDb\Adapter\Driver\DriverInterface;
 use PhpDb\Adapter\Platform\PlatformInterface;
-use PhpDb\Adapter\Platform\Sql92;
+use PhpDb\Adapter\Platform\Standard;
 use PhpDb\ResultSet\ResultSet;
 use PhpDb\ResultSet\ResultSetInterface;
 use PHPUnit\Framework\MockObject\Exception;
@@ -21,7 +21,7 @@ trait AdapterTestTrait
      * Creates a mock Adapter with all required dependencies
      *
      * @param DriverInterface|null    $driver    Optional mock driver, will create one if not provided
-     * @param PlatformInterface|null  $platform  Optional mock platform, will create Sql92 if not provided
+     * @param PlatformInterface|null  $platform  Optional mock platform, will create Standard if not provided
      * @param ResultSetInterface|null $resultSet Optional mock result set, will create one if not provided
      * @throws Exception
      */
@@ -31,7 +31,7 @@ trait AdapterTestTrait
         ?ResultSetInterface $resultSet = null
     ): Adapter {
         $driver    = $driver ?? $this->createMock(DriverInterface::class);
-        $platform  = $platform ?? new Sql92();
+        $platform  = $platform ?? new Standard();
         $resultSet = $resultSet ?? new ResultSet();
 
         return $this->getMockBuilder(Adapter::class)
@@ -44,7 +44,7 @@ trait AdapterTestTrait
      * Creates a real Adapter instance (not mocked) with all required dependencies
      *
      * @param DriverInterface|null    $driver    Optional driver, will create mock if not provided
-     * @param PlatformInterface|null  $platform  Optional platform, will create Sql92 if not provided
+     * @param PlatformInterface|null  $platform  Optional platform, will create Standard if not provided
      * @param ResultSetInterface|null $resultSet Optional result set, will create one if not provided
      * @throws Exception
      */
@@ -54,7 +54,7 @@ trait AdapterTestTrait
         ?ResultSetInterface $resultSet = null
     ): Adapter {
         $driver    = $driver ?? $this->createMock(DriverInterface::class);
-        $platform  = $platform ?? new Sql92();
+        $platform  = $platform ?? new Standard();
         $resultSet = $resultSet ?? new ResultSet();
 
         return new Adapter($driver, $platform, $resultSet);

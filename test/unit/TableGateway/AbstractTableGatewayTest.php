@@ -17,6 +17,7 @@ use PhpDb\Sql;
 use PhpDb\Sql\Delete;
 use PhpDb\Sql\Insert;
 use PhpDb\Sql\Select;
+use PhpDb\Sql\Strategy\StandardSql92;
 use PhpDb\Sql\Update;
 use PhpDb\TableGateway\AbstractTableGateway;
 use PhpDb\TableGateway\Exception\InvalidArgumentException;
@@ -79,6 +80,9 @@ final class AbstractTableGatewayTest extends TestCase
         $mockResult->expects($this->any())->method('getAffectedRows')->willReturn(5);
 
         $mockPlatform = $this->getMockBuilder(PlatformInterface::class)->getMock();
+        $mockPlatform->expects($this->any())
+            ->method('getSqlStrategy')
+            ->willReturn(new StandardSql92());
 
         $mockResultSet = $this->getMockBuilder(ResultSetInterface::class)->getMock();
 

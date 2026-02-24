@@ -28,7 +28,7 @@ use TypeError;
 #[CoversMethod(Sql::class, 'hasTable')]
 #[CoversMethod(Sql::class, 'setTable')]
 #[CoversMethod(Sql::class, 'getTable')]
-#[CoversMethod(Sql::class, 'getSqlPlatform')]
+#[CoversMethod(Sql::class, 'getSqlStrategy')]
 #[CoversMethod(Sql::class, 'select')]
 #[CoversMethod(Sql::class, 'insert')]
 #[CoversMethod(Sql::class, 'update')]
@@ -68,7 +68,7 @@ final class SqlTest extends TestCase
             ->onlyMethods([])
             ->setConstructorArgs([
                 $mockDriver,
-                new TestAsset\TrustingSql92Platform(),
+                new TestAsset\TrustingStandardPlatform(),
                 new TestAsset\TemporaryResultSet(),
             ])
             ->getMock();

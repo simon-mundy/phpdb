@@ -15,7 +15,7 @@ class Sql
 
     protected TableIdentifier|string|array|null $table;
 
-    protected Platform\Platform $sqlPlatform;
+    protected Strategy\SqlStrategyInterface $sqlStrategy;
 
     public function __construct(
         AdapterInterface $adapter,
@@ -23,7 +23,7 @@ class Sql
     ) {
         $this->adapter     = $adapter;
         $this->table       = $table;
-        $this->sqlPlatform = new Platform\Platform($adapter->getPlatform());
+        $this->sqlStrategy = $adapter->getPlatform()->getSqlStrategy();
     }
 
     public function getAdapter(): ?AdapterInterface
@@ -51,9 +51,9 @@ class Sql
         return $this->table;
     }
 
-    public function getSqlPlatform(): ?Platform\Platform
+    public function getSqlStrategy(): ?Strategy\SqlStrategyInterface
     {
-        return $this->sqlPlatform;
+        return $this->sqlStrategy;
     }
 
     public function select(string|TableIdentifier|null $table = null): Select
@@ -112,7 +112,8 @@ class Sql
         $adapter   ??= $this->adapter;
         $statement ??= $adapter->getDriver()->createStatement();
 
-        $this->sqlPlatform->setSubject($sqlObject)->prepareStatement($adapter, $statement);
+        $this->sqlStrategy->setSubject($sqlObject);
+        $this->sqlStrategy->prepareStatement($adapter, $statement);
 
         return $statement;
     }
@@ -122,11 +123,10 @@ class Sql
      */
     public function buildSqlString(SqlInterface $sqlObject, ?AdapterInterface $adapter = null): string
     {
-        return $this
-            ->sqlPlatform
-            ->setSubject($sqlObject)
-            ->getSqlString(
-                $adapter instanceof AdapterInterface ? $adapter->getPlatform() : $this->adapter->getPlatform()
-            );
+        $this->sqlStrategy->setSubject($sqlObject);
+
+        return $this->sqlStrategy->getSqlString(
+            $adapter instanceof AdapterInterface ? $adapter->getPlatform() : $this->adapter->getPlatform()
+        );
     }
 }
