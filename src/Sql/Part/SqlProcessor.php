@@ -7,6 +7,8 @@ namespace PhpDb\Sql\Part;
 use PhpDb\Adapter\Driver\DriverInterface;
 use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Adapter\Platform\PlatformInterface;
+use PhpDb\Sql\Argument\Identifier;
+use PhpDb\Sql\Argument\Identifiers;
 use PhpDb\Sql\Argument\Parameter;
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ArgumentType;
@@ -145,6 +147,27 @@ class SqlProcessor
     }
 
     /**
+     * Quote a pre-split Identifier argument without regex.
+     * Uses the segments stored at Identifier construction time.
+     *
+     * @param Identifier $arg
+     */
+    public function renderIdentifierArgument(ArgumentInterface $arg): string
+    {
+        $segments = $arg->segments;
+
+        if (! isset($segments[1])) {
+            return $this->platform->quoteIdentifier($segments[0]);
+        }
+
+        $parts = [];
+        foreach ($segments as $s) {
+            $parts[] = $this->platform->quoteIdentifier($s);
+        }
+        return implode($this->identifierSeparator, $parts);
+    }
+
+    /**
      * Render an ExpressionInterface directly via its renderSql() method.
      * Sets up parameter prefix and index, then delegates to the expression.
      */
@@ -181,10 +204,10 @@ class SqlProcessor
                     $paramIndex,
                 )
                 : $this->platform->quoteValue((string) $argument->getValue()),
-            ArgumentType::Identifier => $this->platform->quoteIdentifierInFragment($argument->getValue()),
+            ArgumentType::Identifier => $this->renderIdentifierArgument($argument),
             ArgumentType::Literal => $argument->getValue(),
             ArgumentType::Values => $this->renderValuesArgument($argument, $paramPrefix, $paramIndex),
-            ArgumentType::Identifiers => $this->processIdentifiersArgument($argument),
+            ArgumentType::Identifiers => $this->renderIdentifiersArgument($argument),
             ArgumentType::Select => $this->renderSelectArgument($argument, $paramPrefix, $paramIndex),
             ArgumentType::Parameter => $this->renderParameter($argument),
             ArgumentType::Null => 'NULL',
@@ -230,16 +253,16 @@ class SqlProcessor
         throw new ValueError('Invalid SelectArgument value');
     }
 
-    private function processIdentifiersArgument(ArgumentInterface $argument): string
+    /**
+     * @param Identifiers $argument
+     */
+    private function renderIdentifiersArgument(ArgumentInterface $argument): string
     {
-        $identifiers          = $argument->getValue();
-        $processedIdentifiers = [];
-
-        foreach ($identifiers as $identifier) {
-            $processedIdentifiers[] = $this->platform->quoteIdentifierInFragment($identifier);
+        $quoted = [];
+        foreach ($argument->identifiers as $identifier) {
+            $quoted[] = $this->renderIdentifierArgument($identifier);
         }
-
-        return implode(', ', $processedIdentifiers);
+        return implode(', ', $quoted);
     }
 
     /**

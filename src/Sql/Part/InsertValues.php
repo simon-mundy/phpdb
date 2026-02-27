@@ -24,14 +24,14 @@ use function implode;
 class InsertValues extends AbstractPart
 {
     private string $keyword = 'INSERT INTO';
-    private Table $table;
+    private From $table;
 
     /** @var InsertColumnValue[] Normalized column-value pairs */
     private array $columnValues = [];
 
     private bool $hasSelect = false;
 
-    public function __construct(Table $table)
+    public function __construct(From $table)
     {
         $this->table = $table;
     }

@@ -28,7 +28,7 @@ class GroupBy extends AbstractPart
         $groups = [];
         foreach ($this->group as $ref) {
             $groups[] = match ($ref->arg->getType()) {
-                ArgumentType::Identifier => $processor->platform->quoteIdentifierInFragment($ref->arg->getValue()),
+                ArgumentType::Identifier => $processor->renderIdentifierArgument($ref->arg),
                 ArgumentType::Select     => $processor->renderExpression($ref->arg->getValue()),
                 ArgumentType::Literal    => $ref->arg->getValue(),
                 default => throw new ValueError('Unexpected ArgumentType: ' . $ref->arg->getType()->name),

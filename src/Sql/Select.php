@@ -8,11 +8,9 @@ use Closure;
 use PhpDb\Adapter\Driver\DriverInterface;
 use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Adapter\Platform\PlatformInterface;
-use PhpDb\Sql\Part\Columns;
 use PhpDb\Sql\Part\Combine as CombinePart;
 use PhpDb\Sql\Part\GroupBy;
 use PhpDb\Sql\Part\Having as HavingPart;
-use PhpDb\Sql\Part\Joins;
 use PhpDb\Sql\Part\Limit;
 use PhpDb\Sql\Part\Offset;
 use PhpDb\Sql\Part\OrderBy;
@@ -105,10 +103,6 @@ class Select extends AbstractPreparableSql
 
     protected ?Quantifier $quantifier = null;
 
-    protected Columns $columns;
-
-    protected ?Joins $joins = null;
-
     protected ?WherePart $where = null;
 
     protected ?GroupBy $groupBy = null;
@@ -128,8 +122,7 @@ class Select extends AbstractPreparableSql
      */
     public function __construct(array|string|TableIdentifier|null $table = null)
     {
-        $this->table   = new Table();
-        $this->columns = new Columns();
+        $this->table = new Table();
 
         if ($table) {
             $this->from($table);
@@ -156,7 +149,7 @@ class Select extends AbstractPreparableSql
             );
         }
 
-        $this->table->set($table);
+        $this->table->setFrom($table);
         return $this;
     }
 
@@ -182,8 +175,8 @@ class Select extends AbstractPreparableSql
      */
     public function columns(array $columns, bool $prefixColumnsWithTable = true): static
     {
-        $this->columns->set($columns);
-        $this->columns->setPrefixColumnsWithTable($prefixColumnsWithTable);
+        $this->table->setColumns($columns);
+        $this->table->setPrefixColumnsWithTable($prefixColumnsWithTable);
         return $this;
     }
 
@@ -199,7 +192,7 @@ class Select extends AbstractPreparableSql
         array|string $columns = self::SQL_STAR,
         string $type = self::JOIN_INNER
     ): static {
-        ($this->joins ??= new Joins())->join($name, $on, $columns, $type);
+        $this->table->join($name, $on, $columns, $type);
 
         return $this;
     }
@@ -309,16 +302,16 @@ class Select extends AbstractPreparableSql
                     );
                 }
 
-                $this->table->set(null);
+                $this->table->resetFrom();
                 break;
             case self::QUANTIFIER:
                 $this->quantifier = null;
                 break;
             case self::COLUMNS:
-                $this->columns->set([]);
+                $this->table->resetColumns();
                 break;
             case self::JOINS:
-                $this->joins = null;
+                $this->table->resetJoins();
                 break;
             case self::WHERE:
                 $this->where = null;
@@ -348,15 +341,16 @@ class Select extends AbstractPreparableSql
 
     public function getRawState(?string $key = null): mixed
     {
-        $joins  = $this->joins ??= new Joins();
         $where  = $this->where ??= new WherePart();
         $having = $this->having ??= new HavingPart();
 
+        $joins = $this->table->joins();
+
         $rawState = [
-            self::TABLE      => $this->table->get(),
+            self::TABLE      => $this->table->getFrom(),
             self::QUANTIFIER => $this->quantifier?->get(),
-            self::COLUMNS    => $this->columns->get(),
-            self::JOINS      => $joins->model  ??= new Join(),
+            self::COLUMNS    => $this->table->getColumns(),
+            self::JOINS      => $joins !== null ? ($joins->model ??= new Join()) : ($this->table->joinModel ??= new Join()),
             self::WHERE      => $where->model  ??= new Where(),
             self::ORDER      => $this->orderBy?->get() ?? [],
             self::GROUP      => $this->groupBy?->get() ?? [],
@@ -385,12 +379,7 @@ class Select extends AbstractPreparableSql
         $processor = new SqlProcessor($platform, $driver, $parameterContainer, $decorator);
         $processor->setParamPrefix($this->processInfo['paramPrefix']);
 
-        if ($this->columns->getPrefixColumnsWithTable() && $this->table->get() !== null) {
-            $this->columns->setFromTablePrefix($this->table->getQuotedPrefix($processor));
-        } else {
-            $this->columns->setFromTablePrefix('');
-        }
-        $this->columns->setJoinSpecs($this->joins !== null ? $this->joins->getSpecs() : []);
+        $this->table->prepare($processor);
 
         $sql = 'SELECT';
 
@@ -398,13 +387,13 @@ class Select extends AbstractPreparableSql
             $sql .= ' ' . $partSql;
         }
 
-        $sql .= ' ' . $this->columns->toSql($processor);
+        $sql .= ' ' . $this->table->columns()->toSql($processor);
 
-        if (($tableSql = $this->table->toSql($processor)) !== null) {
+        if (($tableSql = $this->table->from()->toSql($processor)) !== null) {
             $sql .= ' FROM ' . $tableSql;
         }
 
-        if (($partSql = $this->joins?->toSql($processor)) !== null) {
+        if (($partSql = $this->table->joins()?->toSql($processor)) !== null) {
             $sql .= ' ' . $partSql;
         }
 
@@ -458,8 +447,11 @@ class Select extends AbstractPreparableSql
                 $part = $this->having ??= new HavingPart();
                 return $part->model ??= new Having();
             case 'joins':
-                $part = $this->joins ??= new Joins();
-                return $part->model ??= new Join();
+                $joins = $this->table->joins();
+                if ($joins !== null) {
+                    return $joins->model ??= new Join();
+                }
+                return $this->table->joinModel ??= new Join();
             default:
                 throw new Exception\InvalidArgumentException('Not a valid magic property for this object');
         }
@@ -474,13 +466,9 @@ class Select extends AbstractPreparableSql
      */
     public function __clone()
     {
-        $this->table   = clone $this->table;
-        $this->columns = clone $this->columns;
+        $this->table = clone $this->table;
         if ($this->quantifier !== null) {
             $this->quantifier = clone $this->quantifier;
-        }
-        if ($this->joins !== null) {
-            $this->joins = clone $this->joins;
         }
         if ($this->where !== null) {
             $this->where = clone $this->where;

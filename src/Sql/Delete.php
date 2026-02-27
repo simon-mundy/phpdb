@@ -9,7 +9,7 @@ use PhpDb\Adapter\Driver\DriverInterface;
 use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Adapter\Platform\PlatformInterface;
 use PhpDb\Sql\Part\SqlProcessor;
-use PhpDb\Sql\Part\Table;
+use PhpDb\Sql\Part\From;
 use PhpDb\Sql\Part\Where as WherePart;
 use PhpDb\Sql\Platform\PlatformDecoratorInterface;
 use PhpDb\Sql\Predicate\PredicateInterface;
@@ -24,7 +24,7 @@ class Delete extends AbstractPreparableSql
 {
     protected bool $emptyWhereProtection = true;
 
-    protected Table $table;
+    protected From $table;
 
     protected ?WherePart $where = null;
 
@@ -33,7 +33,7 @@ class Delete extends AbstractPreparableSql
      */
     public function __construct(string|TableIdentifier|null $table = null)
     {
-        $this->table = new Table();
+        $this->table = new From();
 
         if ($table) {
             $this->from($table);

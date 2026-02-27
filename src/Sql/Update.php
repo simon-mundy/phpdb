@@ -11,7 +11,7 @@ use PhpDb\Adapter\Platform\PlatformInterface;
 use PhpDb\Sql\Part\Joins as JoinsPart;
 use PhpDb\Sql\Part\Set as SetPart;
 use PhpDb\Sql\Part\SqlProcessor;
-use PhpDb\Sql\Part\Table;
+use PhpDb\Sql\Part\From;
 use PhpDb\Sql\Part\Where as WherePart;
 use PhpDb\Sql\Platform\PlatformDecoratorInterface;
 use PhpDb\Sql\Predicate\PredicateInterface;
@@ -31,7 +31,7 @@ class Update extends AbstractPreparableSql
 
     protected bool $emptyWhereProtection = true;
 
-    protected Table $table;
+    protected From $table;
 
     protected SetPart $set;
 
@@ -44,7 +44,7 @@ class Update extends AbstractPreparableSql
      */
     public function __construct(string|TableIdentifier|null $table = null)
     {
-        $this->table = new Table();
+        $this->table = new From();
         $this->set   = new SetPart();
 
         if ($table) {

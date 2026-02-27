@@ -4,85 +4,147 @@ declare(strict_types=1);
 
 namespace PhpDb\Sql\Part;
 
+use PhpDb\Sql\Join;
+use PhpDb\Sql\Predicate\PredicateInterface;
 use PhpDb\Sql\Select;
 use PhpDb\Sql\TableIdentifier;
 
 /**
- * Holds and renders a table reference with optional alias.
- * Used by Select (FROM), Insert (INTO), Update (UPDATE), Delete (DELETE FROM).
- * Normalizes input to TableRef at set time — alias extraction happens once, not at render time.
+ * Unified container for FROM, Columns, and Joins.
+ *
+ * Owns the wiring between these three parts — the prepare() method sets the
+ * fromTablePrefix and joinSpecs on Columns before rendering, encapsulating
+ * logic that previously lived in Select::buildSqlString().
  */
-class Table extends AbstractPart
+class Table
 {
-    private ?TableRef $ref = null;
+    private From $from;
+    private Columns $columns;
+    private ?Joins $joins = null;
 
-    public function toSql(SqlProcessor $processor): ?string
+    /** Backward-compat model exposed via getRawState / __get */
+    public ?Join $joinModel = null;
+
+    public function __construct()
     {
-        if ($this->ref === null) {
-            return null;
-        }
-
-        $resolved = $processor->resolveTable($this->ref->table);
-
-        if ($this->ref->alias !== null) {
-            $quotedAlias = $processor->platform->quoteIdentifier($this->ref->alias);
-            $resolved    = $processor->renderTable($resolved, $quotedAlias);
-        }
-
-        return $resolved;
+        $this->from    = new From();
+        $this->columns = new Columns();
     }
 
-    public function isEmpty(): bool
-    {
-        return $this->ref === null;
-    }
+    // --- FROM management ---
 
-    public function set(string|array|TableIdentifier|Select|null $table): static
+    public function setFrom(string|array|TableIdentifier|Select|null $table): static
     {
-        if ($table === null) {
-            $this->ref = null;
-        } else {
-            $this->ref = new TableRef($table);
-        }
+        $this->from->set($table);
         return $this;
     }
 
-    /**
-     * Reconstruct the original format for getRawState() compatibility.
-     */
-    public function get(): string|array|TableIdentifier|Select|null
+    public function getFrom(): string|array|TableIdentifier|Select|null
     {
-        if ($this->ref === null) {
-            return null;
-        }
-
-        if ($this->ref->alias !== null) {
-            return [$this->ref->alias => $this->ref->table];
-        }
-
-        return $this->ref->table;
+        return $this->from->get();
     }
 
-    /**
-     * Get the quoted table prefix for column prefixing (e.g. "table".)
-     * Returns the alias if one is set, otherwise the table name.
-     */
-    public function getQuotedPrefix(SqlProcessor $processor): string
+    public function hasFrom(): bool
     {
-        if ($this->ref === null) {
-            return '';
-        }
+        return !$this->from->isEmpty();
+    }
 
-        if ($this->ref->alias !== null) {
-            return $processor->platform->quoteIdentifier($this->ref->alias)
-                . $processor->identifierSeparator;
-        }
+    public function resetFrom(): static
+    {
+        $this->from->set(null);
+        return $this;
+    }
 
-        $resolved = $processor->resolveTable($this->ref->table);
-        if ($resolved) {
-            return $resolved . $processor->identifierSeparator;
-        }
+    // --- Column management ---
 
-        return '';
+    public function setColumns(array $columns): static
+    {
+        $this->columns->set($columns);
+        return $this;
+    }
+
+    public function getColumns(): array
+    {
+        return $this->columns->get();
+    }
+
+    public function setPrefixColumnsWithTable(bool $prefix): static
+    {
+        $this->columns->setPrefixColumnsWithTable($prefix);
+        return $this;
+    }
+
+    public function getPrefixColumnsWithTable(): bool
+    {
+        return $this->columns->getPrefixColumnsWithTable();
+    }
+
+    public function resetColumns(): static
+    {
+        $this->columns->set([]);
+        return $this;
+    }
+
+    // --- Join management ---
+
+    public function join(
+        array|string|TableIdentifier $name,
+        PredicateInterface|string $on,
+        array|string $columns = Select::SQL_STAR,
+        string $type = Join::JOIN_INNER,
+    ): static {
+        ($this->joins ??= new Joins())->join($name, $on, $columns, $type);
+        return $this;
+    }
+
+    public function hasJoins(): bool
+    {
+        return $this->joins !== null && !$this->joins->isEmpty();
+    }
+
+    public function resetJoins(): static
+    {
+        $this->joins = null;
+        return $this;
+    }
+
+    // --- Prepare (wire parts before render) ---
+
+    public function prepare(SqlProcessor $processor): void
+    {
+        if ($this->columns->getPrefixColumnsWithTable() && !$this->from->isEmpty()) {
+            $this->columns->setFromTablePrefix($this->from->getQuotedPrefix($processor));
+        } else {
+            $this->columns->setFromTablePrefix('');
+        }
+        $this->columns->setJoinSpecs($this->joins !== null ? $this->joins->getSpecs() : []);
+    }
+
+    // --- PartInterface accessors ---
+
+    public function from(): From
+    {
+        return $this->from;
+    }
+
+    public function columns(): Columns
+    {
+        return $this->columns;
+    }
+
+    public function joins(): ?Joins
+    {
+        return $this->joins;
+    }
+
+    // --- Clone ---
+
+    public function __clone()
+    {
+        $this->from    = clone $this->from;
+        $this->columns = clone $this->columns;
+        if ($this->joins !== null) {
+            $this->joins = clone $this->joins;
+        }
     }
 }

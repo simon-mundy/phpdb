@@ -8,7 +8,6 @@ use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ArgumentType;
 
 use function array_fill;
-use function array_values;
 use function count;
 use function implode;
 
@@ -16,19 +15,24 @@ use function implode;
  * Represents multiple SQL identifiers (column names for multi-column clauses).
  *
  * Used for multi-column IN predicates like (col1, col2) IN (SELECT ...).
- * Each identifier will be quoted appropriately by the platform driver.
+ * Internally stores Identifier[] so each gets pre-split segments and
+ * goes through the same renderIdentifierArgument rendering path.
  */
 final readonly class Identifiers implements ArgumentInterface
 {
-    /** @var list<string> */
-    private array $identifiers;
+    /** @var Identifier[] */
+    public array $identifiers;
 
     /**
      * @param list<string> $identifiers
      */
     public function __construct(array $identifiers)
     {
-        $this->identifiers = array_values($identifiers);
+        $items = [];
+        foreach ($identifiers as $id) {
+            $items[] = new Identifier($id);
+        }
+        $this->identifiers = $items;
     }
 
     public function getType(): ArgumentType
@@ -41,7 +45,11 @@ final readonly class Identifiers implements ArgumentInterface
      */
     public function getValue(): array
     {
-        return $this->identifiers;
+        $result = [];
+        foreach ($this->identifiers as $id) {
+            $result[] = $id->getValue();
+        }
+        return $result;
     }
 
     public function getSpecification(): string

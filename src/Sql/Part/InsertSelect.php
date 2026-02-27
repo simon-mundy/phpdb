@@ -16,13 +16,13 @@ use function implode;
 class InsertSelect extends AbstractPart
 {
     private string $keyword = 'INSERT INTO';
-    private Table $table;
+    private From $table;
     private ?Select $select = null;
 
     /** @var array<string, mixed> Column names (keys) from the columns array */
     private array $columns = [];
 
-    public function __construct(Table $table)
+    public function __construct(From $table)
     {
         $this->table = $table;
     }

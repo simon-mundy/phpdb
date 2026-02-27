@@ -37,7 +37,7 @@ class OrderBy extends AbstractPart
         foreach ($this->order as $spec) {
             $orders[] = match ($spec->column->getType()) {
                 ArgumentType::Select     => $processor->renderExpression($spec->column->getValue()),
-                ArgumentType::Identifier => $processor->platform->quoteIdentifierInFragment($spec->column->getValue())
+                ArgumentType::Identifier => $processor->renderIdentifierArgument($spec->column)
                                              . ' ' . $spec->direction,
                 default => throw new ValueError('Unexpected ArgumentType: ' . $spec->column->getType()->name),
             };

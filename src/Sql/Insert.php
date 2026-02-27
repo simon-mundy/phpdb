@@ -9,7 +9,7 @@ use PhpDb\Adapter\Driver\PdoDriverInterface;
 use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Adapter\Platform\PlatformInterface;
 use PhpDb\Sql\Part\SqlProcessor;
-use PhpDb\Sql\Part\Table;
+use PhpDb\Sql\Part\From;
 use PhpDb\Sql\Platform\PlatformDecoratorInterface;
 
 use function array_flip;
@@ -27,7 +27,7 @@ class Insert extends AbstractPreparableSql
 
     final public const VALUES_SET = 'set';
 
-    protected Table $table;
+    protected From $table;
 
     /** @var array<string, mixed> Column-to-value mapping (keys are column names) */
     protected array $columns = [];
@@ -39,7 +39,7 @@ class Insert extends AbstractPreparableSql
      */
     public function __construct(string|TableIdentifier|null $table = null)
     {
-        $this->table = new Table();
+        $this->table = new From();
 
         if ($table) {
             $this->into($table);
