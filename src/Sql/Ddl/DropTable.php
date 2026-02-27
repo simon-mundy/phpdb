@@ -8,8 +8,12 @@ use PhpDb\Adapter\Platform\PlatformInterface;
 use PhpDb\Sql\AbstractSql;
 use PhpDb\Sql\TableIdentifier;
 
+use function array_key_exists;
+
 class DropTable extends AbstractSql
 {
+    final public const IF_EXISTS = 'ifExists';
+
     final public const TABLE = 'table';
 
     protected bool $ifExists = false;
@@ -34,6 +38,19 @@ class DropTable extends AbstractSql
     public function getIfExists(): bool
     {
         return $this->ifExists;
+    }
+
+    /**
+     * @return array|string
+     */
+    public function getRawState(?string $key = null): array|string
+    {
+        $rawState = [
+            self::TABLE     => $this->table,
+            self::IF_EXISTS => $this->ifExists,
+        ];
+
+        return isset($key) && array_key_exists($key, $rawState) ? $rawState[$key] : $rawState;
     }
 
     /** @return string[] */

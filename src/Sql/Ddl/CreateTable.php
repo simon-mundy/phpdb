@@ -16,6 +16,10 @@ class CreateTable extends AbstractSql
 
     final public const CONSTRAINTS = 'constraints';
 
+    final public const IF_NOT_EXISTS = 'ifNotExists';
+
+    final public const IS_TEMPORARY = 'isTemporary';
+
     final public const TABLE = 'table';
 
     protected array $columns = [];
@@ -100,9 +104,11 @@ class CreateTable extends AbstractSql
     public function getRawState(?string $key = null): array|string
     {
         $rawState = [
-            self::COLUMNS     => $this->columns,
-            self::CONSTRAINTS => $this->constraints,
-            self::TABLE       => $this->table,
+            self::TABLE         => $this->table,
+            self::IS_TEMPORARY  => $this->isTemporary,
+            self::IF_NOT_EXISTS => $this->ifNotExists,
+            self::COLUMNS       => $this->columns,
+            self::CONSTRAINTS   => $this->constraints,
         ];
 
         return isset($key) && array_key_exists($key, $rawState) ? $rawState[$key] : $rawState;

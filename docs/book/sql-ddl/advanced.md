@@ -169,6 +169,7 @@ print_r($state);
 Array(
     [table] => users
     [isTemporary] => false
+    [ifNotExists] => false
     [columns] => Array(
         [0] => PhpDb\Sql\Ddl\Column\Integer Object
         [1] => PhpDb\Sql\Ddl\Column\Varchar Object
@@ -334,24 +335,22 @@ function safeCreateTable($adapter, $tableName, $ddlObject) {
 #### Pattern 3: Idempotent Migrations
 
 ```php
-// Use IF NOT EXISTS (platform-specific)
-// Note: PhpDb DDL doesn't support IF NOT EXISTS directly
-// You'll need to handle this at the SQL level or check existence first
+// IF NOT EXISTS example
+$table = new CreateTable('users');
+$table->ifNotExists();
+$table->addColumn(new Column\Integer('id'));
+$table->addColumn(new Column\Varchar('email', 255));
 
-function createTableIfNotExists($adapter, $tableName, CreateTable $table) {
-    $sql = new Sql($adapter);
-    $platformName = $adapter->getPlatform()->getName();
+$sql = new Sql($adapter);
+$adapter->query($sql->buildSqlString($table), $adapter::QUERY_MODE_EXECUTE);
+// CREATE TABLE IF NOT EXISTS "users" (...)
 
-    if ($platformName === 'MySQL') {
-        // Manually construct IF NOT EXISTS
-        $sqlString = $sql->buildSqlString($table);
-        $sqlString = str_replace('CREATE TABLE', 'CREATE TABLE IF NOT EXISTS', $sqlString);
-        $adapter->query($sqlString, $adapter::QUERY_MODE_EXECUTE);
-    } else {
-        // Fallback: check and create
-        safeCreateTable($adapter, $tableName, $table);
-    }
-}
+// IF EXISTS example
+$drop = new DropTable('users');
+$drop->ifExists();
+
+$adapter->query($sql->buildSqlString($drop), $adapter::QUERY_MODE_EXECUTE);
+// DROP TABLE IF EXISTS "users"
 ```
 
 ### Performance Considerations

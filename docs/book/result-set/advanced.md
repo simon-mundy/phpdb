@@ -15,14 +15,16 @@ use ArrayObject;
 class ResultSet extends AbstractResultSet
 {
     public function __construct(
-        ResultSetReturnType $returnType = ResultSetReturnType::ArrayObject,
-        ?ArrayObject $rowPrototype = null
+        ResultSetReturnType|string $returnType = ResultSetReturnType::ArrayObject,
+        ArrayObject|RowPrototypeInterface|null $rowPrototype = new ArrayObject(
+            [], ArrayObject::ARRAY_AS_PROPS
+        )
     );
 
     public function setRowPrototype(
-        ArrayObject $rowPrototype
+        ArrayObject|RowPrototypeInterface $rowPrototype
     ): ResultSetInterface;
-    public function getRowPrototype(): ArrayObject;
+    public function getRowPrototype(): ArrayObject|RowPrototypeInterface;
     public function getReturnType(): ResultSetReturnType;
 }
 ```

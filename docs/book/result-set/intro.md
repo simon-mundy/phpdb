@@ -14,14 +14,15 @@ sources.
 use Countable;
 use Traversable;
 
-interface ResultSetInterface extends Traversable, Countable
+interface ResultSetInterface extends Iterator, Countable
 {
     public function initialize(iterable $dataSource): ResultSetInterface;
-    public function getFieldCount(): mixed;
+    public function getFieldCount(): int;
     public function setRowPrototype(
-        ArrayObject $rowPrototype
+        ArrayObject|RowPrototypeInterface $rowPrototype
     ): ResultSetInterface;
     public function getRowPrototype(): ?object;
+    public function toArray(): array;
 }
 ```
 
@@ -90,7 +91,7 @@ abstract class AbstractResultSet implements Iterator, ResultSetInterface
     public function valid(): bool;
     public function rewind(): void;
 
-    public function count(): int;
+    public function count(): ?int;
 
     public function toArray(): array;
 }

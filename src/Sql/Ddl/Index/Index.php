@@ -6,7 +6,6 @@ namespace PhpDb\Sql\Ddl\Index;
 
 use Override;
 use PhpDb\Sql\Argument\Identifier;
-use PhpDb\Sql\Argument\Literal;
 
 use function count;
 use function implode;
@@ -58,11 +57,6 @@ class Index extends AbstractIndex
         }
 
         $spec = str_replace('...', implode(', ', $specParts), $this->specification);
-
-        if ($this->type !== null) {
-            $spec    .= ' USING %s';
-            $values[] = new Literal($this->type);
-        }
 
         return [
             'spec'   => $spec,

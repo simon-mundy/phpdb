@@ -265,7 +265,7 @@ class Select extends AbstractPreparableSql
     public function where(
         PredicateInterface|array|string|Closure $predicate,
         string $combination = Predicate\PredicateSet::OP_AND
-    ): self {
+    ): static {
         if ($predicate instanceof Where) {
             $this->where = $predicate;
         } else {

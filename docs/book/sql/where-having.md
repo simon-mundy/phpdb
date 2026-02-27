@@ -344,7 +344,7 @@ The following is the `Literal` API:
 class Literal implements ExpressionInterface, PredicateInterface
 {
     public function __construct(string $literal = '');
-    public function setLiteral(string $literal) : self;
+    public function setLiteral(string $literal) : static;
     public function getLiteral() : string;
     public function getExpressionData() : ExpressionData;
 }

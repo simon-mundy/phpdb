@@ -11,7 +11,7 @@ class Update extends AbstractPreparableSql
     final public const VALUES_MERGE = 'merge';
     final public const VALUES_SET   = 'set';
 
-    public Where $where;
+    /** @property Where $where */
 
     public function __construct(
         string|TableIdentifier|null $table = null
@@ -145,7 +145,7 @@ The `Delete` class provides an API for building SQL DELETE statements.
 class Delete extends AbstractPreparableSql
     implements SqlInterface, PreparableSqlInterface
 {
-    public Where $where;
+    /** @property Where $where */
 
     public function __construct(
         string|TableIdentifier|null $table = null

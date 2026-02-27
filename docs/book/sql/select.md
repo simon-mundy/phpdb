@@ -42,9 +42,9 @@ class Select extends AbstractPreparableSql
     final public const COMBINE_EXCEPT = 'except';
     final public const COMBINE_INTERSECT = 'intersect';
 
-    public Where $where;
-    public Having $having;
-    public Join $joins;
+    /** @property Where $where */
+    /** @property Having $having */
+    /** @property Join $joins */
 
     public function __construct(
         array|string|TableIdentifier|null $table = null
@@ -68,7 +68,7 @@ class Select extends AbstractPreparableSql
     public function where(
         PredicateInterface|array|string|Closure $predicate,
         string $combination = Predicate\PredicateSet::OP_AND
-    ) : self;
+    ) : static;
     public function group(mixed $group) : static;
     public function having(
         Having|PredicateInterface|array|Closure|string $predicate,
@@ -362,6 +362,21 @@ You can also retrieve a specific state element:
 $table = $select->getRawState(Select::TABLE);
 $columns = $select->getRawState(Select::COLUMNS);
 $limit = $select->getRawState(Select::LIMIT);
+```
+
+## isTableReadOnly()
+
+Returns `true` if the table was provided in the constructor, making it
+immutable. When a Select is table-read-only, calling `from()` or
+`reset(Select::TABLE)` will throw an exception.
+
+```php title="Checking table read-only status"
+$select = new Select('users');
+$select->isTableReadOnly(); // true
+
+$select2 = new Select();
+$select2->from('users');
+$select2->isTableReadOnly(); // false
 ```
 
 ## Combine

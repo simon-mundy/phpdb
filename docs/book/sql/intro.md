@@ -114,12 +114,25 @@ each backed by its corresponding class:
   or escaped
 - `Select` - For subqueries (Expression or SqlInterface objects)
 
+The `ArgumentType` enum can be used for type-safe references:
+
+```php title="ArgumentType Enum"
+use PhpDb\Sql\ArgumentType;
+
+ArgumentType::Identifier;   // PhpDb\Sql\Argument\Identifier
+ArgumentType::Identifiers;  // PhpDb\Sql\Argument\Identifiers
+ArgumentType::Value;         // PhpDb\Sql\Argument\Value
+ArgumentType::Values;        // PhpDb\Sql\Argument\Values
+ArgumentType::Literal;       // PhpDb\Sql\Argument\Literal
+ArgumentType::Select;        // PhpDb\Sql\Argument\Select
+```
+
 All argument classes are `readonly` and implement `ArgumentInterface`:
 
 ```php title="Using Argument Factory and Classes"
 use PhpDb\Sql\Argument;
 
-// Using the Argument factory class (recommended)
+// Using the Argument factory class
 $valueArg = Argument::value(123);             // Value type
 $identifierArg = Argument::identifier('id');  // Identifier type
 $literalArg = Argument::literal('NOW()');     // Literal SQL
@@ -127,7 +140,7 @@ $valuesArg = Argument::values([1, 2, 3]);     // Multiple values
 // Multiple identifiers
 $identifiersArg = Argument::identifiers(['col1', 'col2']);
 
-// Direct instantiation is preferred
+// Or via direct instantiation
 $arg = new Argument\Identifier('column_name');
 $arg = new Argument\Value(123);
 $arg = new Argument\Literal('NOW()');

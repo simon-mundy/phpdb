@@ -32,12 +32,12 @@ __construct(
 
 **Methods:**
 
-- `setNullable(bool $nullable): self`
+- `setNullable(bool $nullable): static`
 - `isNullable(): bool`
-- `setDefault(string|int|null $default): self`
-- `getDefault(): string|int|null`
-- `setOption(string $name, mixed $value): self`
-- `setOptions(array $options): self`
+- `setDefault(string|int|float|bool|Literal|Value|null $default): static`
+- `getDefault(): string|int|float|bool|Literal|Value|null`
+- `setOption(string $name, bool|string $value): static`
+- `setOptions(array $options): static`
 
 ### BigInteger
 
@@ -48,6 +48,28 @@ use PhpDb\Sql\Ddl\Column\BigInteger;
 
 $column = new BigInteger('large_number');
 $column = new BigInteger('id', false, null, ['length' => 20]);
+```
+
+**Constructor:**
+
+```php
+__construct(
+    $name,
+    $nullable = false,
+    $default = null,
+    array $options = []
+)
+```
+
+### SmallInteger
+
+For smaller integer values (typically 16-bit).
+
+```php title="Creating SmallInteger Columns"
+use PhpDb\Sql\Ddl\Column\SmallInteger;
+
+$column = new SmallInteger('quantity');
+$column = new SmallInteger('status_code', false, 0); // NOT NULL with default 0
 ```
 
 **Constructor:**
@@ -81,10 +103,10 @@ $column->setDecimal(3); // Change scale
 
 **Methods:**
 
-- `setDigits(int $digits): self` - Set precision
-- `getDigits(): int` - Get precision
-- `setDecimal(int $decimal): self` - Set scale
-- `getDecimal(): int` - Get scale
+- `setDigits(?int $digits): static` - Set precision
+- `getDigits(): ?int` - Get precision
+- `setDecimal(?int $decimal): static` - Set scale
+- `getDecimal(): ?int` - Get scale
 
 ### Floating
 
@@ -104,6 +126,22 @@ $column->setDecimal(4);
 
 > The class is named `Floating` rather than `Float` because `float` is a reserved
 > keyword in PHP.
+
+### Double
+
+Double-precision floating-point numbers.
+
+```php title="Creating Double Precision Columns"
+use PhpDb\Sql\Ddl\Column\Double;
+
+$column = new Double('precise_measurement', 15, 8);
+
+// Adjustable after construction
+$column->setDigits(18);
+$column->setDecimal(10);
+```
+
+**Constructor:** `__construct($name, $digits, $decimal)`
 
 ## String Types
 
@@ -383,6 +421,22 @@ $column->setNullable(true); // Does nothing - stays NOT NULL
 
 **Important:** The `setNullable()` method is overridden to always enforce NOT NULL.
 
+## JSON Type
+
+### Json
+
+JSON data column for storing structured data.
+
+```php title="Creating Json Columns"
+use PhpDb\Sql\Ddl\Column\Json;
+
+$column = new Json('metadata');
+$column = new Json('settings', true); // Nullable
+$column = new Json('config', false, '{}'); // NOT NULL with default
+```
+
+**Constructor:** `__construct($name = null)`
+
 ## Generic Column Type
 
 ### Column
@@ -553,12 +607,15 @@ $table->addColumn($column);
 #### Choosing the Right Numeric Type
 
 ```php
+// Use SmallInteger for small ranges (counters, status codes)
+$qty = new Column\SmallInteger('quantity');    // -32,768 to 32,767
+
 // Use Integer for most numeric IDs and counters
-$id = new Column\Integer('id');           // -2,147,483,648 to 2,147,483,647
+$id = new Column\Integer('id');               // -2,147,483,648 to 2,147,483,647
 $count = new Column\Integer('view_count');
 
 // Use BigInteger for very large numbers
-$bigId = new Column\BigInteger('user_id'); // -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807
+$bigId = new Column\BigInteger('user_id');    // -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807
 
 // Use Decimal for money and precise calculations
 $price = new Column\Decimal('price', 10, 2);     // DECIMAL(10,2) - $99,999,999.99
@@ -567,6 +624,9 @@ $tax = new Column\Decimal('tax_rate', 5, 4);     // DECIMAL(5,4) - 0.9999 (99.99
 // Use Floating for scientific/approximate calculations (avoid for money!)
 $latitude = new Column\Floating('lat', 10, 6);   // GPS coordinates
 $measurement = new Column\Floating('temp', 5, 2); // Temperature readings
+
+// Use Double for higher precision floating-point
+$precise = new Column\Double('precise_value', 15, 8);
 ```
 
 ### String Type Selection

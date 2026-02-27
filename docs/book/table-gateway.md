@@ -14,8 +14,8 @@ use PhpDb\Sql\Where;
 
 interface TableGatewayInterface
 {
-    public function getTable();
-    public function select(Where|Closure|string|array $where): ResultSetInterface;
+    public function getTable(): TableIdentifier|string|array;
+    public function select(Where|Closure|string|array|null $where = null): ResultSetInterface;
     public function insert(array $set): int;
     public function update(array $set, Where|Closure|array|string $where): int;
     public function delete(Where|Closure|array|string $where): int;
@@ -51,17 +51,12 @@ use PhpDb\Sql\TableIdentifier;
 
 class TableGateway extends AbstractTableGateway
 {
-    public $lastInsertValue;
-    public $table;
-    public $adapter;
-
     public function __construct(
-        string|TableIdentifier $table,
+        TableIdentifier|array|string $table,
         AdapterInterface $adapter,
-        Feature\AbstractFeature|Feature\FeatureSet|
-            Feature\AbstractFeature[] $features = null,
-        ResultSetInterface $resultSetPrototype = null,
-        Sql\Sql $sql = null
+        Feature\FeatureSet|Feature\FeatureInterface|array|null $features = new Feature\FeatureSet(),
+        ResultSetInterface|null $resultSetPrototype = new ResultSet(),
+        ?Sql\Sql $sql = null
     );
 
     /** Inherited from AbstractTableGateway */
@@ -88,7 +83,7 @@ class TableGateway extends AbstractTableGateway
     public function updateWith(Sql\Update $update): int;
     public function delete(Sql\Where|Closure|array|string $where): int;
     public function deleteWith(Sql\Delete $delete): int;
-    public function getLastInsertValue(): int;
+    public function getLastInsertValue(): string|int|false|null;
 }
 ```
 
@@ -204,8 +199,11 @@ Populate `TableGateway` with column information from a `Metadata` object. It
 also stores primary key information for the `RowGatewayFeature`:
 
 ```php
-$table = new TableGateway('artist', $adapter, new Feature\MetadataFeature());
+$table = new TableGateway('artist', $adapter, new Feature\MetadataFeature($metadata));
 ```
+
+The `MetadataFeature` requires a `MetadataInterface` instance, which provides
+table and column information for the gateway.
 
 ### EventFeature
 
@@ -221,6 +219,22 @@ $table = new TableGateway(
     $adapter,
     new Feature\EventFeature($eventManagerInstance)
 );
+```
+
+### SequenceFeature
+
+For databases that use sequences (Oracle, PostgreSQL), the `SequenceFeature`
+automatically fetches the next sequence value before insert and sets it as the
+primary key:
+
+```php
+$table = new TableGateway('artist', $adapter, new Feature\SequenceFeature(
+    'id',
+    'artist_id_seq'
+));
+
+$table->insert(['name' => 'New Artist']);
+$id = $table->getLastInsertValue(); // 'id' value from the sequence 'artist_id_seq'
 ```
 
 ### RowGatewayFeature

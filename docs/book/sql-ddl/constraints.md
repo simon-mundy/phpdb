@@ -328,6 +328,18 @@ INDEX "idx_search" ("title"(50), "description"(100))
 - Improves index creation and maintenance performance
 - Particularly useful for VARCHAR/TEXT columns that store long content
 
+### Index Type
+
+You can specify the index algorithm type (e.g., BTREE, HASH) via `setType()` and `getType()`. 
+However, how the type is rendered in SQL is **adapter-specific** — the base implementation 
+stores the value but does not output it. Platform-specific adapters (MySQL, PostgreSQL, etc.) will handle rendering 
+the index type clause appropriate to their syntax.
+
+```php
+$index = new Index('session_id', 'idx_session');
+$index->setType('HASH');
+```
+
 ### Adding Indexes to Existing Tables
 
 Use `AlterTable` to add indexes:

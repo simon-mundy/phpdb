@@ -184,7 +184,7 @@ interface DriverInterface
     public function createResult($resource): ResultInterface;
     public function getPrepareType(): string;
     public function formatParameterName(string $name, ?string $type = null): string;
-    public function getLastGeneratedValue(): int|string|bool|null;
+    public function getLastGeneratedValue(): string|int|false|null;
 }
 ```
 
@@ -207,15 +207,15 @@ interface StatementInterface extends StatementContainerInterface
     public function getResource(): mixed;
     public function prepare(?string $sql = null): StatementInterface;
     public function isPrepared(): bool;
-    public function execute(?array|ParameterContainer $parameters = null): ResultInterface;
+    public function execute(ParameterContainer|array|null $parameters = null): ?ResultInterface;
 
     /** Inherited from StatementContainerInterface */
-    public function setSql(string $sql): void;
-    public function getSql(): string;
+    public function setSql(?string $sql): StatementContainerInterface;
+    public function getSql(): ?string;
     public function setParameterContainer(
         ParameterContainer $parameterContainer
-    ): void;
-    public function getParameterContainer(): ParameterContainer;
+    ): StatementContainerInterface;
+    public function getParameterContainer(): ?ParameterContainer;
 }
 ```
 
@@ -228,9 +228,10 @@ use Iterator;
 interface ResultInterface extends Countable, Iterator
 {
     public function buffer(): void;
+    public function isBuffered(): ?bool;
     public function isQueryResult(): bool;
     public function getAffectedRows(): int;
-    public function getGeneratedValue(): mixed;
+    public function getGeneratedValue(): string|int|false|null;
     public function getResource(): mixed;
     public function getFieldCount(): int;
 }
@@ -249,6 +250,7 @@ namespace PhpDb\Adapter\Platform;
 interface PlatformInterface
 {
     public function getName(): string;
+    public function getSqlPlatformDecorator(): PlatformDecoratorInterface;
     public function getQuoteIdentifierSymbol(): string;
     public function quoteIdentifier(string $identifier): string;
     public function quoteIdentifierChain(array|string $identifierChain): string;
@@ -359,12 +361,9 @@ class ParameterContainer implements Iterator, ArrayAccess, Countable
     public function count(): int;
     public function current(): mixed;
     public function next(): void;
-    public function key(): string|int;
+    public function key(): int|string|null;
     public function valid(): bool;
     public function rewind(): void;
-
-    /** Merge existing array of parameters with existing parameters */
-    public function merge(array $parameters): ParameterContainer;
 }
 ```
 
@@ -383,6 +382,18 @@ the 3rd parameter:
 ```php title="Setting Parameter with Type Binding"
 $container->offsetSet('limit', 5, $container::TYPE_INTEGER);
 ```
+
+**Available Type Constants:**
+
+| Constant | Value | Description |
+| -------- | ----- | ----------- |
+| `TYPE_AUTO` | `'auto'` | Automatic type detection (default) |
+| `TYPE_NULL` | `'null'` | NULL value |
+| `TYPE_DOUBLE` | `'double'` | Floating-point number |
+| `TYPE_INTEGER` | `'integer'` | Integer value |
+| `TYPE_BINARY` | `'binary'` | Binary data |
+| `TYPE_STRING` | `'string'` | String value |
+| `TYPE_LOB` | `'lob'` | Large object |
 
 This will ensure that if the underlying driver supports typing of bound
 parameters, that this translated information will also be passed along to the
