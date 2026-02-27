@@ -132,13 +132,12 @@ final class ExpressionTest extends TestCase
         self::assertSame($expressionString, $expression->getExpression());
     }
 
-    public function testNumberOfReplacementsConsidersWhenSameVariableIsUsedManyTimes(): void
+    public function testNamedParameterSyntaxPreservedAsLiteral(): void
     {
-        $expression = new Expression('uf.user_id = :user_id OR uf.friend_id = :user_id', ['user_id' => 1]);
+        $expression = new Expression('uf.user_id = :user_id OR uf.friend_id = :user_id');
 
         $sql = $this->renderSql($expression);
 
-        // Named parameters are kept as-is in spec; the Value(1) is rendered
         self::assertEquals('uf.user_id = :user_id OR uf.friend_id = :user_id', $sql);
     }
 
@@ -171,13 +170,12 @@ final class ExpressionTest extends TestCase
         ];
     }
 
-    public function testNumberOfReplacementsForExpressionWithParameters(): void
+    public function testExpressionWithoutPlaceholdersPreservesColonNames(): void
     {
-        $expression = new Expression(':a + :b', ['a' => 1, 'b' => 2]);
+        $expression = new Expression(':a + :b');
 
         $sql = $this->renderSql($expression);
 
-        // Named parameters are kept in spec, Values rendered inline
         self::assertEquals(':a + :b', $sql);
     }
 

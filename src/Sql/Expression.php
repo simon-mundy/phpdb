@@ -11,17 +11,13 @@ use PhpDb\Sql\Argument\Values;
 use PhpDb\Sql\Part\SqlProcessor;
 
 use function array_slice;
-use function array_unique;
-use function count;
 use function func_get_args;
 use function func_num_args;
 use function is_array;
-use function preg_match_all;
-use function str_replace;
-use function vsprintf;
 
 class Expression extends AbstractExpression
 {
+    use TokenizesExpression;
     /**
      * @const
      */
@@ -65,6 +61,7 @@ class Expression extends AbstractExpression
         }
 
         $this->expression = $expression;
+        $this->invalidateTokens();
         return $this;
     }
 
@@ -95,6 +92,7 @@ class Expression extends AbstractExpression
             $this->parameters[] = $parameter;
         }
 
+        $this->invalidateTokens();
         return $this;
     }
 
@@ -106,47 +104,10 @@ class Expression extends AbstractExpression
     #[Override]
     public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
     {
-        $specification = $this->prepareSpecification();
-
-        if ($this->parameters === []) {
-            return str_replace('%%', '%', $specification);
+        if ($this->tokens === null) {
+            $this->tokenize($this->expression, $this->parameters);
         }
 
-        $values = [];
-        foreach ($this->parameters as $argument) {
-            $values[] = $processor->renderArgument($argument, $paramPrefix, $paramIndex);
-        }
-
-        return vsprintf($specification, $values);
-    }
-
-    /**
-     * Escape % signs and replace ? placeholders with %s, validating the count matches parameters.
-     *
-     * @throws Exception\RuntimeException
-     */
-    private function prepareSpecification(): string
-    {
-        $parametersCount = count($this->parameters);
-        $specification   = str_replace('%', '%%', $this->expression);
-
-        if ($parametersCount === 0) {
-            return $specification;
-        }
-
-        $specification = str_replace(self::PLACEHOLDER, '%s', $specification, $count);
-
-        // Fast path: placeholder count matches parameter count.
-        // Slow path: check for named parameters (:name) used multiple times.
-        if ($count !== $parametersCount) {
-            preg_match_all('/:\w*/', $specification, $matches);
-            if ($parametersCount !== count(array_unique($matches[0]))) {
-                throw new Exception\RuntimeException(
-                    'The number of replacements in the expression does not match the number of parameters'
-                );
-            }
-        }
-
-        return $specification;
+        return $this->renderTokens($processor, $paramPrefix, $paramIndex);
     }
 }
