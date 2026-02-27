@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace PhpDb\Sql\Part;
 
-use PhpDb\Sql\ArgumentType;
+use PhpDb\Sql\Argument\Identifier;
+use PhpDb\Sql\Argument\Literal;
 use PhpDb\Sql\ExpressionInterface;
 use PhpDb\Sql\Select;
-use ValueError;
 
 use function count;
 use function current;
@@ -20,9 +20,8 @@ use function key;
  * Holds column definitions and renders the column list for SELECT statements.
  * Includes both main table columns and join columns.
  *
- * Columns are normalized to ColumnRef[] at set time. At render time,
- * a flat render list of [prefix, ColumnRef] pairs is built from the main columns
- * and any join columns, then rendered in a single loop with ArgumentType enum matching.
+ * Columns are normalized to ColumnRef[] at set time. Rendering is inlined
+ * with instanceof fast-paths for Identifier (hot path) and Literal (star).
  */
 class Columns extends AbstractPart
 {
@@ -44,18 +43,55 @@ class Columns extends AbstractPart
 
     public function __construct()
     {
-        // Default: normalize the initial [SQL_STAR] column
         $this->normalizeColumns();
     }
 
     public function toSql(SqlProcessor $processor): ?string
     {
-        $columnFragments = [];
-        $exprCounter     = 1;
-        $fromPrefix      = $this->fromTablePrefix;
+        $refs       = $this->columnRefs;
+        $fromPrefix = $this->fromTablePrefix;
 
-        foreach ($this->columnRefs as $ref) {
-            $this->renderColumnRef($ref, $fromPrefix, $processor, $columnFragments, $exprCounter);
+        if (isset($refs[0]) && ! isset($refs[1]) && $refs[0]->arg instanceof Literal && $this->joinSpecs === []) {
+            return $fromPrefix . $refs[0]->arg->getValue();
+        }
+
+        $fragments   = [];
+        $exprCounter = 1;
+        $platform    = $processor->platform;
+
+        foreach ($refs as $ref) {
+            $arg = $ref->arg;
+
+            if ($arg instanceof Literal) {
+                $fragments[] = $fromPrefix . $arg->getValue();
+                continue;
+            }
+
+            if ($arg instanceof Identifier) {
+                $segments = $arg->segments;
+                if (! isset($segments[1])) {
+                    $columnSql = $fromPrefix . $platform->quoteIdentifier($segments[0]);
+                } else {
+                    $parts = [];
+                    foreach ($segments as $s) {
+                        $parts[] = $platform->quoteIdentifier($s);
+                    }
+                    $columnSql = $fromPrefix . implode($processor->identifierSeparator, $parts);
+                }
+            } else {
+                $columnSql = $processor->renderExpression(
+                    $arg->getValue(),
+                    $ref->alias ?? 'column',
+                );
+            }
+
+            if ($ref->alias !== null) {
+                $fragments[] = $columnSql . ' AS ' . $platform->quoteIdentifier($ref->alias);
+            } elseif ($ref->containsAlias) {
+                $fragments[] = $columnSql;
+            } else {
+                $fragments[] = $columnSql . ' AS Expression' . $exprCounter++;
+            }
         }
 
         if ($this->joinSpecs !== []) {
@@ -66,44 +102,43 @@ class Columns extends AbstractPart
                 }
                 $joinPrefix = $processor->resolveTable($spec->alias ?? $spec->table) . $separator;
                 foreach ($spec->columnRefs as $ref) {
-                    $this->renderColumnRef($ref, $joinPrefix, $processor, $columnFragments, $exprCounter);
+                    $arg = $ref->arg;
+
+                    if ($arg instanceof Literal) {
+                        $fragments[] = $joinPrefix . $arg->getValue();
+                        continue;
+                    }
+
+                    if ($arg instanceof Identifier) {
+                        $segments = $arg->segments;
+                        if (! isset($segments[1])) {
+                            $columnSql = $joinPrefix . $platform->quoteIdentifier($segments[0]);
+                        } else {
+                            $parts = [];
+                            foreach ($segments as $s) {
+                                $parts[] = $platform->quoteIdentifier($s);
+                            }
+                            $columnSql = $joinPrefix . implode($separator, $parts);
+                        }
+                    } else {
+                        $columnSql = $processor->renderExpression(
+                            $arg->getValue(),
+                            $ref->alias ?? 'column',
+                        );
+                    }
+
+                    if ($ref->alias !== null) {
+                        $fragments[] = $columnSql . ' AS ' . $platform->quoteIdentifier($ref->alias);
+                    } elseif ($ref->containsAlias) {
+                        $fragments[] = $columnSql;
+                    } else {
+                        $fragments[] = $columnSql . ' AS Expression' . $exprCounter++;
+                    }
                 }
             }
         }
 
-        return implode(', ', $columnFragments);
-    }
-
-    private function renderColumnRef(
-        ColumnRef $ref,
-        string $prefix,
-        SqlProcessor $processor,
-        array &$fragments,
-        int &$exprCounter,
-    ): void {
-        if ($ref->isStar) {
-            $fragments[] = $prefix . '*';
-            return;
-        }
-
-        $columnSql = match ($ref->arg->getType()) {
-            ArgumentType::Identifier => $prefix
-                . $processor->renderIdentifierArgument($ref->arg),
-            ArgumentType::Select => $processor->renderExpression(
-                $ref->arg->getValue(),
-                $ref->alias ?? 'column',
-            ),
-            ArgumentType::Literal => $ref->arg->getValue(),
-            default => throw new ValueError('Unexpected ArgumentType: ' . $ref->arg->getType()->name),
-        };
-
-        if ($ref->alias !== null) {
-            $fragments[] = $columnSql . ' AS ' . $processor->platform->quoteIdentifier($ref->alias);
-        } elseif ($ref->containsAlias) {
-            $fragments[] = $columnSql;
-        } else {
-            $fragments[] = $columnSql . ' AS Expression' . $exprCounter++;
-        }
+        return implode(', ', $fragments);
     }
 
     public function isEmpty(): bool

@@ -19,9 +19,13 @@ use function stripos;
  * Normalized column reference for SELECT column lists.
  * Type discrimination happens at construction time, not at render time.
  *
+ * Argument types determine rendering:
+ * - Literal       → star column (*), prefixed, no alias
+ * - Identifier    → column name, prefixed, alias handling
+ * - SelectArgument → expression/subselect, alias handling
+ *
  * Alias rules:
  * - $alias is set      → always render AS $alias
- * - $isStar            → no alias
  * - $containsAlias     → expression already has AS in its spec, no extra alias
  * - expression w/o alias → auto-generate alias as Expression{N} at render time
  * - string w/o alias   → $alias is set to the column name itself (auto-alias)
@@ -30,7 +34,6 @@ final readonly class ColumnRef
 {
     public ArgumentInterface $arg;
     public ?string $alias;
-    public bool $isStar;
     public bool $containsAlias;
 
     /**
@@ -43,32 +46,25 @@ final readonly class ColumnRef
         ExpressionInterface|string $column,
         string $star = Select::SQL_STAR,
     ) {
-        // Star column — no alias
         if ($column === $star) {
             $this->arg           = new Literal('*');
             $this->alias         = null;
-            $this->isStar        = true;
             $this->containsAlias = false;
             return;
         }
 
-        $this->isStar = false;
-
-        // Normalize column to ArgumentInterface
         if ($column instanceof ExpressionInterface) {
             $this->arg = new SelectArgument($column);
         } else {
             $this->arg = new Identifier($column);
         }
 
-        // Explicit alias from string key
         if (is_string($key)) {
             $this->alias         = $key;
             $this->containsAlias = false;
             return;
         }
 
-        // Expression at integer key — check if it already contains ' as '
         if ($column instanceof ExpressionInterface) {
             $this->containsAlias = $column instanceof Expression
                 && stripos($column->getExpression(), ' as ') !== false;
@@ -76,7 +72,6 @@ final readonly class ColumnRef
             return;
         }
 
-        // String column at integer key — auto-alias with the column name itself
         $this->alias         = $column;
         $this->containsAlias = false;
     }
