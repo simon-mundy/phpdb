@@ -53,10 +53,7 @@ class Joins extends AbstractPart
                     'join' . ($j + 1) . 'part'
                 );
             } else {
-                $onClause = $processor->platform->quoteIdentifierInFragment(
-                    $spec->on,
-                    ['=', 'AND', 'OR', '(', ')', 'BETWEEN', '<', '>']
-                );
+                $onClause = $processor->renderIdentifierFragment($spec->onTokens);
             }
 
             $joinSqlParts[] = "{$spec->type} JOIN {$renderedTable} ON {$onClause}";

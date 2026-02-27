@@ -187,6 +187,22 @@ class SqlProcessor
     }
 
     /**
+     * Render a pre-tokenized identifier fragment (mix of Identifier and Literal tokens).
+     *
+     * @param ArgumentInterface[] $tokens
+     */
+    public function renderIdentifierFragment(array $tokens): string
+    {
+        $sql = '';
+        foreach ($tokens as $token) {
+            $sql .= $token->getType() === ArgumentType::Identifier
+                ? $this->renderIdentifierArgument($token)
+                : $token->getValue();
+        }
+        return $sql;
+    }
+
+    /**
      * Render a single ArgumentInterface to its SQL representation.
      * Centralises type dispatch so expressions can render arguments
      * without knowing about quoting, binding, or subselect handling.
