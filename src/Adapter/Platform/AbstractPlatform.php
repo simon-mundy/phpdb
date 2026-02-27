@@ -11,9 +11,7 @@ use PhpDb\Adapter\Exception\VunerablePlatformQuoteException;
 
 use function addcslashes;
 use function array_map;
-use function ctype_alpha;
 use function implode;
-use function preg_replace;
 use function str_replace;
 
 /**
@@ -28,54 +26,8 @@ abstract class AbstractPlatform implements PlatformInterface
 
     protected bool $quoteIdentifiers = true;
 
-    /** SQL keywords that must not be quoted in identifier fragments */
-    protected const KEYWORDS_PATTERN = 'AS|AND|OR|BETWEEN';
-
     /** @var array<string, string> */
     private array $identifierCache = [];
-
-    /**
-     * {@inheritDoc}
-     *
-     * @param string[] $additionalSafeWords
-     */
-    #[Override]
-    public function quoteIdentifierInFragment(string $identifier, array $additionalSafeWords = []): string
-    {
-        if (! $this->quoteIdentifiers) {
-            return $identifier;
-        }
-
-        $cacheKey = $identifier;
-        $pattern  = self::KEYWORDS_PATTERN;
-
-        if ($additionalSafeWords !== []) {
-            $extra = [];
-            foreach ($additionalSafeWords as $word) {
-                if (ctype_alpha($word)) {
-                    $extra[] = $word;
-                }
-            }
-            if ($extra !== []) {
-                $extraPattern = implode('|', $extra);
-                $pattern     .= '|' . $extraPattern;
-                $cacheKey    .= "\0" . $extraPattern;
-            }
-        }
-
-        if (isset($this->identifierCache[$cacheKey])) {
-            return $this->identifierCache[$cacheKey];
-        }
-
-        /** @var string $result */
-        $result = preg_replace(
-            '/\b(?!(?:' . $pattern . ')\b)([a-zA-Z_]\w*+)(?!\s*\()/i',
-            $this->quoteIdentifier[0] . '$1' . $this->quoteIdentifier[1],
-            $identifier
-        );
-
-        return $this->identifierCache[$cacheKey] = $result;
-    }
 
     /**
      * {@inheritDoc}

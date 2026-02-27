@@ -19,7 +19,6 @@ use PHPUnit\Framework\TestCase;
 #[CoversMethod(Sql92::class, 'quoteTrustedValue')]
 #[CoversMethod(Sql92::class, 'quoteValueList')]
 #[CoversMethod(Sql92::class, 'getIdentifierSeparator')]
-#[CoversMethod(Sql92::class, 'quoteIdentifierInFragment')]
 final class Sql92Test extends TestCase
 {
     protected Sql92 $platform;
@@ -109,33 +108,4 @@ final class Sql92Test extends TestCase
         self::assertEquals('.', $this->platform->getIdentifierSeparator());
     }
 
-    public function testQuoteIdentifierInFragment(): void
-    {
-        self::assertEquals('"foo"."bar"', $this->platform->quoteIdentifierInFragment('foo.bar'));
-        self::assertEquals('"foo" as "bar"', $this->platform->quoteIdentifierInFragment('foo as bar'));
-
-        // single char words
-        self::assertEquals(
-            '("foo"."bar" = "boo"."baz")',
-            $this->platform->quoteIdentifierInFragment('(foo.bar = boo.baz)', ['(', ')', '='])
-        );
-
-        // case insensitive safe words
-        self::assertEquals(
-            '("foo"."bar" = "boo"."baz") AND ("foo"."baz" = "boo"."baz")',
-            $this->platform->quoteIdentifierInFragment(
-                '(foo.bar = boo.baz) AND (foo.baz = boo.baz)',
-                ['(', ')', '=', 'and']
-            )
-        );
-
-        // case insensitive safe words in field
-        self::assertEquals(
-            '("foo"."bar" = "boo".baz) AND ("foo".baz = "boo".baz)',
-            $this->platform->quoteIdentifierInFragment(
-                '(foo.bar = boo.baz) AND (foo.baz = boo.baz)',
-                ['(', ')', '=', 'and', 'bAz']
-            )
-        );
-    }
 }

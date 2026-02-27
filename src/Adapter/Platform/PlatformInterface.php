@@ -68,9 +68,4 @@ interface PlatformInterface
      * Get identifier separator
      */
     public function getIdentifierSeparator(): string;
-
-    /**
-     * Quote identifier in fragment
-     */
-    public function quoteIdentifierInFragment(string $identifier, array $additionalSafeWords = []): string;
 }
