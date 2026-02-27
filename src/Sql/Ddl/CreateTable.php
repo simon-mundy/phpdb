@@ -30,6 +30,10 @@ class CreateTable extends AbstractSql
 
     protected bool $isTemporary = false;
 
+    protected string $specIfNotExists = 'IF NOT EXISTS';
+
+    protected string $specIsTemporary = 'TEMPORARY';
+
     /**
      * {@inheritDoc}
      */
@@ -105,8 +109,8 @@ class CreateTable extends AbstractSql
     {
         $rawState = [
             self::TABLE         => $this->table,
-            self::IS_TEMPORARY  => $this->isTemporary,
-            self::IF_NOT_EXISTS => $this->ifNotExists,
+            self::IS_TEMPORARY  => $this->isTemporary ? $this->specIsTemporary : '',
+            self::IF_NOT_EXISTS => $this->ifNotExists ? $this->specIfNotExists : '',
             self::COLUMNS       => $this->columns,
             self::CONSTRAINTS   => $this->constraints,
         ];
@@ -120,8 +124,8 @@ class CreateTable extends AbstractSql
     protected function processTable(?PlatformInterface $adapterPlatform = null): array
     {
         return [
-            $this->isTemporary ? 'TEMPORARY ' : '',
-            $this->ifNotExists ? 'IF NOT EXISTS ' : '',
+            $this->isTemporary ? $this->specIsTemporary . ' ' : '',
+            $this->ifNotExists ? $this->specIfNotExists . ' ' : '',
             $this->resolveTable($this->table, $adapterPlatform),
         ];
     }

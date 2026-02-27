@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace PhpDbTest\Sql\Ddl\Index;
 
 use PhpDb\Sql\Argument\Identifier;
-use PhpDb\Sql\Argument\Literal;
 use PhpDb\Sql\Ddl\Index\Index;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\TestCase;
@@ -67,34 +66,35 @@ final class IndexTest extends TestCase
         self::assertEquals('BTREE', $index->getType());
     }
 
-    public function testGetExpressionDataWithBtreeType(): void
+    public function testGetExpressionDataWithTypeDoesNotRenderUsing(): void
     {
         $index = new Index('foo', 'my_idx');
         $index->setType('BTREE');
 
         $expressionData = $index->getExpressionData();
 
-        self::assertEquals('INDEX %s(%s) USING %s', $expressionData['spec']);
+        // Type is stored but not rendered in base class (adapter-specific)
+        self::assertEquals('INDEX %s(%s)', $expressionData['spec']);
         self::assertEquals([
             new Identifier('my_idx'),
             new Identifier('foo'),
-            new Literal('BTREE'),
         ], $expressionData['values']);
+        self::assertEquals('BTREE', $index->getType());
     }
 
-    public function testGetExpressionDataWithHashType(): void
+    public function testGetExpressionDataWithHashTypeDoesNotRenderUsing(): void
     {
         $index = new Index('foo', 'my_idx');
         $index->setType('HASH');
 
         $expressionData = $index->getExpressionData();
 
-        self::assertEquals('INDEX %s(%s) USING %s', $expressionData['spec']);
+        self::assertEquals('INDEX %s(%s)', $expressionData['spec']);
         self::assertEquals([
             new Identifier('my_idx'),
             new Identifier('foo'),
-            new Literal('HASH'),
         ], $expressionData['values']);
+        self::assertEquals('HASH', $index->getType());
     }
 
     public function testGetExpressionDataWithTypeAndLengths(): void
@@ -104,12 +104,12 @@ final class IndexTest extends TestCase
 
         $expressionData = $index->getExpressionData();
 
-        self::assertEquals('INDEX %s(%s(10), %s(5)) USING %s', $expressionData['spec']);
+        self::assertEquals('INDEX %s(%s(10), %s(5))', $expressionData['spec']);
         self::assertEquals([
             new Identifier('my_idx'),
             new Identifier('foo'),
             new Identifier('bar'),
-            new Literal('BTREE'),
         ], $expressionData['values']);
+        self::assertEquals('BTREE', $index->getType());
     }
 }

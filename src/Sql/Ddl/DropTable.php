@@ -18,6 +18,8 @@ class DropTable extends AbstractSql
 
     protected bool $ifExists = false;
 
+    protected string $specIfExists = 'IF EXISTS';
+
     protected array $specifications = [
         self::TABLE => 'DROP TABLE %1$s%2$s',
     ];
@@ -47,7 +49,7 @@ class DropTable extends AbstractSql
     {
         $rawState = [
             self::TABLE     => $this->table,
-            self::IF_EXISTS => $this->ifExists,
+            self::IF_EXISTS => $this->ifExists ? $this->specIfExists : '',
         ];
 
         return isset($key) && array_key_exists($key, $rawState) ? $rawState[$key] : $rawState;
@@ -57,7 +59,7 @@ class DropTable extends AbstractSql
     protected function processTable(?PlatformInterface $adapterPlatform = null): array
     {
         return [
-            $this->ifExists ? 'IF EXISTS ' : '',
+            $this->ifExists ? $this->specIfExists . ' ' : '',
             $this->resolveTable($this->table, $adapterPlatform),
         ];
     }

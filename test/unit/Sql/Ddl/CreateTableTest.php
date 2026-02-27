@@ -219,10 +219,14 @@ class CreateTableTest extends TestCase
 
         self::assertIsArray($rawState);
         self::assertArrayHasKey(CreateTable::TABLE, $rawState);
+        self::assertArrayHasKey(CreateTable::IS_TEMPORARY, $rawState);
+        self::assertArrayHasKey(CreateTable::IF_NOT_EXISTS, $rawState);
         self::assertArrayHasKey(CreateTable::COLUMNS, $rawState);
         self::assertArrayHasKey(CreateTable::CONSTRAINTS, $rawState);
 
         self::assertEquals('users', $rawState[CreateTable::TABLE]);
+        self::assertEquals('', $rawState[CreateTable::IS_TEMPORARY]);
+        self::assertEquals('', $rawState[CreateTable::IF_NOT_EXISTS]);
         self::assertEquals([$col], $rawState[CreateTable::COLUMNS]);
         self::assertEquals([$con], $rawState[CreateTable::CONSTRAINTS]);
     }

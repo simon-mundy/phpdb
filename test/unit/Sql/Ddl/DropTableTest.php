@@ -12,6 +12,7 @@ use PHPUnit\Framework\TestCase;
 #[CoversMethod(DropTable::class, '__construct')]
 #[CoversMethod(DropTable::class, 'ifExists')]
 #[CoversMethod(DropTable::class, 'getIfExists')]
+#[CoversMethod(DropTable::class, 'getRawState')]
 #[CoversMethod(DropTable::class, 'getSqlString')]
 #[CoversMethod(DropTable::class, 'processTable')]
 class DropTableTest extends TestCase
@@ -58,5 +59,36 @@ class DropTableTest extends TestCase
         $dt->ifExists();
 
         self::assertEquals('DROP TABLE IF EXISTS "foo"."bar"', $dt->getSqlString());
+    }
+
+    public function testGetRawState(): void
+    {
+        $dt = new DropTable('foo');
+
+        $rawState = $dt->getRawState();
+
+        self::assertIsArray($rawState);
+        self::assertArrayHasKey(DropTable::TABLE, $rawState);
+        self::assertArrayHasKey(DropTable::IF_EXISTS, $rawState);
+        self::assertEquals('foo', $rawState[DropTable::TABLE]);
+        self::assertEquals('', $rawState[DropTable::IF_EXISTS]);
+    }
+
+    public function testGetRawStateWithIfExists(): void
+    {
+        $dt = new DropTable('foo');
+        $dt->ifExists();
+
+        $rawState = $dt->getRawState();
+
+        self::assertEquals('IF EXISTS', $rawState[DropTable::IF_EXISTS]);
+    }
+
+    public function testGetRawStateByKey(): void
+    {
+        $dt = new DropTable('foo');
+
+        self::assertEquals('foo', $dt->getRawState(DropTable::TABLE));
+        self::assertEquals('', $dt->getRawState(DropTable::IF_EXISTS));
     }
 }

@@ -168,8 +168,8 @@ print_r($state);
 /*
 Array(
     [table] => users
-    [isTemporary] => false
-    [ifNotExists] => false
+    [isTemporary] =>
+    [ifNotExists] =>
     [columns] => Array(
         [0] => PhpDb\Sql\Ddl\Column\Integer Object
         [1] => PhpDb\Sql\Ddl\Column\Varchar Object
