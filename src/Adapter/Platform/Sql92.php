@@ -18,6 +18,14 @@ class Sql92 extends AbstractPlatform
     /**
      * {@inheritDoc}
      */
+    public function getName(): string
+    {
+        return self::PLATFORM_NAME;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     #[Override]
     public function quoteValue(string $value): string
     {
@@ -33,7 +41,6 @@ class Sql92 extends AbstractPlatform
     /**
      * {@inheritDoc}
      */
-    #[Override]
     public function getSqlPlatformDecorator(): SqlPlatform
     {
         return new Sql92Platform();
