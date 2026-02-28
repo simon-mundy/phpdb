@@ -28,7 +28,7 @@ class Check extends AbstractConstraint
     }
 
     #[Override]
-    public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
+    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         $parts = [];
 

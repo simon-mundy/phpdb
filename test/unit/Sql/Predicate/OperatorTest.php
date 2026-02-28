@@ -22,7 +22,7 @@ use PHPUnit\Framework\TestCase;
 #[CoversMethod(Operator::class, 'setOperator')]
 #[CoversMethod(Operator::class, 'getRight')]
 #[CoversMethod(Operator::class, 'setRight')]
-#[CoversMethod(Operator::class, 'renderSql')]
+#[CoversMethod(Operator::class, 'toSql')]
 final class OperatorTest extends TestCase
 {
     public function testEmptyConstructorYieldsNullLeftAndRightValues(): void
@@ -152,7 +152,7 @@ final class OperatorTest extends TestCase
 
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $operator->renderSql($processor, '', $paramIndex);
+        $sql        = $operator->toSql($processor, '', $paramIndex);
 
         self::assertEquals('\'foo\' >= "foo"."bar"', $sql);
     }
@@ -167,7 +167,7 @@ final class OperatorTest extends TestCase
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Left expression must be specified');
-        $operator->renderSql($processor, '', $paramIndex);
+        $operator->toSql($processor, '', $paramIndex);
     }
 
     public function testGetExpressionDataThrowsExceptionWhenRightNotSet(): void
@@ -180,6 +180,6 @@ final class OperatorTest extends TestCase
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Right expression must be specified');
-        $operator->renderSql($processor, '', $paramIndex);
+        $operator->toSql($processor, '', $paramIndex);
     }
 }

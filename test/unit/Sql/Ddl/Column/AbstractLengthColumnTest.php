@@ -13,7 +13,7 @@ use PHPUnit\Framework\TestCase;
 
 #[CoversMethod(AbstractLengthColumn::class, 'setLength')]
 #[CoversMethod(AbstractLengthColumn::class, 'getLength')]
-#[CoversMethod(AbstractLengthColumn::class, 'renderSql')]
+#[CoversMethod(AbstractLengthColumn::class, 'toSql')]
 final class AbstractLengthColumnTest extends TestCase
 {
     /**
@@ -55,7 +55,7 @@ final class AbstractLengthColumnTest extends TestCase
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
 
-        $sql = $column->renderSql($processor, '', $paramIndex);
+        $sql = $column->toSql($processor, '', $paramIndex);
 
         self::assertEquals('"foo" INTEGER(4) NOT NULL', $sql);
     }

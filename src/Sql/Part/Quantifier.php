@@ -15,7 +15,7 @@ class Quantifier extends AbstractPart
 {
     private ?ArgumentInterface $quantifier = null;
 
-    public function toSql(SqlProcessor $processor): ?string
+    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         if ($this->quantifier === null) {
             return null;

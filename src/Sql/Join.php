@@ -161,7 +161,7 @@ class Join extends AbstractPart implements Iterator, Countable
     }
 
     #[Override]
-    public function toSql(SqlProcessor $processor): ?string
+    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         if ($this->specs === []) {
             return null;
@@ -180,10 +180,10 @@ class Join extends AbstractPart implements Iterator, Countable
 
         foreach ($this->specs as $j => $spec) {
             $joinName = match ($spec->tableType) {
-                JoinTableType::Expression      => $spec->table->getExpression(), // @phpstan-ignore method.nonObject
-                JoinTableType::TableIdentifier => $processor->resolveTable($spec->table),
-                JoinTableType::Select          => '(' . $processor->processSubSelect($spec->table) . ')',
                 JoinTableType::Identifier      => $platform->quoteIdentifier($spec->table),
+                JoinTableType::TableIdentifier => $processor->resolveTable($spec->table),
+                JoinTableType::Expression      => $spec->table->getExpression(), // @phpstan-ignore method.nonObject
+                JoinTableType::Select          => '(' . $processor->processSubSelect($spec->table) . ')',
             };
             $quotedAlias = $spec->alias !== null
                 ? $platform->quoteIdentifier($spec->alias)

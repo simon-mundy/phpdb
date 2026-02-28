@@ -11,7 +11,7 @@ class Limit extends AbstractPart
 {
     private ?Parameter $limit = null;
 
-    public function toSql(SqlProcessor $processor): ?string
+    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         if ($this->limit === null) {
             return null;

@@ -17,7 +17,7 @@ use PHPUnit\Framework\TestCase;
 #[CoversMethod(AbstractConstraint::class, 'setColumns')]
 #[CoversMethod(AbstractConstraint::class, 'addColumn')]
 #[CoversMethod(AbstractConstraint::class, 'getColumns')]
-#[CoversMethod(AbstractConstraint::class, 'renderSql')]
+#[CoversMethod(AbstractConstraint::class, 'toSql')]
 #[CoversMethod(ForeignKey::class, '__construct')]
 #[CoversMethod(ForeignKey::class, 'setName')]
 #[CoversMethod(ForeignKey::class, 'getName')]
@@ -29,7 +29,7 @@ use PHPUnit\Framework\TestCase;
 #[CoversMethod(ForeignKey::class, 'getOnDeleteRule')]
 #[CoversMethod(ForeignKey::class, 'setOnUpdateRule')]
 #[CoversMethod(ForeignKey::class, 'getOnUpdateRule')]
-#[CoversMethod(ForeignKey::class, 'renderSql')]
+#[CoversMethod(ForeignKey::class, 'toSql')]
 final class ForeignKeyTest extends TestCase
 {
     public function testSetName(): void
@@ -138,7 +138,7 @@ final class ForeignKeyTest extends TestCase
 
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $fk->renderSql($processor, '', $paramIndex);
+        $sql        = $fk->toSql($processor, '', $paramIndex);
 
         self::assertEquals(
             'CONSTRAINT "foo" FOREIGN KEY ("bar") REFERENCES "baz" ("bam") ON DELETE CASCADE ON UPDATE SET NULL',

@@ -37,7 +37,7 @@ class Index extends AbstractIndex
     }
 
     #[Override]
-    public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
+    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         $quotedName = $processor->renderArgument(
             new Identifier($this->name),

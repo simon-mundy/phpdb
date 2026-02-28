@@ -194,7 +194,7 @@ final class ExpressionTest extends TestCase
 
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $expression->renderSql($processor, '', $paramIndex);
+        $sql        = $expression->toSql($processor, '', $paramIndex);
 
         self::assertEquals('foo.bar = \'foo\' AND id != \'bar\'', $sql);
     }

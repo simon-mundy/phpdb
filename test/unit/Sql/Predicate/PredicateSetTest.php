@@ -31,7 +31,7 @@ use TypeError;
 #[CoversMethod(PredicateSet::class, 'getPredicates')]
 #[CoversMethod(PredicateSet::class, 'orPredicate')]
 #[CoversMethod(PredicateSet::class, 'andPredicate')]
-#[CoversMethod(PredicateSet::class, 'renderSql')]
+#[CoversMethod(PredicateSet::class, 'toSql')]
 #[CoversMethod(PredicateSet::class, 'count')]
 final class PredicateSetTest extends TestCase
 {
@@ -52,7 +52,7 @@ final class PredicateSetTest extends TestCase
 
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $predicateSet->renderSql($processor, '', $paramIndex);
+        $sql        = $predicateSet->toSql($processor, '', $paramIndex);
 
         self::assertStringContainsString('AND', $sql);
         self::assertStringNotContainsString('OR', $sql);
@@ -69,7 +69,7 @@ final class PredicateSetTest extends TestCase
 
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $predicateSet->renderSql($processor, '', $paramIndex);
+        $sql        = $predicateSet->toSql($processor, '', $paramIndex);
 
         self::assertStringContainsString('OR', $sql);
         self::assertStringNotContainsString('AND', $sql);
@@ -87,7 +87,7 @@ final class PredicateSetTest extends TestCase
 
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $predicateSet->renderSql($processor, '', $paramIndex);
+        $sql        = $predicateSet->toSql($processor, '', $paramIndex);
 
         self::assertEquals('"foo" IS NULL AND "bar" IS NULL OR "baz" IS NULL AND "bat" IS NULL', $sql);
     }
@@ -102,7 +102,7 @@ final class PredicateSetTest extends TestCase
 
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $predicateSet->renderSql($processor, '', $paramIndex);
+        $sql        = $predicateSet->toSql($processor, '', $paramIndex);
 
         self::assertEquals('"foo" IS NULL AND "bar" IS NULL OR "baz" IS NULL AND "bat" IS NULL', $sql);
     }
@@ -187,7 +187,7 @@ final class PredicateSetTest extends TestCase
         // Verify the rendered SQL contains COUNT
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $predicateSet->renderSql($processor, '', $paramIndex);
+        $sql        = $predicateSet->toSql($processor, '', $paramIndex);
         self::assertStringContainsString('COUNT', $sql);
     }
 

@@ -11,7 +11,7 @@ use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\TestCase;
 
 #[CoversMethod(Index::class, '__construct')]
-#[CoversMethod(Index::class, 'renderSql')]
+#[CoversMethod(Index::class, 'toSql')]
 #[CoversMethod(Index::class, 'setType')]
 #[CoversMethod(Index::class, 'getType')]
 final class IndexTest extends TestCase
@@ -22,7 +22,7 @@ final class IndexTest extends TestCase
 
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $uk->renderSql($processor, '', $paramIndex);
+        $sql        = $uk->toSql($processor, '', $paramIndex);
 
         self::assertEquals('INDEX "my_uk"("foo")', $sql);
     }
@@ -33,7 +33,7 @@ final class IndexTest extends TestCase
 
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $key->renderSql($processor, '', $paramIndex);
+        $sql        = $key->toSql($processor, '', $paramIndex);
 
         self::assertEquals('INDEX "my_uk"("foo"(10), "bar"(5))', $sql);
     }
@@ -44,7 +44,7 @@ final class IndexTest extends TestCase
 
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $key->renderSql($processor, '', $paramIndex);
+        $sql        = $key->toSql($processor, '', $paramIndex);
 
         self::assertEquals('INDEX "my_uk"("foo"(10), "bar")', $sql);
     }
@@ -66,7 +66,7 @@ final class IndexTest extends TestCase
 
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $index->renderSql($processor, '', $paramIndex);
+        $sql        = $index->toSql($processor, '', $paramIndex);
 
         self::assertEquals('INDEX "my_idx"("foo") USING BTREE', $sql);
     }
@@ -78,7 +78,7 @@ final class IndexTest extends TestCase
 
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $index->renderSql($processor, '', $paramIndex);
+        $sql        = $index->toSql($processor, '', $paramIndex);
 
         self::assertEquals('INDEX "my_idx"("foo") USING HASH', $sql);
     }
@@ -90,7 +90,7 @@ final class IndexTest extends TestCase
 
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $index->renderSql($processor, '', $paramIndex);
+        $sql        = $index->toSql($processor, '', $paramIndex);
 
         self::assertEquals('INDEX "my_idx"("foo"(10), "bar"(5)) USING BTREE', $sql);
     }

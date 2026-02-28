@@ -12,13 +12,22 @@ use PhpDb\Sql\Part\SqlProcessor;
 class Having extends Predicate\Predicate implements PartInterface
 {
     #[Override]
-    public function toSql(SqlProcessor $processor): ?string
+    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         if ($this->count() === 0) {
             return null;
         }
 
-        return 'HAVING ' . $processor->renderExpression($this, 'having');
+        if ($paramPrefix !== '') {
+            return parent::toSql($processor, $paramPrefix, $paramIndex);
+        }
+
+        if ($processor->parameterContainer !== null) {
+            return 'HAVING ' . $processor->renderExpression($this, 'having');
+        }
+
+        $pi = 0;
+        return 'HAVING ' . parent::toSql($processor, '', $pi);
     }
 
     #[Override]

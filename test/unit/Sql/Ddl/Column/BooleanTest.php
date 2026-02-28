@@ -12,7 +12,7 @@ use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
-#[CoversMethod(Boolean::class, 'renderSql')]
+#[CoversMethod(Boolean::class, 'toSql')]
 #[CoversClass(Boolean::class)]
 final class BooleanTest extends TestCase
 {
@@ -23,7 +23,7 @@ final class BooleanTest extends TestCase
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
 
-        $sql = $column->renderSql($processor, '', $paramIndex);
+        $sql = $column->toSql($processor, '', $paramIndex);
 
         self::assertEquals('"foo" BOOLEAN NOT NULL', $sql);
     }

@@ -31,7 +31,7 @@ class Columns extends AbstractPart
         $this->normalizeColumns();
     }
 
-    public function toSql(SqlProcessor $processor): ?string
+    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         $refs       = $this->columnRefs;
         $fromPrefix = $this->fromTablePrefix;

@@ -20,7 +20,7 @@ use PHPUnit\Framework\TestCase;
 #[CoversMethod(In::class, 'getIdentifier')]
 #[CoversMethod(In::class, 'setValueSet')]
 #[CoversMethod(In::class, 'getValueSet')]
-#[CoversMethod(In::class, 'renderSql')]
+#[CoversMethod(In::class, 'toSql')]
 final class InTest extends TestCase
 {
     public function testEmptyConstructorYieldsNullIdentifierAndValueSet(): void
@@ -124,7 +124,7 @@ final class InTest extends TestCase
 
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $in->renderSql($processor, '', $paramIndex);
+        $sql        = $in->toSql($processor, '', $paramIndex);
 
         self::assertEquals('"foo"."bar" IN (\'1\', \'2\', \'3\')', $sql);
     }
@@ -136,7 +136,7 @@ final class InTest extends TestCase
 
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $in->renderSql($processor, '', $paramIndex);
+        $sql        = $in->toSql($processor, '', $paramIndex);
 
         self::assertStringStartsWith('\'foo\' IN (SELECT "foo"', $sql);
     }
@@ -147,7 +147,7 @@ final class InTest extends TestCase
 
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $in->renderSql($processor, '', $paramIndex);
+        $sql        = $in->toSql($processor, '', $paramIndex);
 
         self::assertEquals('"foo" IN ()', $sql);
     }
@@ -159,7 +159,7 @@ final class InTest extends TestCase
 
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $in->renderSql($processor, '', $paramIndex);
+        $sql        = $in->toSql($processor, '', $paramIndex);
 
         self::assertStringStartsWith('"foo" IN (SELECT "foo"', $sql);
     }
@@ -171,7 +171,7 @@ final class InTest extends TestCase
 
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $in->renderSql($processor, '', $paramIndex);
+        $sql        = $in->toSql($processor, '', $paramIndex);
 
         self::assertStringStartsWith('"foo", "bar" IN (SELECT "foo"', $sql);
     }
@@ -186,7 +186,7 @@ final class InTest extends TestCase
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Identifier must be specified');
-        $in->renderSql($processor, '', $paramIndex);
+        $in->toSql($processor, '', $paramIndex);
     }
 
     public function testGetExpressionDataThrowsExceptionWhenValueSetNotSet(): void
@@ -199,6 +199,6 @@ final class InTest extends TestCase
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Value set must be provided for IN predicate');
-        $in->renderSql($processor, '', $paramIndex);
+        $in->toSql($processor, '', $paramIndex);
     }
 }

@@ -13,7 +13,7 @@ class From extends AbstractPart
 
     private ?string $resolvedTable = null;
 
-    public function toSql(SqlProcessor $processor): ?string
+    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         $table = $this->renderTable($processor);
         return $table !== null ? 'FROM ' . $table : null;

@@ -13,7 +13,7 @@ use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\TestCase;
 
 #[CoversMethod(Integer::class, '__construct')]
-#[CoversMethod(Column::class, 'renderSql')]
+#[CoversMethod(Column::class, 'toSql')]
 final class IntegerTest extends TestCase
 {
     public function testObjectConstruction(): void
@@ -28,7 +28,7 @@ final class IntegerTest extends TestCase
         $paramIndex = 1;
 
         $column = new Integer('foo');
-        $sql    = $column->renderSql($processor, '', $paramIndex);
+        $sql    = $column->toSql($processor, '', $paramIndex);
 
         self::assertEquals('"foo" INTEGER NOT NULL', $sql);
 
@@ -36,7 +36,7 @@ final class IntegerTest extends TestCase
         $column->addConstraint(new PrimaryKey());
 
         $paramIndex = 1;
-        $sql        = $column->renderSql($processor, '', $paramIndex);
+        $sql        = $column->toSql($processor, '', $paramIndex);
 
         self::assertEquals('"foo" INTEGER NOT NULL PRIMARY KEY', $sql);
     }

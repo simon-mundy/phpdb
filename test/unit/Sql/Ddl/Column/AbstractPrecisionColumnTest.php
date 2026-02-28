@@ -15,7 +15,7 @@ use PHPUnit\Framework\TestCase;
 #[CoversMethod(AbstractPrecisionColumn::class, 'getDigits')]
 #[CoversMethod(AbstractPrecisionColumn::class, 'setDecimal')]
 #[CoversMethod(AbstractPrecisionColumn::class, 'getDecimal')]
-#[CoversMethod(AbstractPrecisionColumn::class, 'renderSql')]
+#[CoversMethod(AbstractPrecisionColumn::class, 'toSql')]
 final class AbstractPrecisionColumnTest extends TestCase
 {
     /**
@@ -83,7 +83,7 @@ final class AbstractPrecisionColumnTest extends TestCase
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
 
-        $sql = $column->renderSql($processor, '', $paramIndex);
+        $sql = $column->toSql($processor, '', $paramIndex);
 
         self::assertEquals('"foo" INTEGER(10,5) NOT NULL', $sql);
     }

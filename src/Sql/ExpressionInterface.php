@@ -8,11 +8,5 @@ use PhpDb\Sql\Part\SqlProcessor;
 
 interface ExpressionInterface
 {
-    /**
-     * Render this expression directly to a SQL string.
-     *
-     * Implementations should render their own structure using $processor->renderArgument()
-     * for each argument.
-     */
-    public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string;
+    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string;
 }

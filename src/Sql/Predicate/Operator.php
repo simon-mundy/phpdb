@@ -136,7 +136,7 @@ class Operator extends AbstractExpression implements PredicateInterface
     }
 
     #[Override]
-    public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
+    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         if ($this->left === null || $this->right === null) {
             throw new InvalidArgumentException(

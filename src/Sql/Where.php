@@ -12,13 +12,22 @@ use PhpDb\Sql\Part\SqlProcessor;
 class Where extends Predicate\Predicate implements PartInterface
 {
     #[Override]
-    public function toSql(SqlProcessor $processor): ?string
+    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         if ($this->count() === 0) {
             return null;
         }
 
-        return 'WHERE ' . $processor->renderExpression($this, 'where');
+        if ($paramPrefix !== '') {
+            return parent::toSql($processor, $paramPrefix, $paramIndex);
+        }
+
+        if ($processor->parameterContainer !== null) {
+            return 'WHERE ' . $processor->renderExpression($this, 'where');
+        }
+
+        $pi = 0;
+        return 'WHERE ' . parent::toSql($processor, '', $pi);
     }
 
     #[Override]

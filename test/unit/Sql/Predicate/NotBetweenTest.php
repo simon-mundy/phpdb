@@ -13,7 +13,7 @@ use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\TestCase;
 
 #[CoversMethod(NotBetween::class, 'getSpecification')]
-#[CoversMethod(NotBetween::class, 'renderSql')]
+#[CoversMethod(NotBetween::class, 'toSql')]
 final class NotBetweenTest extends TestCase
 {
     protected NotBetween $notBetween;
@@ -38,7 +38,7 @@ final class NotBetweenTest extends TestCase
 
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $this->notBetween->renderSql($processor, '', $paramIndex);
+        $sql        = $this->notBetween->toSql($processor, '', $paramIndex);
 
         self::assertEquals('"foo"."bar" NOT BETWEEN \'10\' AND \'19\'', $sql);
 
@@ -48,7 +48,7 @@ final class NotBetweenTest extends TestCase
             ->setMaxValue(Argument::identifier('foo.baz'));
 
         $paramIndex = 1;
-        $sql        = $this->notBetween->renderSql($processor, '', $paramIndex);
+        $sql        = $this->notBetween->toSql($processor, '', $paramIndex);
 
         self::assertEquals('\'10\' NOT BETWEEN "foo"."bar" AND "foo"."baz"', $sql);
     }

@@ -122,13 +122,13 @@ class SqlProcessor
     ): string {
         if ($this->parameterContainer === null) {
             $paramIndex = 0;
-            return $expression->renderSql($this, '', $paramIndex);
+            return $expression->toSql($this, '', $paramIndex);
         }
 
         $namedParameterPrefix = $this->resolveParamPrefix($namedParameterPrefix);
         $paramIndex           = &$this->instanceParameterIndex[$namedParameterPrefix];
 
-        return $expression->renderSql($this, $namedParameterPrefix, $paramIndex);
+        return $expression->toSql($this, $namedParameterPrefix, $paramIndex);
     }
 
     public function renderArgument(

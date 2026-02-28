@@ -24,7 +24,7 @@ use PHPUnit\Framework\TestCase;
 #[CoversMethod(Between::class, 'setMinValue')]
 #[CoversMethod(Between::class, 'setMaxValue')]
 #[CoversMethod(Between::class, 'setSpecification')]
-#[CoversMethod(Between::class, 'renderSql')]
+#[CoversMethod(Between::class, 'toSql')]
 final class BetweenTest extends TestCase
 {
     protected Between $between;
@@ -187,7 +187,7 @@ final class BetweenTest extends TestCase
 
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $this->between->renderSql($processor, '', $paramIndex);
+        $sql        = $this->between->toSql($processor, '', $paramIndex);
 
         self::assertEquals('"foo"."bar" BETWEEN \'10\' AND \'19\'', $sql);
 
@@ -196,7 +196,7 @@ final class BetweenTest extends TestCase
                       ->setMaxValue(Argument::identifier('foo.baz'));
 
         $paramIndex = 1;
-        $sql        = $this->between->renderSql($processor, '', $paramIndex);
+        $sql        = $this->between->toSql($processor, '', $paramIndex);
 
         self::assertEquals('\'10\' BETWEEN "foo"."bar" AND "foo"."baz"', $sql);
     }
@@ -211,7 +211,7 @@ final class BetweenTest extends TestCase
 
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage('Identifier must be specified');
-        $between->renderSql($processor, '', $paramIndex);
+        $between->toSql($processor, '', $paramIndex);
     }
 
     public function testGetExpressionDataThrowsExceptionWhenMinValueNotSet(): void
@@ -224,7 +224,7 @@ final class BetweenTest extends TestCase
 
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage('minValue must be specified');
-        $between->renderSql($processor, '', $paramIndex);
+        $between->toSql($processor, '', $paramIndex);
     }
 
     public function testGetExpressionDataThrowsExceptionWhenMaxValueNotSet(): void
@@ -237,6 +237,6 @@ final class BetweenTest extends TestCase
 
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage('maxValue must be specified');
-        $between->renderSql($processor, '', $paramIndex);
+        $between->toSql($processor, '', $paramIndex);
     }
 }

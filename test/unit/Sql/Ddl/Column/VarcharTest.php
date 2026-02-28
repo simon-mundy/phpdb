@@ -11,12 +11,12 @@ use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\TestCase;
 
-#[CoversMethod(Varchar::class, 'renderSql')]
+#[CoversMethod(Varchar::class, 'toSql')]
 #[CoversMethod(AbstractLengthColumn::class, '__construct')]
 #[CoversMethod(AbstractLengthColumn::class, 'setLength')]
 #[CoversMethod(AbstractLengthColumn::class, 'getLength')]
 #[CoversMethod(AbstractLengthColumn::class, 'getLengthExpression')]
-#[CoversMethod(AbstractLengthColumn::class, 'renderSql')]
+#[CoversMethod(AbstractLengthColumn::class, 'toSql')]
 final class VarcharTest extends TestCase
 {
     public function testGetExpressionData(): void
@@ -26,14 +26,14 @@ final class VarcharTest extends TestCase
 
         $column = new Varchar('foo', 20);
 
-        $sql = $column->renderSql($processor, '', $paramIndex);
+        $sql = $column->toSql($processor, '', $paramIndex);
 
         self::assertEquals('"foo" VARCHAR(20) NOT NULL', $sql);
 
         $column->setDefault('bar');
 
         $paramIndex = 1;
-        $sql        = $column->renderSql($processor, '', $paramIndex);
+        $sql        = $column->toSql($processor, '', $paramIndex);
 
         self::assertEquals('"foo" VARCHAR(20) NOT NULL DEFAULT \'bar\'', $sql);
     }
@@ -54,7 +54,7 @@ final class VarcharTest extends TestCase
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
 
-        $sql = $column->renderSql($processor, '', $paramIndex);
+        $sql = $column->toSql($processor, '', $paramIndex);
 
         // When length is null, getLengthExpression() returns empty string
         // which means no length modifier is appended

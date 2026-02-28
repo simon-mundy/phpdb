@@ -11,7 +11,7 @@ use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\TestCase;
 
-#[CoversMethod(Decimal::class, 'renderSql')]
+#[CoversMethod(Decimal::class, 'toSql')]
 #[CoversMethod(AbstractPrecisionColumn::class, '__construct')]
 #[CoversMethod(AbstractPrecisionColumn::class, 'setDigits')]
 #[CoversMethod(AbstractPrecisionColumn::class, 'getDigits')]
@@ -27,7 +27,7 @@ final class DecimalTest extends TestCase
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
 
-        $sql = $column->renderSql($processor, '', $paramIndex);
+        $sql = $column->toSql($processor, '', $paramIndex);
 
         self::assertEquals('"foo" DECIMAL(10,5) NOT NULL', $sql);
     }
@@ -66,7 +66,7 @@ final class DecimalTest extends TestCase
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
 
-        $sql = $column->renderSql($processor, '', $paramIndex);
+        $sql = $column->toSql($processor, '', $paramIndex);
 
         // Without decimal, length expression should be just the digits
         self::assertEquals('"amount" DECIMAL(10) NOT NULL', $sql);

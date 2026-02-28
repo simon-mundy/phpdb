@@ -28,15 +28,15 @@ use TypeError;
 #[CoversMethod(Expression::class, 'getExpression')]
 #[CoversMethod(Expression::class, 'setParameters')]
 #[CoversMethod(Expression::class, 'getParameters')]
-#[CoversMethod(Expression::class, 'renderSql')]
+#[CoversMethod(Expression::class, 'toSql')]
 final class ExpressionTest extends TestCase
 {
-    private function renderSql(Expression $expression): string
+    private function toSql(Expression $expression): string
     {
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
 
-        return $expression->renderSql($processor, '', $paramIndex);
+        return $expression->toSql($processor, '', $paramIndex);
     }
 
     public function testSetExpression(): void
@@ -103,7 +103,7 @@ final class ExpressionTest extends TestCase
             ]
         );
 
-        $sql = $this->renderSql($expression);
+        $sql = $this->toSql($expression);
 
         self::assertEquals('X SAME AS "foo" AND Y = \'5\' BUT LITERALLY FUNC(FF%X)', $sql);
     }
@@ -112,7 +112,7 @@ final class ExpressionTest extends TestCase
     {
         $expression = new Expression('X LIKE "foo%"');
 
-        $sql = $this->renderSql($expression);
+        $sql = $this->toSql($expression);
 
         self::assertEquals('X LIKE "foo%"', $sql);
     }
@@ -136,7 +136,7 @@ final class ExpressionTest extends TestCase
     {
         $expression = new Expression('uf.user_id = :user_id OR uf.friend_id = :user_id');
 
-        $sql = $this->renderSql($expression);
+        $sql = $this->toSql($expression);
 
         self::assertEquals('uf.user_id = :user_id OR uf.friend_id = :user_id', $sql);
     }
@@ -174,7 +174,7 @@ final class ExpressionTest extends TestCase
     {
         $expression = new Expression(':a + :b');
 
-        $sql = $this->renderSql($expression);
+        $sql = $this->toSql($expression);
 
         self::assertEquals(':a + :b', $sql);
     }
@@ -187,7 +187,7 @@ final class ExpressionTest extends TestCase
         $this->expectExceptionMessage(
             'The number of replacements in the expression does not match the number of parameters'
         );
-        $this->renderSql($expression);
+        $this->toSql($expression);
     }
 
     public function testConstructorWithMultipleArguments(): void
@@ -195,7 +195,7 @@ final class ExpressionTest extends TestCase
         // Test deprecated multi-argument constructor
         $expression = new Expression('? + ? - ?', 1, 2, 3);
 
-        $sql = $this->renderSql($expression);
+        $sql = $this->toSql($expression);
 
         self::assertEquals("'1' + '2' - '3'", $sql);
     }

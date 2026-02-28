@@ -12,7 +12,7 @@ use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\TestCase;
 
 #[CoversMethod(SmallInteger::class, '__construct')]
-#[CoversMethod(Column::class, 'renderSql')]
+#[CoversMethod(Column::class, 'toSql')]
 final class SmallIntegerTest extends TestCase
 {
     public function testObjectConstruction(): void
@@ -27,7 +27,7 @@ final class SmallIntegerTest extends TestCase
 
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $column->renderSql($processor, '', $paramIndex);
+        $sql        = $column->toSql($processor, '', $paramIndex);
 
         self::assertEquals('"foo" SMALLINT NOT NULL', $sql);
     }

@@ -94,7 +94,7 @@ final class NotLikeTest extends TestCase
 
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $notLike->renderSql($processor, '', $paramIndex);
+        $sql        = $notLike->toSql($processor, '', $paramIndex);
 
         self::assertEquals('"bar" NOT LIKE \'Foo%\'', $sql);
     }

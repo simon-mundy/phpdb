@@ -33,6 +33,6 @@ final readonly class Select implements ArgumentInterface
             return '(' . $processor->processSubSelect($this->select) . ')';
         }
 
-        return $this->select->renderSql($processor, $paramPrefix, $paramIndex);
+        return $this->select->toSql($processor, $paramPrefix, $paramIndex);
     }
 }

@@ -12,8 +12,8 @@ use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\TestCase;
 
-#[CoversMethod(Timestamp::class, 'renderSql')]
-#[CoversMethod(AbstractTimestampColumn::class, 'renderSql')]
+#[CoversMethod(Timestamp::class, 'toSql')]
+#[CoversMethod(AbstractTimestampColumn::class, 'toSql')]
 final class TimestampTest extends TestCase
 {
     public function testGetExpressionData(): void
@@ -23,7 +23,7 @@ final class TimestampTest extends TestCase
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
 
-        $sql = $column->renderSql($processor, '', $paramIndex);
+        $sql = $column->toSql($processor, '', $paramIndex);
 
         self::assertEquals('"foo" TIMESTAMP NOT NULL', $sql);
     }
@@ -36,7 +36,7 @@ final class TimestampTest extends TestCase
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
 
-        $sql = $column->renderSql($processor, '', $paramIndex);
+        $sql = $column->toSql($processor, '', $paramIndex);
 
         self::assertEquals('"created_at" TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP', $sql);
     }
@@ -48,7 +48,7 @@ final class TimestampTest extends TestCase
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
 
-        $sql = $column->renderSql($processor, '', $paramIndex);
+        $sql = $column->toSql($processor, '', $paramIndex);
 
         // Should NOT include ON UPDATE
         self::assertEquals('"updated_at" TIMESTAMP NOT NULL', $sql);
@@ -61,7 +61,7 @@ final class TimestampTest extends TestCase
 
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $column->renderSql($processor, '', $paramIndex);
+        $sql        = $column->toSql($processor, '', $paramIndex);
 
         self::assertEquals('"created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP', $sql);
     }
@@ -74,7 +74,7 @@ final class TimestampTest extends TestCase
 
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $column->renderSql($processor, '', $paramIndex);
+        $sql        = $column->toSql($processor, '', $paramIndex);
 
         $expected = '"updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP';
         self::assertEquals($expected, $sql);

@@ -43,7 +43,7 @@ class LiteralTest extends TestCase
 
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $literal->renderSql($processor, '', $paramIndex);
+        $sql        = $literal->toSql($processor, '', $paramIndex);
 
         self::assertEquals('bar', $sql);
     }

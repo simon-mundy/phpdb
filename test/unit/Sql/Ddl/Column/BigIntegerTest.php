@@ -12,7 +12,7 @@ use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\TestCase;
 
 #[CoversMethod(BigInteger::class, '__construct')]
-#[CoversMethod(Column::class, 'renderSql')]
+#[CoversMethod(Column::class, 'toSql')]
 final class BigIntegerTest extends TestCase
 {
     public function testObjectConstruction(): void
@@ -27,7 +27,7 @@ final class BigIntegerTest extends TestCase
         $paramIndex = 1;
 
         $column = new BigInteger('foo');
-        $sql    = $column->renderSql($processor, '', $paramIndex);
+        $sql    = $column->toSql($processor, '', $paramIndex);
 
         self::assertEquals('"foo" BIGINT NOT NULL', $sql);
     }

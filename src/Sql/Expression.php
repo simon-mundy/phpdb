@@ -103,7 +103,7 @@ class Expression extends AbstractExpression
     }
 
     #[Override]
-    public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
+    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         if ($this->tokens === null) {
             $this->tokenize($this->expression, $this->parameters);

@@ -19,7 +19,7 @@ use PHPUnit\Framework\TestCase;
 #[CoversMethod(IsNull::class, 'getIdentifier')]
 #[CoversMethod(IsNull::class, 'setSpecification')]
 #[CoversMethod(IsNull::class, 'getSpecification')]
-#[CoversMethod(IsNull::class, 'renderSql')]
+#[CoversMethod(IsNull::class, 'toSql')]
 final class IsNullTest extends TestCase
 {
     public function testEmptyConstructorYieldsNullIdentifier(): void
@@ -85,7 +85,7 @@ final class IsNullTest extends TestCase
 
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $isNotNull->renderSql($processor, '', $paramIndex);
+        $sql        = $isNotNull->toSql($processor, '', $paramIndex);
 
         self::assertEquals('"foo"."bar" IS NOT NULL', $sql);
     }
@@ -99,6 +99,6 @@ final class IsNullTest extends TestCase
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Identifier must be specified');
-        $isNull->renderSql($processor, '', $paramIndex);
+        $isNull->toSql($processor, '', $paramIndex);
     }
 }

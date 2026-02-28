@@ -103,9 +103,9 @@ class ForeignKey extends AbstractConstraint
     }
 
     #[Override]
-    public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
+    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
-        $sql = parent::renderSql($processor, $paramPrefix, $paramIndex);
+        $sql = parent::toSql($processor, $paramPrefix, $paramIndex);
 
         $sql .= ' REFERENCES ' . $processor->renderArgument(
             new Identifier($this->referenceTable),

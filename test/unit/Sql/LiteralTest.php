@@ -43,7 +43,7 @@ class LiteralTest extends TestCase
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
 
-        $sql = $literal->renderSql($processor, '', $paramIndex);
+        $sql = $literal->toSql($processor, '', $paramIndex);
 
         self::assertEquals('bar', $sql);
     }
@@ -54,8 +54,8 @@ class LiteralTest extends TestCase
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
 
-        // renderSql returns the literal as-is (no percent escaping needed in renderSql path)
-        $sql = $literal->renderSql($processor, '', $paramIndex);
+        // toSql returns the literal as-is (no percent escaping needed in toSql path)
+        $sql = $literal->toSql($processor, '', $paramIndex);
 
         self::assertEquals('X LIKE "foo%"', $sql);
     }

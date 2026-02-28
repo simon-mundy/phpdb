@@ -13,9 +13,9 @@ use PhpDb\Sql\Part\SqlProcessor;
 abstract class AbstractTimestampColumn extends Column
 {
     #[Override]
-    public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
+    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
-        $sql     = parent::renderSql($processor, $paramPrefix, $paramIndex);
+        $sql     = parent::toSql($processor, $paramPrefix, $paramIndex);
         $options = $this->getOptions();
 
         if (isset($options['on_update'])) {

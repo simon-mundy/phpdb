@@ -21,7 +21,7 @@ use PHPUnit\Framework\TestCase;
 #[CoversMethod(Like::class, 'getLike')]
 #[CoversMethod(Like::class, 'setSpecification')]
 #[CoversMethod(Like::class, 'getSpecification')]
-#[CoversMethod(Like::class, 'renderSql')]
+#[CoversMethod(Like::class, 'toSql')]
 final class LikeTest extends TestCase
 {
     public function testConstructEmptyArgs(): void
@@ -104,14 +104,14 @@ final class LikeTest extends TestCase
 
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $like->renderSql($processor, '', $paramIndex);
+        $sql        = $like->toSql($processor, '', $paramIndex);
 
         self::assertEquals('"bar" LIKE \'Foo%\'', $sql);
 
         $like = new Like(Argument::value('Foo%'), Argument::identifier('bar'));
 
         $paramIndex = 1;
-        $sql        = $like->renderSql($processor, '', $paramIndex);
+        $sql        = $like->toSql($processor, '', $paramIndex);
 
         self::assertEquals('\'Foo%\' LIKE "bar"', $sql);
     }
@@ -134,7 +134,7 @@ final class LikeTest extends TestCase
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Identifier must be specified');
-        $like->renderSql($processor, '', $paramIndex);
+        $like->toSql($processor, '', $paramIndex);
     }
 
     public function testGetExpressionDataThrowsExceptionWhenLikeNotSet(): void
@@ -147,6 +147,6 @@ final class LikeTest extends TestCase
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Like expression must be specified');
-        $like->renderSql($processor, '', $paramIndex);
+        $like->toSql($processor, '', $paramIndex);
     }
 }

@@ -11,7 +11,7 @@ use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\TestCase;
 
 #[CoversMethod(Check::class, '__construct')]
-#[CoversMethod(Check::class, 'renderSql')]
+#[CoversMethod(Check::class, 'toSql')]
 final class CheckTest extends TestCase
 {
     public function testGetExpressionData(): void
@@ -20,7 +20,7 @@ final class CheckTest extends TestCase
 
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $check->renderSql($processor, '', $paramIndex);
+        $sql        = $check->toSql($processor, '', $paramIndex);
 
         self::assertEquals('CONSTRAINT "foo" CHECK (id>0)', $sql);
     }

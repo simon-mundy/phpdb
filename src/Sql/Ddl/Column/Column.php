@@ -103,7 +103,7 @@ class Column implements ColumnInterface
     }
 
     #[Override]
-    public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
+    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         $sql = $processor->renderArgument(new Identifier($this->name), $paramPrefix, $paramIndex)
             . ' ' . $this->type;
@@ -122,7 +122,7 @@ class Column implements ColumnInterface
         }
 
         foreach ($this->constraints as $constraint) {
-            $sql .= ' ' . $constraint->renderSql($processor, $paramPrefix, $paramIndex);
+            $sql .= ' ' . $constraint->toSql($processor, $paramPrefix, $paramIndex);
         }
 
         return $sql;

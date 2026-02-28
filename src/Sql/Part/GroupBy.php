@@ -14,7 +14,7 @@ class GroupBy extends AbstractPart
     /** @var ColumnRef[]|null */
     private ?array $group = null;
 
-    public function toSql(SqlProcessor $processor): ?string
+    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         if ($this->group === null) {
             return null;

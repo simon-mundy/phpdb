@@ -23,7 +23,7 @@ use PHPUnit\Framework\TestCase;
 #[CoversMethod(Column::class, 'setOption')]
 #[CoversMethod(Column::class, 'getOptions')]
 #[CoversMethod(Column::class, 'addConstraint')]
-#[CoversMethod(Column::class, 'renderSql')]
+#[CoversMethod(Column::class, 'toSql')]
 final class ColumnTest extends TestCase
 {
     public function testConstructor(): void
@@ -143,19 +143,19 @@ final class ColumnTest extends TestCase
         $column = new Column();
         $column->setName('foo');
 
-        $sql = $column->renderSql($processor, '', $paramIndex);
+        $sql = $column->toSql($processor, '', $paramIndex);
         self::assertEquals('"foo" INTEGER NOT NULL', $sql);
 
         $column->setNullable(true);
 
         $paramIndex = 1;
-        $sql        = $column->renderSql($processor, '', $paramIndex);
+        $sql        = $column->toSql($processor, '', $paramIndex);
         self::assertEquals('"foo" INTEGER', $sql);
 
         $column->setDefault('bar');
 
         $paramIndex = 1;
-        $sql        = $column->renderSql($processor, '', $paramIndex);
+        $sql        = $column->toSql($processor, '', $paramIndex);
         self::assertEquals('"foo" INTEGER DEFAULT \'bar\'', $sql);
     }
 
@@ -169,7 +169,7 @@ final class ColumnTest extends TestCase
         $column->setNullable(true);
         $column->setDefault(new Literal('CURRENT_TIMESTAMP'));
 
-        $sql = $column->renderSql($processor, '', $paramIndex);
+        $sql = $column->toSql($processor, '', $paramIndex);
         self::assertEquals('"created_at" INTEGER DEFAULT CURRENT_TIMESTAMP', $sql);
 
         self::assertInstanceOf(Literal::class, $column->getDefault());
@@ -196,7 +196,7 @@ final class ColumnTest extends TestCase
         $column->setName('created_at');
         $column->setDefault(new Literal('CURRENT_TIMESTAMP'));
 
-        $sql = $column->renderSql($processor, '', $paramIndex);
+        $sql = $column->toSql($processor, '', $paramIndex);
         self::assertEquals('"created_at" INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP', $sql);
     }
 
@@ -221,7 +221,7 @@ final class ColumnTest extends TestCase
         $column->setName('score');
         $column->setDefault(new Value(42));
 
-        $sql = $column->renderSql($processor, '', $paramIndex);
+        $sql = $column->toSql($processor, '', $paramIndex);
         self::assertEquals('"score" INTEGER NOT NULL DEFAULT \'42\'', $sql);
     }
 
@@ -245,7 +245,7 @@ final class ColumnTest extends TestCase
         $column->setName('rate');
         $column->setDefault(9.99);
 
-        $sql = $column->renderSql($processor, '', $paramIndex);
+        $sql = $column->toSql($processor, '', $paramIndex);
         self::assertEquals('"rate" INTEGER NOT NULL DEFAULT \'9.99\'', $sql);
     }
 
@@ -269,7 +269,7 @@ final class ColumnTest extends TestCase
         $column->setName('is_active');
         $column->setDefault(false);
 
-        $sql = $column->renderSql($processor, '', $paramIndex);
+        $sql = $column->toSql($processor, '', $paramIndex);
         self::assertEquals('"is_active" INTEGER NOT NULL DEFAULT \'\'', $sql);
     }
 }

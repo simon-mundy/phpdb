@@ -21,7 +21,7 @@ final class NotInTest extends TestCase
 
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $in->renderSql($processor, '', $paramIndex);
+        $sql        = $in->toSql($processor, '', $paramIndex);
 
         self::assertEquals('"foo"."bar" NOT IN (\'1\', \'2\', \'3\')', $sql);
     }
@@ -33,7 +33,7 @@ final class NotInTest extends TestCase
 
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $in->renderSql($processor, '', $paramIndex);
+        $sql        = $in->toSql($processor, '', $paramIndex);
 
         self::assertStringStartsWith('"foo" NOT IN (SELECT "foo"', $sql);
     }
@@ -45,7 +45,7 @@ final class NotInTest extends TestCase
 
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $in->renderSql($processor, '', $paramIndex);
+        $sql        = $in->toSql($processor, '', $paramIndex);
 
         self::assertStringStartsWith('"foo" NOT IN (SELECT "foo"', $sql);
     }
@@ -57,7 +57,7 @@ final class NotInTest extends TestCase
 
         $processor  = new SqlProcessor(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $in->renderSql($processor, '', $paramIndex);
+        $sql        = $in->toSql($processor, '', $paramIndex);
 
         self::assertStringStartsWith('"foo", "bar" NOT IN (SELECT "foo"', $sql);
     }
