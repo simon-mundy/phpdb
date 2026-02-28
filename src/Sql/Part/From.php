@@ -14,7 +14,7 @@ use PhpDb\Sql\TableIdentifier;
  */
 class From extends AbstractPart
 {
-    private ?TableRef $ref = null;
+    public ?TableRef $ref = null;
 
     private ?string $resolvedTable = null;
 
