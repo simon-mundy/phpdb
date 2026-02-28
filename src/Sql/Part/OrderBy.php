@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace PhpDb\Sql\Part;
 
+use PhpDb\Sql\ArgumentType;
 use PhpDb\Sql\ExpressionInterface;
+use ValueError;
 
 use function explode;
 use function implode;
@@ -31,19 +33,15 @@ class OrderBy extends AbstractPart
             return null;
         }
 
-        $platform = $processor->platform;
-        $orders   = [];
-
+        $orders = [];
+        $pi     = 0;
         foreach ($this->order as $spec) {
-            $column = $spec->column;
-
-            if (is_string($column)) {
-                $parts     = explode('.', $column, 2);
-                $orders[]  = $platform->quoteIdentifier($parts[0], $parts[1] ?? null)
-                           . ' ' . $spec->direction;
-            } else {
-                $orders[] = $processor->renderExpression($column);
-            }
+            $orders[] = match ($spec->column->getType()) {
+                ArgumentType::Select     => $processor->renderExpression($spec->column->getValue()),
+                ArgumentType::Identifier => $spec->column->render($processor, '', $pi)
+                                             . ' ' . $spec->direction,
+                default => throw new ValueError('Unexpected ArgumentType: ' . $spec->column->getType()->name),
+            };
         }
 
         return 'ORDER BY ' . implode(', ', $orders);
@@ -88,10 +86,10 @@ class OrderBy extends AbstractPart
     {
         $result = [];
         foreach ($this->order as $spec) {
-            if ($spec->column instanceof ExpressionInterface) {
-                $result[] = $spec->column;
+            if ($spec->column->getType() === ArgumentType::Select) {
+                $result[] = $spec->column->getValue();
             } else {
-                $result[] = $spec->column . ' ' . $spec->direction;
+                $result[] = $spec->column->getValue() . ' ' . $spec->direction;
             }
         }
         return $result;

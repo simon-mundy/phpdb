@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace PhpDb\Sql\Part;
 
+use PhpDb\Sql\Argument\Identifier;
+use PhpDb\Sql\Argument\Literal;
 use PhpDb\Sql\ExpressionInterface;
 use PhpDb\Sql\Select;
 
 use function count;
 use function current;
-use function explode;
 use function implode;
 use function is_array;
 use function is_numeric;
-use function is_string;
 use function key;
 
 /**
@@ -51,8 +51,8 @@ class Columns extends AbstractPart
         $refs       = $this->columnRefs;
         $fromPrefix = $this->fromTablePrefix;
 
-        if (isset($refs[0]) && ! isset($refs[1]) && $refs[0]->isStar && $this->joinSpecs === []) {
-            return $fromPrefix . '*';
+        if (isset($refs[0]) && ! isset($refs[1]) && $refs[0]->arg instanceof Literal && $this->joinSpecs === []) {
+            return $fromPrefix . $refs[0]->arg->getValue();
         }
 
         $fragments   = [];
@@ -60,18 +60,20 @@ class Columns extends AbstractPart
         $platform    = $processor->platform;
 
         foreach ($refs as $ref) {
-            if ($ref->isStar) {
-                $fragments[] = $fromPrefix . '*';
+            $arg = $ref->arg;
+
+            if ($arg instanceof Literal) {
+                $fragments[] = $fromPrefix . $arg->getValue();
                 continue;
             }
 
-            $column = $ref->column;
-
-            if (is_string($column)) {
-                $parts     = explode('.', $column, 2);
-                $columnSql = $fromPrefix . $platform->quoteIdentifier($parts[0], $parts[1] ?? null);
+            if ($arg instanceof Identifier) {
+                $columnSql = $fromPrefix . $platform->quoteIdentifier($arg->segments[0], $arg->segments[1] ?? null);
             } else {
-                $columnSql = $processor->renderExpression($column, $ref->alias ?? 'column');
+                $columnSql = $processor->renderExpression(
+                    $arg->getValue(),
+                    $ref->alias ?? 'column',
+                );
             }
 
             if ($ref->alias !== null) {
@@ -91,18 +93,20 @@ class Columns extends AbstractPart
                 }
                 $joinPrefix = $processor->resolveTable($spec->alias ?? $spec->table) . $separator;
                 foreach ($spec->columnRefs as $ref) {
-                    if ($ref->isStar) {
-                        $fragments[] = $joinPrefix . '*';
+                    $arg = $ref->arg;
+
+                    if ($arg instanceof Literal) {
+                        $fragments[] = $joinPrefix . $arg->getValue();
                         continue;
                     }
 
-                    $column = $ref->column;
-
-                    if (is_string($column)) {
-                        $parts     = explode('.', $column, 2);
-                        $columnSql = $joinPrefix . $platform->quoteIdentifier($parts[0], $parts[1] ?? null);
+                    if ($arg instanceof Identifier) {
+                        $columnSql = $joinPrefix . $platform->quoteIdentifier($arg->segments[0], $arg->segments[1] ?? null);
                     } else {
-                        $columnSql = $processor->renderExpression($column, $ref->alias ?? 'column');
+                        $columnSql = $processor->renderExpression(
+                            $arg->getValue(),
+                            $ref->alias ?? 'column',
+                        );
                     }
 
                     if ($ref->alias !== null) {
