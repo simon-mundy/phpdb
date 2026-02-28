@@ -19,15 +19,6 @@ class Sql92 extends AbstractPlatform
      * {@inheritDoc}
      */
     #[Override]
-    public function getName(): string
-    {
-        return self::PLATFORM_NAME;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    #[Override]
     public function quoteValue(string $value): string
     {
         if (! isset($this->driver)) {
