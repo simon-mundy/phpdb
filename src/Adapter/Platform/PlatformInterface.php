@@ -24,9 +24,9 @@ interface PlatformInterface
     public function getQuoteIdentifierSymbol(): string;
 
     /**
-     * Quote identifier
+     * Quote identifier — pass two segments for dot-qualified identifiers (e.g. table, column).
      */
-    public function quoteIdentifier(string $identifier): string;
+    public function quoteIdentifier(string $identifier, ?string $identifier2 = null): string;
 
     /**
      * Quote identifier chain

@@ -134,7 +134,7 @@ class Update extends AbstractPreparableSql
     ): string {
         $processor = new SqlProcessor($platform, $driver, $parameterContainer, $sqlPlatform);
         $processor->setParamPrefix($this->processInfo['paramPrefix']);
-        $processor->prepare($this);
+        $sqlPlatform?->getTypeDecorator($this)?->prepare($this, $processor);
 
         return (string) SqlFragment::of($this->getStatementKeyword())
             ->part($this->table->renderTable($processor))

@@ -24,6 +24,8 @@ abstract class AbstractPlatform implements PlatformInterface
 
     protected string $quoteIdentifierTo = '\'';
 
+    protected string $identifierSeparator = '.';
+
     protected bool $quoteIdentifiers = true;
 
     /** @var array<string, string> */
@@ -33,10 +35,24 @@ abstract class AbstractPlatform implements PlatformInterface
      * {@inheritDoc}
      */
     #[Override]
-    public function quoteIdentifier(string $identifier): string
+    public function quoteIdentifier(string $identifier, ?string $identifier2 = null): string
     {
         if (! $this->quoteIdentifiers) {
-            return $identifier;
+            return $identifier2 !== null
+                ? $identifier . $this->identifierSeparator . $identifier2
+                : $identifier;
+        }
+
+        if ($identifier2 !== null) {
+            $key = $identifier . '.' . $identifier2;
+            return $this->identifierCache[$key]
+                ??= $this->quoteIdentifier[0]
+                    . str_replace($this->quoteIdentifier[0], $this->quoteIdentifierTo, $identifier)
+                    . $this->quoteIdentifier[1]
+                    . $this->identifierSeparator
+                    . $this->quoteIdentifier[0]
+                    . str_replace($this->quoteIdentifier[0], $this->quoteIdentifierTo, $identifier2)
+                    . $this->quoteIdentifier[1];
         }
 
         return $this->identifierCache[$identifier]
@@ -111,6 +127,6 @@ abstract class AbstractPlatform implements PlatformInterface
     #[Override]
     public function getIdentifierSeparator(): string
     {
-        return '.';
+        return $this->identifierSeparator;
     }
 }

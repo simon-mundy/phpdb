@@ -68,16 +68,7 @@ class Columns extends AbstractPart
             }
 
             if ($arg instanceof Identifier) {
-                $segments = $arg->segments;
-                if (! isset($segments[1])) {
-                    $columnSql = $fromPrefix . $platform->quoteIdentifier($segments[0]);
-                } else {
-                    $parts = [];
-                    foreach ($segments as $s) {
-                        $parts[] = $platform->quoteIdentifier($s);
-                    }
-                    $columnSql = $fromPrefix . implode($processor->identifierSeparator, $parts);
-                }
+                $columnSql = $fromPrefix . $platform->quoteIdentifier($arg->segments[0], $arg->segments[1] ?? null);
             } else {
                 $columnSql = $processor->renderExpression(
                     $arg->getValue(),
@@ -110,16 +101,7 @@ class Columns extends AbstractPart
                     }
 
                     if ($arg instanceof Identifier) {
-                        $segments = $arg->segments;
-                        if (! isset($segments[1])) {
-                            $columnSql = $joinPrefix . $platform->quoteIdentifier($segments[0]);
-                        } else {
-                            $parts = [];
-                            foreach ($segments as $s) {
-                                $parts[] = $platform->quoteIdentifier($s);
-                            }
-                            $columnSql = $joinPrefix . implode($separator, $parts);
-                        }
+                        $columnSql = $joinPrefix . $platform->quoteIdentifier($arg->segments[0], $arg->segments[1] ?? null);
                     } else {
                         $columnSql = $processor->renderExpression(
                             $arg->getValue(),

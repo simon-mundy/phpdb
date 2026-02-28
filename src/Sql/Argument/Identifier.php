@@ -9,7 +9,6 @@ use PhpDb\Sql\ArgumentType;
 use PhpDb\Sql\Part\SqlProcessor;
 
 use function explode;
-use function implode;
 
 final readonly class Identifier implements ArgumentInterface
 {
@@ -34,14 +33,6 @@ final readonly class Identifier implements ArgumentInterface
 
     public function render(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
     {
-        if (!isset($this->segments[1])) {
-            return $processor->platform->quoteIdentifier($this->segments[0]);
-        }
-
-        $parts = [];
-        foreach ($this->segments as $s) {
-            $parts[] = $processor->platform->quoteIdentifier($s);
-        }
-        return implode($processor->identifierSeparator, $parts);
+        return $processor->platform->quoteIdentifier($this->segments[0], $this->segments[1] ?? null);
     }
 }

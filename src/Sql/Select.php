@@ -384,7 +384,8 @@ class Select extends AbstractPreparableSql
     ): string {
         $processor = new SqlProcessor($platform, $driver, $parameterContainer, $sqlPlatform);
         $processor->setParamPrefix($this->processInfo['paramPrefix']);
-        $processor->prepare($this);
+        $sqlPlatform?->getTypeDecorator($this)?->prepare($this, $processor);
+        $this->table->prepare($processor);
 
         return (string) SqlFragment::of('SELECT')
             ->part($this->quantifier?->toSql($processor))

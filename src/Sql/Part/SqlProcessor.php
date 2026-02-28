@@ -48,15 +48,6 @@ class SqlProcessor
         $this->paramPrefix = $prefix;
     }
 
-    public function prepare(object $subject): void
-    {
-        $this->sqlPlatform?->getTypeDecorator($subject)?->prepare($subject, $this);
-
-        if ($subject instanceof Select) {
-            $subject->tablePart()->prepare($this);
-        }
-    }
-
     public function renderParameter(Parameter $param, ?string $nameOverride = null): string
     {
         if ($this->parameterContainer instanceof ParameterContainer) {
