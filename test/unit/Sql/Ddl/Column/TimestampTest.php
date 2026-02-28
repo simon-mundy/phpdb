@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpDbTest\Sql\Ddl\Column;
 
+use PhpDb\Sql\Argument\Literal;
 use PhpDb\Sql\Ddl\Column\AbstractTimestampColumn;
 use PhpDb\Sql\Ddl\Column\Timestamp;
 use PhpDb\Sql\Part\SqlProcessor;
@@ -51,6 +52,31 @@ final class TimestampTest extends TestCase
 
         // Should NOT include ON UPDATE
         self::assertEquals('"updated_at" TIMESTAMP NOT NULL', $sql);
+    }
+
+    public function testGetExpressionDataWithCurrentTimestampDefault(): void
+    {
+        $column = new Timestamp('created_at');
+        $column->setDefault(new Literal('CURRENT_TIMESTAMP'));
+
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $column->renderSql($processor, '', $paramIndex);
+
+        self::assertEquals('"created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP', $sql);
+    }
+
+    public function testGetExpressionDataWithCurrentTimestampDefaultAndOnUpdate(): void
+    {
+        $column = new Timestamp('updated_at');
+        $column->setDefault(new Literal('CURRENT_TIMESTAMP'));
+        $column->setOption('on_update', true);
+
+        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $paramIndex = 1;
+        $sql        = $column->renderSql($processor, '', $paramIndex);
+
+        self::assertEquals('"updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP', $sql);
     }
 
     public function testInheritanceFromAbstractTimestampColumn(): void

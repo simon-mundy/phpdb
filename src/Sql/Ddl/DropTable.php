@@ -15,11 +15,24 @@ class DropTable extends AbstractDdl
 {
     final public const TABLE = 'table';
 
+    protected bool $ifExists = false;
+
     protected string|TableIdentifier $table = '';
 
     public function __construct(string|TableIdentifier $table = '')
     {
         $this->table = $table;
+    }
+
+    public function ifExists(bool $ifExists = true): static
+    {
+        $this->ifExists = $ifExists;
+        return $this;
+    }
+
+    public function getIfExists(): bool
+    {
+        return $this->ifExists;
     }
 
     public function buildSqlString(
@@ -30,6 +43,8 @@ class DropTable extends AbstractDdl
     ): string {
         $processor = new SqlProcessor($platform, $driver, $parameterContainer, $sqlPlatform);
 
-        return 'DROP TABLE ' . $processor->resolveTable($this->table);
+        return 'DROP TABLE '
+            . ($this->ifExists ? 'IF EXISTS ' : '')
+            . $processor->resolveTable($this->table);
     }
 }

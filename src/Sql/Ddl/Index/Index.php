@@ -16,11 +16,24 @@ class Index extends AbstractIndex
 
     protected array $lengths;
 
+    protected ?string $type = null;
+
     public function __construct(null|array|string $columns, ?string $name = null, array $lengths = [])
     {
         parent::__construct($columns, $name);
 
         $this->lengths = $lengths;
+    }
+
+    public function setType(string $type): static
+    {
+        $this->type = $type;
+        return $this;
+    }
+
+    public function getType(): ?string
+    {
+        return $this->type;
     }
 
     #[Override]
@@ -47,6 +60,12 @@ class Index extends AbstractIndex
             $columnParts[] = $part;
         }
 
-        return 'INDEX ' . $quotedName . '(' . implode(', ', $columnParts) . ')';
+        $sql = 'INDEX ' . $quotedName . '(' . implode(', ', $columnParts) . ')';
+
+        if ($this->type !== null) {
+            $sql .= ' USING ' . $this->type;
+        }
+
+        return $sql;
     }
 }

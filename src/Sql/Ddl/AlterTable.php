@@ -7,13 +7,17 @@ namespace PhpDb\Sql\Ddl;
 use PhpDb\Adapter\Driver\DriverInterface;
 use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Adapter\Platform\PlatformInterface;
+use PhpDb\Sql\Literal;
 use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Platform\AbstractPlatform as SqlPlatform;
 use PhpDb\Sql\TableIdentifier;
 
 use function array_key_exists;
 use function implode;
+use function is_bool;
+use function is_int;
 use function rtrim;
+use function strtoupper;
 
 class AlterTable extends AbstractDdl
 {
@@ -31,6 +35,8 @@ class AlterTable extends AbstractDdl
 
     final public const TABLE = 'table';
 
+    final public const TABLE_OPTIONS = 'tableOptions';
+
     protected array $addColumns = [];
 
     protected array $addConstraints = [];
@@ -42,6 +48,8 @@ class AlterTable extends AbstractDdl
     protected array $dropConstraints = [];
 
     protected array $dropIndexes = [];
+
+    protected array $options = [];
 
     protected string|TableIdentifier $table = '';
 
@@ -104,6 +112,23 @@ class AlterTable extends AbstractDdl
         return $this;
     }
 
+    public function setOption(string $name, Literal|bool|int|string $value): static
+    {
+        $this->options[$name] = $value;
+        return $this;
+    }
+
+    public function setOptions(array $options): static
+    {
+        $this->options = $options;
+        return $this;
+    }
+
+    public function getOptions(): array
+    {
+        return $this->options;
+    }
+
     public function getRawState(?string $key = null): array|string
     {
         $rawState = [
@@ -114,6 +139,7 @@ class AlterTable extends AbstractDdl
             self::ADD_CONSTRAINTS  => $this->addConstraints,
             self::DROP_CONSTRAINTS => $this->dropConstraints,
             self::DROP_INDEXES     => $this->dropIndexes,
+            self::TABLE_OPTIONS    => $this->options,
         ];
 
         return isset($key) && array_key_exists($key, $rawState) ? $rawState[$key] : $rawState;
@@ -157,8 +183,32 @@ class AlterTable extends AbstractDdl
             $clauses[] = 'DROP INDEX ' . $platform->quoteIdentifier($index);
         }
 
+        if ($this->options) {
+            $clauses[] = $this->renderTableOptions($platform);
+        }
+
         $sql .= ' ' . implode(",\n ", $clauses);
 
         return rtrim($sql, "\n ,");
+    }
+
+    private function renderTableOptions(PlatformInterface $platform): string
+    {
+        $parts = [];
+        foreach ($this->options as $key => $value) {
+            $key = strtoupper($key);
+            if ($value instanceof Literal) {
+                $value = $value->getLiteral();
+            } elseif (is_bool($value)) {
+                $value = $value ? '1' : '0';
+            } elseif (is_int($value)) {
+                $value = (string) $value;
+            } else {
+                $value = $platform->quoteTrustedValue($value);
+            }
+            $parts[] = $key . ' = ' . $value;
+        }
+
+        return implode(', ', $parts);
     }
 }

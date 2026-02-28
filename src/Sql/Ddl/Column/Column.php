@@ -6,6 +6,7 @@ namespace PhpDb\Sql\Ddl\Column;
 
 use Override;
 use PhpDb\Sql\Argument\Identifier;
+use PhpDb\Sql\Argument\Literal;
 use PhpDb\Sql\Argument\Value;
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\Ddl\Constraint\ConstraintInterface;
@@ -13,7 +14,7 @@ use PhpDb\Sql\Part\SqlProcessor;
 
 class Column implements ColumnInterface
 {
-    protected string|int|ArgumentInterface|null $default;
+    protected string|int|float|bool|Literal|Value|null $default;
 
     protected bool $isNullable = false;
 
@@ -64,14 +65,14 @@ class Column implements ColumnInterface
         return $this->isNullable;
     }
 
-    public function setDefault(string|int|ArgumentInterface|null $default): static
+    public function setDefault(string|int|float|bool|Literal|Value|null $default): static
     {
         $this->default = $default;
         return $this;
     }
 
     #[Override]
-    public function getDefault(): string|int|ArgumentInterface|null
+    public function getDefault(): string|int|float|bool|Literal|Value|null
     {
         return $this->default;
     }
