@@ -18,11 +18,6 @@ use function is_string;
 use function key;
 use function sprintf;
 
-/**
- * Normalized join specification.
- * All type discrimination (array alias, table type, expression ON)
- * happens at construction time.
- */
 final readonly class JoinSpec
 {
     public string|TableIdentifier|Select|ExpressionInterface $table;
@@ -32,7 +27,7 @@ final readonly class JoinSpec
     public bool $isExpressionOn;
     public string $type;
 
-    /** @var ColumnRef[] Pre-normalized column references */
+    /** @var ColumnRef[] */
     public array $columnRefs;
 
     /** @param array{name: array|string|TableIdentifier, on: PredicateInterface|string, columns: array, type: string} $join */

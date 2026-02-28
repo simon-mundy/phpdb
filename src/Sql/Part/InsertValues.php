@@ -16,17 +16,12 @@ use PhpDb\Sql\Select;
 
 use function implode;
 
-/**
- * Renders an INSERT INTO table (columns) VALUES (values) statement.
- * Mutually exclusive with InsertSelect -- only one renders.
- * Normalizes values to ArgumentInterface at setColumns time.
- */
 class InsertValues extends AbstractPart
 {
     private string $keyword = 'INSERT INTO';
     private From $table;
 
-    /** @var InsertColumnValue[] Normalized column-value pairs */
+    /** @var InsertColumnValue[] */
     private array $columnValues = [];
 
     private bool $hasSelect = false;
@@ -87,11 +82,7 @@ class InsertValues extends AbstractPart
         return $this->keyword;
     }
 
-    /**
-     * Set columns with values, normalizing to InsertColumnValue[].
-     *
-     * @param array<string, mixed> $columns Column-to-value mapping
-     */
+    /** @param array<string, mixed> $columns */
     public function setColumns(array $columns): void
     {
         $this->columnValues = [];
@@ -100,9 +91,6 @@ class InsertValues extends AbstractPart
         }
     }
 
-    /**
-     * Reconstruct the raw column-to-value mapping for compatibility.
-     */
     public function getColumns(): array
     {
         $result = [];
@@ -117,9 +105,6 @@ class InsertValues extends AbstractPart
         $this->hasSelect = $hasSelect;
     }
 
-    /**
-     * Normalize a raw value to an ArgumentInterface.
-     */
     private function normalizeValue(string $column, mixed $value): ArgumentInterface
     {
         if ($value instanceof ArgumentInterface) {
@@ -138,7 +123,6 @@ class InsertValues extends AbstractPart
             return new Literal('NULL');
         }
 
-        // Scalar — bind as parameter
         return new Parameter($value, preferredName: $column);
     }
 }

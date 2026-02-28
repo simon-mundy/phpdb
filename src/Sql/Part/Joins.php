@@ -18,23 +18,16 @@ use function key;
 use function preg_replace_callback;
 use function spl_object_id;
 
-/**
- * Wraps a Join model and renders all JOIN clauses.
- * Used by Select and Update.
- *
- * JoinSpecs are normalized at join() time. The rendering loop uses typed access
- * on JoinSpec — no instanceof/is_array cascades or per-render allocations.
- */
 class Joins extends AbstractPart
 {
     private const IDENTIFIER_PATTERN = '/\b(?!(?:AS|AND|OR|BETWEEN)\b)([a-zA-Z_]\w*+(?:\.[a-zA-Z_]\w*+)*)(?!\s*\()/i';
 
     public ?Join $model = null;
 
-    /** @var JoinSpec[] Normalized join specifications, built at join() time */
+    /** @var JoinSpec[] */
     private array $specs = [];
 
-    /** @var array[] Raw join data for lazy Join model building */
+    /** @var array[] */
     private array $rawJoins = [];
 
     private ?string $sqlCache = null;
@@ -107,9 +100,6 @@ class Joins extends AbstractPart
         return $this->specs;
     }
 
-    /**
-     * Add a join specification.
-     */
     public function join(
         array|string|TableIdentifier $name,
         PredicateInterface|string $on,

@@ -7,10 +7,6 @@ namespace PhpDb\Sql\Part;
 use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Sql\Argument\Parameter;
 
-/**
- * Holds and renders OFFSET clause.
- * Normalizes offset value to Parameter at set time.
- */
 class Offset extends AbstractPart
 {
     private ?Parameter $offset = null;

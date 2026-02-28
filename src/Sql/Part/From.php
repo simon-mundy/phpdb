@@ -7,11 +7,6 @@ namespace PhpDb\Sql\Part;
 use PhpDb\Sql\Select;
 use PhpDb\Sql\TableIdentifier;
 
-/**
- * Holds and renders a table reference with optional alias.
- * Used by Select (FROM), Insert (INTO), Update (UPDATE), Delete (DELETE FROM).
- * Normalizes input to TableRef at set time — alias extraction happens once, not at render time.
- */
 class From extends AbstractPart
 {
     private ?TableRef $ref = null;
@@ -56,9 +51,6 @@ class From extends AbstractPart
         return $this;
     }
 
-    /**
-     * Reconstruct the original format for getRawState() compatibility.
-     */
     public function get(): string|array|TableIdentifier|Select|null
     {
         if ($this->ref === null) {
@@ -72,10 +64,6 @@ class From extends AbstractPart
         return $this->ref->table;
     }
 
-    /**
-     * Get the quoted table prefix for column prefixing (e.g. "table".)
-     * Returns the alias if one is set, otherwise the table name.
-     */
     public function getQuotedPrefix(SqlProcessor $processor): string
     {
         if ($this->ref === null) {

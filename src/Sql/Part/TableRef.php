@@ -11,10 +11,6 @@ use function current;
 use function is_array;
 use function key;
 
-/**
- * Normalized table reference with optional alias.
- * Alias extraction from array format happens at construction time.
- */
 final readonly class TableRef
 {
     public string|TableIdentifier|Select $table;

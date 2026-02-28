@@ -9,17 +9,13 @@ use PhpDb\Sql\Select;
 use function array_keys;
 use function implode;
 
-/**
- * Renders an INSERT INTO table (columns) SELECT ... statement.
- * Mutually exclusive with InsertValues -- only one renders.
- */
 class InsertSelect extends AbstractPart
 {
     private string $keyword = 'INSERT INTO';
     private From $table;
     private ?Select $select = null;
 
-    /** @var array<string, mixed> Column names (keys) from the columns array */
+    /** @var array<string, mixed> */
     private array $columns = [];
 
     public function __construct(From $table)

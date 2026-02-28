@@ -11,10 +11,6 @@ use function implode;
 use function is_array;
 use function is_string;
 
-/**
- * Holds and renders GROUP BY clause.
- * Normalizes columns to ColumnRef at add time.
- */
 class GroupBy extends AbstractPart
 {
     /** @var ColumnRef[]|null */
@@ -60,9 +56,6 @@ class GroupBy extends AbstractPart
         return $this;
     }
 
-    /**
-     * Reconstruct the original format for getRawState() compatibility.
-     */
     public function get(): ?array
     {
         if ($this->group === null) {

@@ -6,9 +6,6 @@ namespace PhpDb\Sql\Part;
 
 use PhpDb\Sql\Select;
 
-/**
- * Holds and renders UNION/EXCEPT/INTERSECT clause for SELECT statements.
- */
 class Combine extends AbstractPart
 {
     private array $combine = [];

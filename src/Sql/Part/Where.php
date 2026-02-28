@@ -9,10 +9,6 @@ use PhpDb\Sql\Predicate\PredicateInterface;
 use PhpDb\Sql\Predicate\PredicateSet;
 use PhpDb\Sql\Where as WhereModel;
 
-/**
- * Wraps a Where predicate model and renders it as a WHERE clause.
- * Used by Select, Update, and Delete.
- */
 class Where extends AbstractPart
 {
     public ?WhereModel $model = null;
@@ -31,9 +27,6 @@ class Where extends AbstractPart
         return $this->model === null || $this->model->count() === 0;
     }
 
-    /**
-     * Add predicates to the where clause, or replace with a Where instance.
-     */
     public function addPredicates(
         PredicateInterface|WhereModel|array|Closure|string $predicate,
         string $combination = PredicateSet::OP_AND

@@ -13,10 +13,6 @@ use function is_string;
 use function preg_split;
 use function str_contains;
 
-/**
- * Holds and renders ORDER BY clause.
- * Normalizes order specs to OrderSpec at add time.
- */
 class OrderBy extends AbstractPart
 {
     final public const ORDER_ASCENDING  = 'ASC';
@@ -66,24 +62,17 @@ class OrderBy extends AbstractPart
             if ($v instanceof ExpressionInterface) {
                 $this->order[] = new OrderSpec($v);
             } elseif (is_string($k)) {
-                // ['column' => 'DESC']
                 $this->order[] = new OrderSpec($k, $v);
             } elseif (str_contains($v, ' ')) {
-                // 'column DESC'
                 [$col, $dir]   = explode(' ', $v, 2);
                 $this->order[] = new OrderSpec($col, $dir);
             } else {
-                // 'column' (no direction)
                 $this->order[] = new OrderSpec($v);
             }
         }
         return $this;
     }
 
-    /**
-     * Reconstruct the order as 'column DIRECTION' strings for getRawState() compatibility.
-     * Expressions are returned at integer keys.
-     */
     public function get(): array
     {
         $result = [];

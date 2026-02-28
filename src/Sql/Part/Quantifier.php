@@ -11,10 +11,6 @@ use PhpDb\Sql\ArgumentType;
 use PhpDb\Sql\ExpressionInterface;
 use ValueError;
 
-/**
- * Holds and renders a SELECT quantifier (DISTINCT, ALL, or expression).
- * Normalizes input to ArgumentInterface at set time.
- */
 class Quantifier extends AbstractPart
 {
     private ?ArgumentInterface $quantifier = null;
@@ -49,9 +45,6 @@ class Quantifier extends AbstractPart
         return $this;
     }
 
-    /**
-     * Reconstruct the original format for getRawState() compatibility.
-     */
     public function get(): string|ExpressionInterface|null
     {
         if ($this->quantifier === null) {

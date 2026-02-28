@@ -7,10 +7,6 @@ namespace PhpDb\Sql\Part;
 use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Sql\Argument\Parameter;
 
-/**
- * Holds and renders LIMIT clause.
- * Normalizes limit value to Parameter at set time.
- */
 class Limit extends AbstractPart
 {
     private ?Parameter $limit = null;

@@ -18,16 +18,12 @@ use PhpDb\Sql\Select;
 use function implode;
 use function is_string;
 
-/**
- * Holds SET column=value pairs for UPDATE statements and renders them.
- * Normalizes values to ArgumentInterface at set time.
- */
 class Set extends AbstractPart
 {
     /** @var array<string, ArgumentInterface>|null */
     public ?array $model = null;
 
-    /** @var array<string, Identifier> Pre-split column identifiers, keyed by column name */
+    /** @var array<string, Identifier> */
     private array $columnIds = [];
 
     public function toSql(SqlProcessor $processor): ?string
@@ -64,12 +60,6 @@ class Set extends AbstractPart
         return $this->model === null || $this->model === [];
     }
 
-    /**
-     * Set key/value pairs. Values are normalized to ArgumentInterface.
-     *
-     * @param string|int $flag One of VALUES_SET, VALUES_MERGE, or a numeric priority
-     * @throws Exception\InvalidArgumentException
-     */
     // phpcs:ignore Generic.NamingConventions.ConstructorName
     public function set(array $values, string|int $flag = 'set'): static
     {
@@ -91,9 +81,6 @@ class Set extends AbstractPart
         return $this;
     }
 
-    /**
-     * Reconstruct the raw values for getRawState() compatibility.
-     */
     public function toArray(): array
     {
         if ($this->model === null) {
@@ -109,12 +96,8 @@ class Set extends AbstractPart
 
     public function __clone()
     {
-        // Plain array of immutable value objects — no deep clone needed
     }
 
-    /**
-     * Normalize a raw value to an ArgumentInterface.
-     */
     private function normalizeValue(string $column, mixed $value): ArgumentInterface
     {
         if ($value instanceof ArgumentInterface) {
@@ -133,7 +116,6 @@ class Set extends AbstractPart
             return new NullValue();
         }
 
-        // Scalar — bind as parameter
         return new Parameter($value, preferredName: $column);
     }
 }

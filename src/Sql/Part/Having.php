@@ -9,9 +9,6 @@ use PhpDb\Sql\Having as HavingModel;
 use PhpDb\Sql\Predicate\PredicateInterface;
 use PhpDb\Sql\Predicate\PredicateSet;
 
-/**
- * Wraps a Having predicate model and renders it as a HAVING clause.
- */
 class Having extends AbstractPart
 {
     public ?HavingModel $model = null;
@@ -30,9 +27,6 @@ class Having extends AbstractPart
         return $this->model === null || $this->model->count() === 0;
     }
 
-    /**
-     * Add predicates to the having clause, or replace with a Having instance.
-     */
     public function addPredicates(
         PredicateInterface|HavingModel|array|Closure|string $predicate,
         string $combination = PredicateSet::OP_AND

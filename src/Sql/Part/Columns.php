@@ -16,29 +16,14 @@ use function is_numeric;
 use function is_string;
 use function key;
 
-/**
- * Holds column definitions and renders the column list for SELECT statements.
- * Includes both main table columns and join columns.
- *
- * Columns are normalized to ColumnRef[] at set time. Rendering is inlined
- * with instanceof fast-paths for Identifier (hot path) and Literal (star).
- */
 class Columns extends AbstractPart
 {
-    /** @var ColumnRef[] Normalized column references */
+    /** @var ColumnRef[] */
     private array $columnRefs = [];
-
-    /** @var array Raw columns for getRawState() backward compatibility */
     private array $rawColumns = [Select::SQL_STAR];
-
     private bool $prefixColumnsWithTable = true;
-
-    /**
-     * Set during preparePartsForBuild -- the resolved table prefix (e.g. "table".)
-     */
     private string $fromTablePrefix = '';
-
-    /** @var JoinSpec[] Join specs for column resolution */
+    /** @var JoinSpec[] */
     private array $joinSpecs = [];
 
     public function __construct()
@@ -149,9 +134,6 @@ class Columns extends AbstractPart
         return $this;
     }
 
-    /**
-     * Reconstruct the original format for getRawState() compatibility.
-     */
     public function get(): array
     {
         return $this->rawColumns;
@@ -168,29 +150,19 @@ class Columns extends AbstractPart
         return $this->prefixColumnsWithTable;
     }
 
-    /**
-     * Set the table prefix for column resolution (e.g. "table".)
-     */
     public function setFromTablePrefix(string $prefix): static
     {
         $this->fromTablePrefix = $prefix;
         return $this;
     }
 
-    /**
-     * Set join specs for column resolution during rendering.
-     *
-     * @param JoinSpec[] $specs
-     */
+    /** @param JoinSpec[] $specs */
     public function setJoinSpecs(array $specs): static
     {
         $this->joinSpecs = $specs;
         return $this;
     }
 
-    /**
-     * Normalize the raw columns array into ColumnRef[].
-     */
     private function normalizeColumns(): void
     {
         $this->columnRefs = [];

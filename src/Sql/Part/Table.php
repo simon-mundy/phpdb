@@ -11,13 +11,6 @@ use PhpDb\Sql\TableIdentifier;
 
 use function spl_object_id;
 
-/**
- * Unified container for FROM, Columns, and Joins.
- *
- * Owns the wiring between these three parts — the prepare() method sets the
- * fromTablePrefix and joinSpecs on Columns before rendering, encapsulating
- * logic that previously lived in Select::buildSqlString().
- */
 class Table
 {
     private From $from;
@@ -25,7 +18,6 @@ class Table
     private ?Joins $joins = null;
     private ?int $preparedPlatformId = null;
 
-    /** Backward-compat model exposed via getRawState / __get */
     public ?Join $joinModel = null;
 
     public function __construct()
@@ -33,8 +25,6 @@ class Table
         $this->from    = new From();
         $this->columns = new Columns();
     }
-
-    // --- FROM management ---
 
     public function setFrom(string|array|TableIdentifier|Select|null $table): static
     {
@@ -59,8 +49,6 @@ class Table
         $this->preparedPlatformId = null;
         return $this;
     }
-
-    // --- Column management ---
 
     public function setColumns(array $columns): static
     {
@@ -91,8 +79,6 @@ class Table
         return $this;
     }
 
-    // --- Join management ---
-
     public function join(
         array|string|TableIdentifier $name,
         PredicateInterface|string $on,
@@ -116,8 +102,6 @@ class Table
         return $this;
     }
 
-    // --- Prepare (wire parts before render) ---
-
     public function prepare(SqlProcessor $processor): void
     {
         $platformId = spl_object_id($processor->platform);
@@ -134,8 +118,6 @@ class Table
         $this->preparedPlatformId = $platformId;
     }
 
-    // --- PartInterface accessors ---
-
     public function from(): From
     {
         return $this->from;
@@ -150,8 +132,6 @@ class Table
     {
         return $this->joins;
     }
-
-    // --- Clone ---
 
     public function __clone()
     {
