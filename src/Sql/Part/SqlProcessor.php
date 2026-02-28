@@ -10,7 +10,7 @@ use PhpDb\Adapter\Platform\PlatformInterface;
 use PhpDb\Sql\Argument\Parameter;
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ExpressionInterface;
-use PhpDb\Sql\Platform\PlatformDecoratorInterface;
+use PhpDb\Sql\Platform\AbstractPlatform as SqlPlatform;
 use PhpDb\Sql\Select;
 use PhpDb\Sql\TableIdentifier;
 
@@ -33,7 +33,7 @@ class SqlProcessor
         public readonly PlatformInterface $platform,
         public readonly ?DriverInterface $driver = null,
         public readonly ?ParameterContainer $parameterContainer = null,
-        private ?PlatformDecoratorInterface $decorator = null,
+        private ?SqlPlatform $sqlPlatform = null,
     ) {
         $this->identifierSeparator = $platform->getIdentifierSeparator();
     }
@@ -46,6 +46,15 @@ class SqlProcessor
     public function setParamPrefix(string $prefix): void
     {
         $this->paramPrefix = $prefix;
+    }
+
+    public function prepare(object $subject): void
+    {
+        $this->sqlPlatform?->getTypeDecorator($subject)?->prepare($subject, $this);
+
+        if ($subject instanceof Select) {
+            $subject->tablePart()->prepare($this);
+        }
     }
 
     public function renderParameter(Parameter $param, ?string $nameOverride = null): string
@@ -62,12 +71,6 @@ class SqlProcessor
 
     public function processSubSelect(Select $subselect): string
     {
-        $decorator = null;
-        if ($this->decorator !== null) {
-            $decorator = clone $this->decorator;
-            $decorator->setSubject($subselect);
-        }
-
         if ($this->parameterContainer instanceof ParameterContainer) {
             $this->subselectCount++;
             $subselect->processInfo['subselectCount'] = $this->subselectCount;
@@ -78,7 +81,7 @@ class SqlProcessor
                 $this->platform,
                 $this->driver,
                 $this->parameterContainer,
-                $decorator,
+                $this->sqlPlatform,
             );
             $this->subselectCount = $subselect->processInfo['subselectCount'];
 
@@ -89,7 +92,7 @@ class SqlProcessor
             $this->platform,
             $this->driver,
             $this->parameterContainer,
-            $decorator,
+            $this->sqlPlatform,
         );
     }
 

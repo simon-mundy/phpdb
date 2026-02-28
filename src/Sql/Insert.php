@@ -10,7 +10,7 @@ use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Adapter\Platform\PlatformInterface;
 use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Part\From;
-use PhpDb\Sql\Platform\PlatformDecoratorInterface;
+use PhpDb\Sql\Platform\AbstractPlatform as SqlPlatform;
 
 use function array_flip;
 use function array_key_exists;
@@ -152,9 +152,9 @@ class Insert extends AbstractPreparableSql
         PlatformInterface $platform,
         ?DriverInterface $driver = null,
         ?ParameterContainer $parameterContainer = null,
-        ?PlatformDecoratorInterface $decorator = null,
+        ?SqlPlatform $sqlPlatform = null,
     ): string {
-        $processor = new SqlProcessor($platform, $driver, $parameterContainer, $decorator);
+        $processor = new SqlProcessor($platform, $driver, $parameterContainer, $sqlPlatform);
         $processor->setParamPrefix($this->processInfo['paramPrefix']);
 
         $keyword  = $this->getStatementKeyword();

@@ -6,8 +6,8 @@ namespace PhpDb\Adapter\Platform;
 
 use Override;
 use PhpDb\Adapter\Exception\VunerablePlatformQuoteException;
-use PhpDb\Sql\Platform\Platform;
-use PhpDb\Sql\Platform\PlatformDecoratorInterface;
+use PhpDb\Sql\Platform\AbstractPlatform as SqlPlatform;
+use PhpDb\Sql\Platform\Sql92Platform;
 
 use function addcslashes;
 
@@ -43,8 +43,8 @@ class Sql92 extends AbstractPlatform
      * {@inheritDoc}
      */
     #[Override]
-    public function getSqlPlatformDecorator(): PlatformDecoratorInterface
+    public function getSqlPlatformDecorator(): SqlPlatform
     {
-        return new Platform($this);
+        return new Sql92Platform();
     }
 }

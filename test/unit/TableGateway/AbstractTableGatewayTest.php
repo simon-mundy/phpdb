@@ -100,7 +100,7 @@ final class AbstractTableGatewayTest extends TestCase
 
         $this->mockInsert = $this
             ->getMockBuilder(Insert::class)
-            ->onlyMethods(['prepareStatement', 'values'])
+            ->onlyMethods(['buildSqlString', 'values'])
             ->setConstructorArgs(['foo'])
             ->getMock();
 
@@ -234,8 +234,8 @@ final class AbstractTableGatewayTest extends TestCase
         $mockInsert = $this->mockInsert;
 
         $mockInsert->expects($this->once())
-            ->method('prepareStatement')
-            ->with($this->mockAdapter);
+            ->method('buildSqlString')
+            ->willReturn('INSERT INTO "foo" ("foo") VALUES (\'bar\')');
 
         $mockInsert->expects($this->once())
             ->method('values')

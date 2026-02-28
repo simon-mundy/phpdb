@@ -8,7 +8,7 @@ use PhpDb\Adapter\Driver\DriverInterface;
 use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Adapter\Platform\PlatformInterface;
 use PhpDb\Sql\Part\SqlProcessor;
-use PhpDb\Sql\Platform\PlatformDecoratorInterface;
+use PhpDb\Sql\Platform\AbstractPlatform as SqlPlatform;
 use PhpDb\Sql\TableIdentifier;
 
 class DropTable extends AbstractDdl
@@ -26,9 +26,9 @@ class DropTable extends AbstractDdl
         PlatformInterface $platform,
         ?DriverInterface $driver = null,
         ?ParameterContainer $parameterContainer = null,
-        ?PlatformDecoratorInterface $decorator = null,
+        ?SqlPlatform $sqlPlatform = null,
     ): string {
-        $processor = new SqlProcessor($platform, $driver, $parameterContainer, $decorator);
+        $processor = new SqlProcessor($platform, $driver, $parameterContainer, $sqlPlatform);
 
         return 'DROP TABLE ' . $processor->resolveTable($this->table);
     }

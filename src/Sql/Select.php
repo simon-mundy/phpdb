@@ -19,7 +19,7 @@ use PhpDb\Sql\Part\SqlFragment;
 use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Part\Table;
 use PhpDb\Sql\Part\Where as WherePart;
-use PhpDb\Sql\Platform\PlatformDecoratorInterface;
+use PhpDb\Sql\Platform\AbstractPlatform as SqlPlatform;
 use PhpDb\Sql\Predicate\PredicateInterface;
 
 use function array_key_exists;
@@ -371,16 +371,20 @@ class Select extends AbstractPreparableSql
         return $this->tableReadOnly;
     }
 
+    public function tablePart(): Table
+    {
+        return $this->table;
+    }
+
     public function buildSqlString(
         PlatformInterface $platform,
         ?DriverInterface $driver = null,
         ?ParameterContainer $parameterContainer = null,
-        ?PlatformDecoratorInterface $decorator = null,
+        ?SqlPlatform $sqlPlatform = null,
     ): string {
-        $processor = new SqlProcessor($platform, $driver, $parameterContainer, $decorator);
+        $processor = new SqlProcessor($platform, $driver, $parameterContainer, $sqlPlatform);
         $processor->setParamPrefix($this->processInfo['paramPrefix']);
-
-        $this->table->prepare($processor);
+        $processor->prepare($this);
 
         return (string) SqlFragment::of('SELECT')
             ->part($this->quantifier?->toSql($processor))

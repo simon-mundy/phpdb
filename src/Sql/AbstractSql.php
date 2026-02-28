@@ -9,7 +9,7 @@ use PhpDb\Adapter\Driver\DriverInterface;
 use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Adapter\Platform\PlatformInterface;
 use PhpDb\Adapter\Platform\Sql92 as DefaultAdapterPlatform;
-use PhpDb\Sql\Platform\PlatformDecoratorInterface;
+use PhpDb\Sql\Platform\AbstractPlatform as SqlPlatform;
 
 abstract class AbstractSql implements SqlInterface
 {
@@ -35,7 +35,7 @@ abstract class AbstractSql implements SqlInterface
         PlatformInterface $platform,
         ?DriverInterface $driver = null,
         ?ParameterContainer $parameterContainer = null,
-        ?PlatformDecoratorInterface $decorator = null,
+        ?SqlPlatform $sqlPlatform = null,
     ): string {
         return '';
     }

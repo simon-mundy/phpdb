@@ -14,7 +14,7 @@ use PhpDb\Sql\Ddl\CreateTable;
 use PhpDb\Sql\Delete;
 use PhpDb\Sql\Expression;
 use PhpDb\Sql\Insert;
-use PhpDb\Sql\Platform\PlatformDecoratorInterface;
+use PhpDb\Sql\Platform\SqlDecoratorInterface;
 use PhpDb\Sql\PreparableSqlInterface;
 use PhpDb\Sql\Select;
 use PhpDb\Sql\SqlInterface;
@@ -22,7 +22,6 @@ use PhpDb\Sql\TableIdentifier;
 use PhpDb\Sql\Update;
 use PhpDbTest\TestAsset;
 use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 use function array_merge;
@@ -257,15 +256,14 @@ abstract class AbstractSqlFunctionalTestCase extends TestCase
         $sql = new Sql\Sql($this->resolveAdapter($platform));
 
         if (is_array($expected) && isset($expected['decorators'])) {
-            /** @var PlatformDecoratorInterface|array $decorator */
+            /** @var SqlDecoratorInterface $decorator */
             foreach ($expected['decorators'] as $type => $decorator) {
                 self::assertIsString($type);
-                $decorator = $this->resolveDecorator($decorator);
-                $this->assertInstanceOf(PlatformDecoratorInterface::class, $decorator);
+                $this->assertInstanceOf(SqlDecoratorInterface::class, $decorator);
 
-                $platform = $sql->getSqlPlatform();
-                $this->assertNotNull($platform);
-                $platform->setTypeDecorator($type, $decorator);
+                $sqlPlatform = $sql->getSqlPlatform();
+                $this->assertNotNull($sqlPlatform);
+                $sqlPlatform->setTypeDecorator($type, $decorator);
             }
         }
 
@@ -287,22 +285,6 @@ abstract class AbstractSqlFunctionalTestCase extends TestCase
                 self::assertSame($expected['parameters'], $actual, 'parameterContainer()');
             }
         }
-    }
-
-    protected function resolveDecorator(
-        PlatformDecoratorInterface|array $decorator
-    ): PlatformDecoratorInterface|MockObject|null {
-        if (is_array($decorator)) {
-            /** @var class-string $classString */
-            $classString   = $decorator[0];
-            $decoratorMock = $this->getMockBuilder($classString)
-                ->onlyMethods(['buildSqlString'])
-                ->setConstructorArgs([null])
-                ->getMock();
-            $decoratorMock->expects($this->any())->method('buildSqlString')->willReturn($decorator[1]);
-            return $decoratorMock;
-        }
-        return $decorator;
     }
 
     protected function resolveAdapter(string $platformName): Adapter\Adapter
