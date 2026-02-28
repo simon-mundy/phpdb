@@ -8,17 +8,11 @@ use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ArgumentType;
 use PhpDb\Sql\Part\SqlProcessor;
 
-use function explode;
-
 final readonly class Identifier implements ArgumentInterface
 {
-    /** @var string[] Pre-split segments (e.g. ['foo','bar'] for 'foo.bar') */
-    public array $segments;
-
     public function __construct(
         private string $identifier
     ) {
-        $this->segments = explode('.', $identifier);
     }
 
     public function getType(): ArgumentType
@@ -33,6 +27,6 @@ final readonly class Identifier implements ArgumentInterface
 
     public function render(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
     {
-        return $processor->platform->quoteIdentifier($this->segments[0], $this->segments[1] ?? null);
+        return $processor->platform->quoteIdentifier($this->identifier);
     }
 }

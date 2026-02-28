@@ -24,9 +24,10 @@ interface PlatformInterface
     public function getQuoteIdentifierSymbol(): string;
 
     /**
-     * Quote identifier — pass two segments for dot-qualified identifiers (e.g. table, column).
+     * Quote identifier — dotted names (e.g. "table.column") are auto-split.
+     * Pass $prefix explicitly for schema-qualified tables.
      */
-    public function quoteIdentifier(string $identifier, ?string $identifier2 = null): string;
+    public function quoteIdentifier(string $name, ?string $prefix = null): string;
 
     /**
      * Quote identifier chain

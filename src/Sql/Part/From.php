@@ -22,7 +22,7 @@ class From extends AbstractPart
 
     public function renderTable(SqlProcessor $processor): ?string
     {
-        return $this->ref?->resolveTableWithAlias($processor);
+        return $this->ref !== null ? $processor->resolveTableWithAlias($this->ref) : null;
     }
 
     public function isEmpty(): bool
@@ -56,6 +56,6 @@ class From extends AbstractPart
             return '';
         }
 
-        return $this->ref->getQuotedPrefix($processor);
+        return $processor->getQuotedPrefix($this->ref);
     }
 }

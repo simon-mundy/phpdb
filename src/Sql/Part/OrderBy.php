@@ -34,8 +34,7 @@ class OrderBy extends AbstractPart
             $column = $spec->column;
 
             if (is_string($column)) {
-                $parts    = explode('.', $column, 2);
-                $orders[] = $platform->quoteIdentifier($parts[0], $parts[1] ?? null)
+                $orders[] = $platform->quoteIdentifier($column)
                            . ' ' . $spec->direction;
             } else {
                 $orders[] = $processor->renderExpression($column);

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace PhpDb\Sql;
 
-use PhpDb\Sql\Part\SqlProcessor;
-
 use function current;
 use function is_array;
 use function is_string;
@@ -83,47 +81,5 @@ class TableIdentifier
         }
 
         return [$this->table, $this->schema];
-    }
-
-    public function resolveTable(SqlProcessor $processor): string
-    {
-        $table = $this->table;
-
-        if (is_string($table)) {
-            $resolved = $processor->platform->quoteIdentifier($table);
-            if ($this->schema !== null) {
-                $resolved = $processor->platform->quoteIdentifier($this->schema)
-                    . $processor->identifierSeparator . $resolved;
-            }
-            return $resolved;
-        }
-
-        if ($table instanceof Select) {
-            return '(' . $processor->processSubSelect($table) . ')';
-        }
-
-        $pi = 0;
-        return $table->toSql($processor, '', $pi);
-    }
-
-    public function resolveTableWithAlias(SqlProcessor $processor): string
-    {
-        $resolved = $this->resolveTable($processor);
-
-        if ($this->alias !== null) {
-            $resolved .= ' AS ' . $processor->platform->quoteIdentifier($this->alias);
-        }
-
-        return $resolved;
-    }
-
-    public function getQuotedPrefix(SqlProcessor $processor): string
-    {
-        if ($this->alias !== null) {
-            return $processor->platform->quoteIdentifier($this->alias)
-                . $processor->identifierSeparator;
-        }
-
-        return $this->resolveTable($processor) . $processor->identifierSeparator;
     }
 }

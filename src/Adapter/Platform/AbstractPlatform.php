@@ -11,7 +11,9 @@ use PhpDb\Adapter\Exception\VunerablePlatformQuoteException;
 
 use function addcslashes;
 use function array_map;
+use function explode;
 use function implode;
+use function str_contains;
 use function str_replace;
 
 /**
@@ -35,29 +37,33 @@ abstract class AbstractPlatform implements PlatformInterface
      * {@inheritDoc}
      */
     #[Override]
-    public function quoteIdentifier(string $identifier, ?string $identifier2 = null): string
+    public function quoteIdentifier(string $name, ?string $prefix = null): string
     {
-        if (! $this->quoteIdentifiers) {
-            return $identifier2 !== null
-                ? $identifier . $this->identifierSeparator . $identifier2
-                : $identifier;
+        if ($prefix === null && str_contains($name, '.')) {
+            [$prefix, $name] = explode('.', $name, 2);
         }
 
-        if ($identifier2 !== null) {
-            $key                                  = $identifier . '.' . $identifier2;
+        if (! $this->quoteIdentifiers) {
+            return $prefix !== null
+                ? $prefix . $this->identifierSeparator . $name
+                : $name;
+        }
+
+        if ($prefix !== null) {
+            $key                                  = $prefix . '.' . $name;
             return $this->identifierCache[$key]
                 ??= $this->quoteIdentifier[0]
-                    . str_replace($this->quoteIdentifier[0], $this->quoteIdentifierTo, $identifier)
+                    . str_replace($this->quoteIdentifier[0], $this->quoteIdentifierTo, $prefix)
                     . $this->quoteIdentifier[1]
                     . $this->identifierSeparator
                     . $this->quoteIdentifier[0]
-                    . str_replace($this->quoteIdentifier[0], $this->quoteIdentifierTo, $identifier2)
+                    . str_replace($this->quoteIdentifier[0], $this->quoteIdentifierTo, $name)
                     . $this->quoteIdentifier[1];
         }
 
-        return $this->identifierCache[$identifier]
+        return $this->identifierCache[$name]
             ??= $this->quoteIdentifier[0]
-                . str_replace($this->quoteIdentifier[0], $this->quoteIdentifierTo, $identifier)
+                . str_replace($this->quoteIdentifier[0], $this->quoteIdentifierTo, $name)
                 . $this->quoteIdentifier[1];
     }
 

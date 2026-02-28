@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace PhpDb\Sql\Part;
 
-use function explode;
 use function implode;
 use function is_array;
 use function is_string;
@@ -27,8 +26,7 @@ class GroupBy extends AbstractPart
             $column = $ref->column;
 
             if (is_string($column)) {
-                $parts    = explode('.', $column, 2);
-                $groups[] = $platform->quoteIdentifier($parts[0], $parts[1] ?? null);
+                $groups[] = $platform->quoteIdentifier($column);
             } else {
                 $groups[] = $processor->renderExpression($column);
             }

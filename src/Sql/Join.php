@@ -13,9 +13,7 @@ use PhpDb\Sql\Part\SqlProcessor;
 use ReturnTypeWillChange;
 
 use function count;
-use function explode;
 use function implode;
-use function preg_replace_callback;
 
 /**
  * Aggregate JOIN specifications.
@@ -29,9 +27,6 @@ use function preg_replace_callback;
  */
 class Join extends AbstractPart implements Iterator, Countable
 {
-    private const IDENTIFIER_PATTERN
-        = '/\b(?!(?:AS|AND|OR|BETWEEN)\b)([a-zA-Z_]\w*+(?:\.[a-zA-Z_]\w*+)*)(?!\s*\()/i';
-
     final public const JOIN_INNER = 'INNER';
 
     final public const JOIN_OUTER = 'OUTER';
@@ -124,26 +119,18 @@ class Join extends AbstractPart implements Iterator, Countable
             return null;
         }
 
-        $platform     = $processor->platform;
         $joinSqlParts = [];
 
         foreach ($this->specs as $j => $spec) {
-            $renderedTable = $spec->table->resolveTableWithAlias($processor);
+            $table = $processor->resolveTableWithAlias($spec->table);
 
             if (! $spec->isExpressionOn) {
-                $onClause = preg_replace_callback(
-                    self::IDENTIFIER_PATTERN,
-                    static fn($m) => $platform->quoteIdentifier(...explode('.', $m[1], 2)),
-                    $spec->on,
-                );
+                $onClause = $processor->renderQuotedIdentifiers($spec->on);
             } else {
-                $onClause = $processor->renderExpression(
-                    $spec->on,
-                    'join' . ($j + 1) . 'part'
-                );
+                $onClause = $processor->renderExpression($spec->on, 'join' . ($j + 1) . 'part');
             }
 
-            $joinSqlParts[] = "{$spec->type} JOIN {$renderedTable} ON {$onClause}";
+            $joinSqlParts[] = "{$spec->type} JOIN {$table} ON {$onClause}";
         }
 
         return implode(' ', $joinSqlParts);

@@ -9,7 +9,6 @@ use PhpDb\Sql\Select;
 
 use function count;
 use function current;
-use function explode;
 use function implode;
 use function is_array;
 use function is_numeric;
@@ -53,8 +52,7 @@ class Columns extends AbstractPart
             $column = $ref->column;
 
             if (is_string($column)) {
-                $parts     = explode('.', $column, 2);
-                $columnSql = $fromPrefix . $platform->quoteIdentifier($parts[0], $parts[1] ?? null);
+                $columnSql = $fromPrefix . $platform->quoteIdentifier($column);
             } else {
                 $columnSql = $processor->renderExpression($column, $ref->alias ?? 'column');
             }
@@ -73,7 +71,7 @@ class Columns extends AbstractPart
                 if ($spec->columnRefs === []) {
                     continue;
                 }
-                $joinPrefix = $spec->table->getQuotedPrefix($processor);
+                $joinPrefix = $processor->getQuotedPrefix($spec->table);
                 foreach ($spec->columnRefs as $ref) {
                     if ($ref->isStar) {
                         $fragments[] = $joinPrefix . '*';
@@ -83,8 +81,7 @@ class Columns extends AbstractPart
                     $column = $ref->column;
 
                     if (is_string($column)) {
-                        $parts     = explode('.', $column, 2);
-                        $columnSql = $joinPrefix . $platform->quoteIdentifier($parts[0], $parts[1] ?? null);
+                        $columnSql = $joinPrefix . $platform->quoteIdentifier($column);
                     } else {
                         $columnSql = $processor->renderExpression($column, $ref->alias ?? 'column');
                     }
