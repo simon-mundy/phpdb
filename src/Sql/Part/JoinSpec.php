@@ -19,9 +19,11 @@ use function get_debug_type;
 use function is_array;
 use function is_string;
 use function key;
-use function preg_match_all;
+use function ctype_alpha;
+use function ctype_alnum;
 use function sprintf;
 use function strlen;
+use function strtoupper;
 use function substr;
 
 /**
@@ -31,8 +33,6 @@ use function substr;
  */
 final readonly class JoinSpec
 {
-    private const IDENTIFIER_PATTERN = '/\b(?!(?:AS|AND|OR|BETWEEN)\b)([a-zA-Z_]\w*+(?:\.[a-zA-Z_]\w*+)*)(?!\s*\()/i';
-
     public string|TableIdentifier|Select|ExpressionInterface $table;
     public JoinTableType $tableType;
     public ?string $alias;
@@ -87,35 +87,46 @@ final readonly class JoinSpec
         $this->onTokens = is_string($on) ? self::tokenizeOn($on) : null;
     }
 
-    /**
-     * Tokenize a string ON clause into Identifier and Literal tokens.
-     * Identifiers are word-like tokens excluding SQL keywords and function calls.
-     *
-     * @return ArgumentInterface[]
-     */
+    /** @return ArgumentInterface[] */
     private static function tokenizeOn(string $on): array
     {
-        preg_match_all(self::IDENTIFIER_PATTERN, $on, $matches, PREG_OFFSET_CAPTURE);
+        $tokens       = [];
+        $len          = strlen($on);
+        $pos          = 0;
+        $literalStart = 0;
 
-        if ($matches[0] === []) {
-            return [new Literal($on)];
-        }
+        while ($pos < $len) {
+            $ch = $on[$pos];
 
-        $tokens = [];
-        $pos    = 0;
+            if ($ch === '_' || ctype_alpha($ch)) {
+                $wordStart = $pos++;
+                while ($pos < $len && ($on[$pos] === '_' || $on[$pos] === '.' || ctype_alnum($on[$pos]))) {
+                    $pos++;
+                }
 
-        foreach ($matches[0] as [$match, $offset]) {
-            if ($offset > $pos) {
-                $tokens[] = new Literal(substr($on, $pos, $offset - $pos));
+                $word  = substr($on, $wordStart, $pos - $wordStart);
+                $upper = strtoupper($word);
+
+                if ($upper === 'AND' || $upper === 'OR' || $upper === 'AS' || $upper === 'BETWEEN'
+                    || ($pos < $len && $on[$pos] === '(')
+                ) {
+                    continue;
+                }
+
+                if ($wordStart > $literalStart) {
+                    $tokens[] = new Literal(substr($on, $literalStart, $wordStart - $literalStart));
+                }
+                $tokens[] = new Identifier($word);
+                $literalStart = $pos;
+            } else {
+                $pos++;
             }
-            $tokens[] = new Identifier($match);
-            $pos      = $offset + strlen($match);
         }
 
-        if ($pos < strlen($on)) {
-            $tokens[] = new Literal(substr($on, $pos));
+        if ($literalStart < $len) {
+            $tokens[] = new Literal(substr($on, $literalStart));
         }
 
-        return $tokens;
+        return $tokens ?: [new Literal($on)];
     }
 }
