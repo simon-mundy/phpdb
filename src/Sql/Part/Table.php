@@ -22,7 +22,7 @@ class Table
 {
     private From $from;
     private Columns $columns;
-    private ?Joins $joins            = null;
+    private ?Joins $joins = null;
     private ?int $preparedPlatformId = null;
 
     /** Backward-compat model exposed via getRawState / __get */
@@ -50,7 +50,7 @@ class Table
 
     public function hasFrom(): bool
     {
-        return ! $this->from->isEmpty();
+        return !$this->from->isEmpty();
     }
 
     public function resetFrom(): static
@@ -106,12 +106,12 @@ class Table
 
     public function hasJoins(): bool
     {
-        return $this->joins !== null && ! $this->joins->isEmpty();
+        return $this->joins !== null && !$this->joins->isEmpty();
     }
 
     public function resetJoins(): static
     {
-        $this->joins              = null;
+        $this->joins = null;
         $this->preparedPlatformId = null;
         return $this;
     }
@@ -125,10 +125,12 @@ class Table
             return;
         }
 
-        $this->columns->fromTablePrefix = $this->columns->prefixColumnsWithTable && $this->from->ref !== null
-            ? $this->from->getQuotedPrefix($processor)
-            : '';
-        $this->columns->joinSpecs = $this->joins?->getSpecs() ?? [];
+        if ($this->columns->getPrefixColumnsWithTable() && !$this->from->isEmpty()) {
+            $this->columns->setFromTablePrefix($this->from->getQuotedPrefix($processor));
+        } else {
+            $this->columns->setFromTablePrefix('');
+        }
+        $this->columns->setJoinSpecs($this->joins !== null ? $this->joins->getSpecs() : []);
         $this->preparedPlatformId = $platformId;
     }
 

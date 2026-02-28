@@ -31,13 +31,15 @@ class Columns extends AbstractPart
     /** @var array Raw columns for getRawState() backward compatibility */
     private array $rawColumns = [Select::SQL_STAR];
 
-    public bool $prefixColumnsWithTable = true;
+    private bool $prefixColumnsWithTable = true;
 
-    /** @var string Resolved table prefix (e.g. "table".) — set by Table::prepare() */
-    public string $fromTablePrefix = '';
+    /**
+     * Set during preparePartsForBuild -- the resolved table prefix (e.g. "table".)
+     */
+    private string $fromTablePrefix = '';
 
-    /** @var JoinSpec[] Join specs — set by Table::prepare() */
-    public array $joinSpecs = [];
+    /** @var JoinSpec[] Join specs for column resolution */
+    private array $joinSpecs = [];
 
     public function __construct()
     {
@@ -164,6 +166,26 @@ class Columns extends AbstractPart
     public function getPrefixColumnsWithTable(): bool
     {
         return $this->prefixColumnsWithTable;
+    }
+
+    /**
+     * Set the table prefix for column resolution (e.g. "table".)
+     */
+    public function setFromTablePrefix(string $prefix): static
+    {
+        $this->fromTablePrefix = $prefix;
+        return $this;
+    }
+
+    /**
+     * Set join specs for column resolution during rendering.
+     *
+     * @param JoinSpec[] $specs
+     */
+    public function setJoinSpecs(array $specs): static
+    {
+        $this->joinSpecs = $specs;
+        return $this;
     }
 
     /**
