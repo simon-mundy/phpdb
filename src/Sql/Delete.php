@@ -8,7 +8,6 @@ use Closure;
 use PhpDb\Adapter\Driver\DriverInterface;
 use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Adapter\Platform\PlatformInterface;
-use PhpDb\Sql\Part\SqlFragment;
 use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Part\From;
 use PhpDb\Sql\Part\Where as WherePart;
@@ -90,9 +89,13 @@ class Delete extends AbstractPreparableSql
         $processor->setParamPrefix($this->processInfo['paramPrefix']);
         $sqlPlatform?->getTypeDecorator($this)?->prepare($this, $processor);
 
-        return (string) SqlFragment::of($this->getStatementKeyword())
-            ->part($this->table->toSql($processor))
-            ->part($this->where?->toSql($processor));
+        $sql = $this->getStatementKeyword() . ' ' . $this->table->toSql($processor);
+
+        if (null !== $part = $this->where?->toSql($processor)) {
+            $sql .= ' ' . $part;
+        }
+
+        return $sql;
     }
 
     /**
