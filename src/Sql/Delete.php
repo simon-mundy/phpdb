@@ -8,6 +8,7 @@ use Closure;
 use PhpDb\Adapter\Driver\DriverInterface;
 use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Adapter\Platform\PlatformInterface;
+use PhpDb\Sql\Part\SqlFragment;
 use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Part\From;
 use PhpDb\Sql\Part\Where as WherePart;
@@ -74,13 +75,9 @@ class Delete extends AbstractPreparableSql
         return $key !== null && array_key_exists($key, $rawState) ? $rawState[$key] : $rawState;
     }
 
-    /**
-     * Get the statement keyword (e.g. "DELETE FROM").
-     * Override in subclasses for variants like "DELETE IGNORE FROM".
-     */
     protected function getStatementKeyword(): string
     {
-        return 'DELETE FROM';
+        return 'DELETE';
     }
 
     public function buildSqlString(
@@ -92,14 +89,9 @@ class Delete extends AbstractPreparableSql
         $processor = new SqlProcessor($platform, $driver, $parameterContainer, $decorator);
         $processor->setParamPrefix($this->processInfo['paramPrefix']);
 
-        // Render inline: DELETE FROM table [WHERE ...]
-        $sql = $this->getStatementKeyword() . ' ' . $this->table->toSql($processor);
-
-        if (($partSql = $this->where?->toSql($processor)) !== null) {
-            $sql .= ' ' . $partSql;
-        }
-
-        return $sql;
+        return (string) SqlFragment::of($this->getStatementKeyword())
+            ->part($this->table->toSql($processor))
+            ->part($this->where?->toSql($processor));
     }
 
     /**

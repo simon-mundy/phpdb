@@ -15,6 +15,7 @@ use PhpDb\Sql\Part\Limit;
 use PhpDb\Sql\Part\Offset;
 use PhpDb\Sql\Part\OrderBy;
 use PhpDb\Sql\Part\Quantifier;
+use PhpDb\Sql\Part\SqlFragment;
 use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Part\Table;
 use PhpDb\Sql\Part\Where as WherePart;
@@ -381,55 +382,18 @@ class Select extends AbstractPreparableSql
 
         $this->table->prepare($processor);
 
-        $sql = 'SELECT';
-
-        if (($partSql = $this->quantifier?->toSql($processor)) !== null) {
-            $sql .= ' ' . $partSql;
-        }
-
-        $sql .= ' ' . $this->table->columns()->toSql($processor);
-
-        if (($tableSql = $this->table->from()->toSql($processor)) !== null) {
-            $sql .= ' FROM ' . $tableSql;
-        }
-
-        if (($partSql = $this->table->joins()?->toSql($processor)) !== null) {
-            $sql .= ' ' . $partSql;
-        }
-
-        if (($partSql = $this->where?->toSql($processor)) !== null) {
-            $sql .= ' ' . $partSql;
-        }
-
-        if (($partSql = $this->groupBy?->toSql($processor)) !== null) {
-            $sql .= ' ' . $partSql;
-        }
-
-        if (($partSql = $this->having?->toSql($processor)) !== null) {
-            $sql .= ' ' . $partSql;
-        }
-
-        if (($partSql = $this->orderBy?->toSql($processor)) !== null) {
-            $sql .= ' ' . $partSql;
-        }
-
-        if (($partSql = $this->limit?->toSql($processor)) !== null) {
-            $sql .= ' ' . $partSql;
-        }
-
-        if (($partSql = $this->offset?->toSql($processor)) !== null) {
-            $sql .= ' ' . $partSql;
-        }
-
-        if ($this->combine !== null && ! $this->combine->isEmpty()) {
-            $sql     = '( ' . $sql . ' )';
-            $partSql = $this->combine->toSql($processor);
-            if ($partSql !== null) {
-                $sql .= ' ' . $partSql;
-            }
-        }
-
-        return $sql;
+        return (string) SqlFragment::of('SELECT')
+            ->part($this->quantifier?->toSql($processor))
+            ->part($this->table->columns()->toSql($processor))
+            ->part($this->table->from()->toSql($processor))
+            ->part($this->table->joins()?->toSql($processor))
+            ->part($this->where?->toSql($processor))
+            ->part($this->groupBy?->toSql($processor))
+            ->part($this->having?->toSql($processor))
+            ->part($this->orderBy?->toSql($processor))
+            ->part($this->limit?->toSql($processor))
+            ->part($this->offset?->toSql($processor))
+            ->wrap($this->combine?->toSql($processor));
     }
 
     /**

@@ -10,6 +10,6 @@ class DeleteIgnore extends Delete
 {
     protected function getStatementKeyword(): string
     {
-        return 'DELETE IGNORE FROM';
+        return 'DELETE IGNORE';
     }
 }

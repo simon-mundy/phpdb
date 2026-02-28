@@ -20,6 +20,12 @@ class From extends AbstractPart
 
     public function toSql(SqlProcessor $processor): ?string
     {
+        $table = $this->renderTable($processor);
+        return $table !== null ? 'FROM ' . $table : null;
+    }
+
+    public function renderTable(SqlProcessor $processor): ?string
+    {
         if ($this->ref === null) {
             return null;
         }
