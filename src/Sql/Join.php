@@ -127,12 +127,10 @@ class Join extends AbstractPart implements Iterator, Countable
             $columns = [$columns];
         }
 
-        $this->specs[] = new JoinSpec([
-            'name'    => $name,
-            'on'      => $on,
-            'columns' => $columns,
-            'type'    => $type,
-        ]);
+        $raw   = ['name' => $name, 'on' => $on, 'columns' => $columns, 'type' => $type];
+        $table = $name instanceof TableIdentifier ? $name : new TableIdentifier($name);
+
+        $this->specs[] = new JoinSpec($table, $on, $type, $raw, $columns);
 
         return $this;
     }
