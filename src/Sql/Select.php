@@ -15,6 +15,7 @@ use PhpDb\Sql\Part\Limit;
 use PhpDb\Sql\Part\Offset;
 use PhpDb\Sql\Part\OrderBy;
 use PhpDb\Sql\Part\Quantifier;
+use PhpDb\Sql\Part\SqlFragment;
 use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Part\Table;
 use PhpDb\Sql\Part\Where as WherePart;
@@ -386,51 +387,18 @@ class Select extends AbstractPreparableSql
         $sqlPlatform?->getTypeDecorator($this)?->prepare($this, $processor);
         $this->table->prepare($processor);
 
-        $sql = 'SELECT';
-
-        if (null !== $part = $this->quantifier?->toSql($processor)) {
-            $sql .= ' ' . $part;
-        }
-
-        $sql .= ' ' . $this->table->columns()->toSql($processor);
-
-        if (null !== $part = $this->table->from()->toSql($processor)) {
-            $sql .= ' ' . $part;
-        }
-
-        if (null !== $part = $this->table->joins()?->toSql($processor)) {
-            $sql .= ' ' . $part;
-        }
-
-        if (null !== $part = $this->where?->toSql($processor)) {
-            $sql .= ' ' . $part;
-        }
-
-        if (null !== $part = $this->groupBy?->toSql($processor)) {
-            $sql .= ' ' . $part;
-        }
-
-        if (null !== $part = $this->having?->toSql($processor)) {
-            $sql .= ' ' . $part;
-        }
-
-        if (null !== $part = $this->orderBy?->toSql($processor)) {
-            $sql .= ' ' . $part;
-        }
-
-        if (null !== $part = $this->limit?->toSql($processor)) {
-            $sql .= ' ' . $part;
-        }
-
-        if (null !== $part = $this->offset?->toSql($processor)) {
-            $sql .= ' ' . $part;
-        }
-
-        if (null !== $part = $this->combine?->toSql($processor)) {
-            $sql = '( ' . $sql . ' ) ' . $part;
-        }
-
-        return $sql;
+        return (string) SqlFragment::of('SELECT')
+            ->part($this->quantifier?->toSql($processor))
+            ->part($this->table->columns()->toSql($processor))
+            ->part($this->table->from()->toSql($processor))
+            ->part($this->table->joins()?->toSql($processor))
+            ->part($this->where?->toSql($processor))
+            ->part($this->groupBy?->toSql($processor))
+            ->part($this->having?->toSql($processor))
+            ->part($this->orderBy?->toSql($processor))
+            ->part($this->limit?->toSql($processor))
+            ->part($this->offset?->toSql($processor))
+            ->wrap($this->combine?->toSql($processor));
     }
 
     /**
