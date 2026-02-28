@@ -16,6 +16,7 @@ use ReturnTypeWillChange;
 use function count;
 use function implode;
 use function is_array;
+use function is_scalar;
 use function is_string;
 use function str_contains;
 
@@ -78,6 +79,41 @@ class PredicateSet implements PredicateInterface, Countable
         PredicateInterface|Closure|string|array $predicates,
         string $combination = self::OP_AND
     ): static {
+        if (is_array($predicates)) {
+            foreach ($predicates as $pkey => $pvalue) {
+                if (is_string($pkey)) {
+                    if (str_contains($pkey, '?')) {
+                        $predicate = new PredicateExpression($pkey, $pvalue);
+                    } elseif (is_scalar($pvalue)) {
+                        $predicate = new Operator($pkey, Operator::OP_EQ, $pvalue);
+                    } elseif ($pvalue === null) {
+                        $predicate = new IsNull($pkey);
+                    } elseif (is_array($pvalue)) {
+                        $predicate = new In($pkey, $pvalue);
+                    } elseif ($pvalue instanceof PredicateInterface) {
+                        throw new Exception\InvalidArgumentException(
+                            'Using Predicate must not use string keys'
+                        );
+                    } else {
+                        $predicate = new Operator($pkey, Operator::OP_EQ, $pvalue);
+                    }
+                } elseif ($pvalue instanceof PredicateInterface) {
+                    $predicate = $pvalue;
+                } elseif ($pvalue instanceof Expression) {
+                    $predicate = new PredicateExpression(
+                        $pvalue->getExpression(),
+                        $pvalue->getParameters()
+                    );
+                } else {
+                    $predicate = str_contains($pvalue, Expression::PLACEHOLDER)
+                        ? new Expression($pvalue) : new Literal($pvalue);
+                }
+                $this->predicates[] = [$combination, $predicate];
+            }
+
+            return $this;
+        }
+
         if ($predicates instanceof PredicateInterface) {
             $this->addPredicate($predicates, $combination);
 
@@ -96,36 +132,6 @@ class PredicateSet implements PredicateInterface, Countable
             $this->addPredicate($predicate, $combination);
 
             return $this;
-        }
-
-        foreach ($predicates as $pkey => $pvalue) {
-            if (is_string($pkey)) {
-                if (str_contains($pkey, '?')) {
-                    $predicate = new PredicateExpression($pkey, $pvalue);
-                } elseif ($pvalue === null) {
-                    $predicate = new IsNull($pkey);
-                } elseif (is_array($pvalue)) {
-                    $predicate = new In($pkey, $pvalue);
-                } elseif ($pvalue instanceof PredicateInterface) {
-                    throw new Exception\InvalidArgumentException(
-                        'Using Predicate must not use string keys'
-                    );
-                } else {
-                    $predicate = new Operator($pkey, Operator::OP_EQ, $pvalue);
-                }
-            } elseif ($pvalue instanceof PredicateInterface) {
-                $predicate = $pvalue;
-            } elseif ($pvalue instanceof Expression) {
-                $predicate = new PredicateExpression(
-                    $pvalue->getExpression(),
-                    $pvalue->getParameters()
-                );
-            } else {
-                $predicate = str_contains($pvalue, Expression::PLACEHOLDER)
-                    ? new Expression($pvalue) : new Literal($pvalue);
-            }
-
-            $this->addPredicate($predicate, $combination);
         }
 
         return $this;

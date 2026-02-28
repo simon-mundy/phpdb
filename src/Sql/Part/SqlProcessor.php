@@ -7,25 +7,16 @@ namespace PhpDb\Sql\Part;
 use PhpDb\Adapter\Driver\DriverInterface;
 use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Adapter\Platform\PlatformInterface;
-use PhpDb\Sql\Argument\Identifier;
-use PhpDb\Sql\Argument\Identifiers;
 use PhpDb\Sql\Argument\Parameter;
 use PhpDb\Sql\ArgumentInterface;
-use PhpDb\Sql\ArgumentType;
 use PhpDb\Sql\ExpressionInterface;
 use PhpDb\Sql\Platform\PlatformDecoratorInterface;
 use PhpDb\Sql\Select;
 use PhpDb\Sql\TableIdentifier;
-use ValueError;
 
-use function implode;
 use function is_string;
 use function str_replace;
 
-/**
- * Central SQL rendering service used by Part objects and Expressions
- * to render arguments, resolve tables/columns, and bind parameters.
- */
 class SqlProcessor
 {
     private string $paramPrefix = '';
@@ -57,12 +48,6 @@ class SqlProcessor
         $this->paramPrefix = $prefix;
     }
 
-    /**
-     * Render a Parameter argument: bind to parameterContainer if available, otherwise quote inline.
-     *
-     * @param Parameter    $param         The parameter to render
-     * @param ?string      $nameOverride  Override the parameter's preferred name (e.g. for PDO incremental naming)
-     */
     public function renderParameter(Parameter $param, ?string $nameOverride = null): string
     {
         if ($this->parameterContainer instanceof ParameterContainer) {
@@ -75,9 +60,6 @@ class SqlProcessor
         return $this->platform->quoteValue((string) $param->getValue());
     }
 
-    /**
-     * Render a subselect, handling decorator propagation and param prefix tracking.
-     */
     public function processSubSelect(Select $subselect): string
     {
         $decorator = null;
@@ -111,9 +93,6 @@ class SqlProcessor
         );
     }
 
-    /**
-     * Quote and resolve a table reference (handles TableIdentifier, Select subquery, and string).
-     */
     public function resolveTable(Select|string|TableIdentifier|null $table): string|null
     {
         if (is_string($table)) {
@@ -138,39 +117,11 @@ class SqlProcessor
         return $table;
     }
 
-    /**
-     * Render table with optional alias: "table" AS "alias"
-     */
     public function renderTable(string $table, ?string $alias = null): string
     {
         return $alias ? "{$table} AS {$alias}" : $table;
     }
 
-    /**
-     * Quote a pre-split Identifier argument without regex.
-     * Uses the segments stored at Identifier construction time.
-     *
-     * @param Identifier $arg
-     */
-    public function renderIdentifierArgument(ArgumentInterface $arg): string
-    {
-        $segments = $arg->segments;
-
-        if (! isset($segments[1])) {
-            return $this->platform->quoteIdentifier($segments[0]);
-        }
-
-        $parts = [];
-        foreach ($segments as $s) {
-            $parts[] = $this->platform->quoteIdentifier($s);
-        }
-        return implode($this->identifierSeparator, $parts);
-    }
-
-    /**
-     * Render an ExpressionInterface directly via its renderSql() method.
-     * Sets up parameter prefix and index, then delegates to the expression.
-     */
     public function renderExpression(
         ExpressionInterface $expression,
         ?string $namedParameterPrefix = null
@@ -187,103 +138,37 @@ class SqlProcessor
     }
 
     /**
-     * Render a pre-tokenized identifier fragment (mix of Identifier and Literal tokens).
-     *
      * @param ArgumentInterface[] $tokens
      */
     public function renderIdentifierFragment(array $tokens): string
     {
         $sql = '';
+        $pi  = 0;
         foreach ($tokens as $token) {
-            $sql .= $token instanceof Identifier
-                ? $this->renderIdentifierArgument($token)
-                : $token->getValue();
+            $sql .= $token->render($this, '', $pi);
         }
         return $sql;
     }
 
-    /**
-     * Render a single ArgumentInterface to its SQL representation.
-     * Centralises type dispatch so expressions can render arguments
-     * without knowing about quoting, binding, or subselect handling.
-     */
     public function renderArgument(
         ArgumentInterface $argument,
         string $paramPrefix,
         int &$paramIndex,
     ): string {
-        return match ($argument->getType()) {
-            ArgumentType::Value => $this->parameterContainer instanceof ParameterContainer
-                ? $this->processExpressionParameterName(
-                    $argument->getValue(),
-                    $paramPrefix,
-                    $paramIndex,
-                )
-                : $this->platform->quoteValue((string) $argument->getValue()),
-            ArgumentType::Identifier => $this->renderIdentifierArgument($argument),
-            ArgumentType::Literal => $argument->getValue(),
-            ArgumentType::Values => $this->renderValuesArgument($argument, $paramPrefix, $paramIndex),
-            ArgumentType::Identifiers => $this->renderIdentifiersArgument($argument),
-            ArgumentType::Select => $this->renderSelectArgument($argument, $paramPrefix, $paramIndex),
-            ArgumentType::Parameter => $this->renderParameter($argument),
-            ArgumentType::Null => 'NULL',
-        };
+        return $argument->render($this, $paramPrefix, $paramIndex);
     }
 
-    /**
-     * Render a Values argument as a parenthesised comma-separated list: (val1, val2, val3)
-     */
-    private function renderValuesArgument(ArgumentInterface $argument, string $paramPrefix, int &$paramIndex): string
-    {
-        $values          = $argument->getValue();
-        $processedValues = [];
+    public function bindValue(
+        int|float|string|bool $value,
+        string $namedParameterPrefix,
+        int &$expressionParamIndex,
+    ): string {
+        $name = $namedParameterPrefix . $expressionParamIndex++;
+        $this->parameterContainer->offsetSet($name, $value);
 
-        if ($this->parameterContainer instanceof ParameterContainer) {
-            foreach ($values as $value) {
-                $processedValues[] = $this->processExpressionParameterName($value, $paramPrefix, $paramIndex);
-            }
-        } else {
-            foreach ($values as $value) {
-                $processedValues[] = $this->platform->quoteValue((string) $value);
-            }
-        }
-
-        return '(' . implode(', ', $processedValues) . ')';
+        return $this->driver->formatParameterName($name);
     }
 
-    /**
-     * Render a SelectArgument: wraps Select in (...), renders ExpressionInterface via renderSql().
-     */
-    private function renderSelectArgument(ArgumentInterface $argument, string $paramPrefix, int &$paramIndex): string
-    {
-        $value = $argument->getValue();
-
-        if ($value instanceof Select) {
-            return '(' . $this->processSubSelect($value) . ')';
-        }
-
-        if ($value instanceof ExpressionInterface) {
-            return $value->renderSql($this, $paramPrefix, $paramIndex);
-        }
-
-        throw new ValueError('Invalid SelectArgument value');
-    }
-
-    /**
-     * @param Identifiers $argument
-     */
-    private function renderIdentifiersArgument(ArgumentInterface $argument): string
-    {
-        $quoted = [];
-        foreach ($argument->identifiers as $identifier) {
-            $quoted[] = $this->renderIdentifierArgument($identifier);
-        }
-        return implode(', ', $quoted);
-    }
-
-    /**
-     * Resolve and initialize the named parameter prefix for expression rendering.
-     */
     private function resolveParamPrefix(?string $namedParameterPrefix): string
     {
         if ($namedParameterPrefix === null || $namedParameterPrefix === '') {
@@ -300,16 +185,5 @@ class SqlProcessor
         }
 
         return $namedParameterPrefix;
-    }
-
-    private function processExpressionParameterName(
-        int|float|string|bool $value,
-        string $namedParameterPrefix,
-        int &$expressionParamIndex,
-    ): string {
-        $name = $namedParameterPrefix . $expressionParamIndex++;
-        $this->parameterContainer->offsetSet($name, $value);
-
-        return $this->driver->formatParameterName($name);
     }
 }

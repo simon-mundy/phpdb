@@ -38,10 +38,11 @@ class Set extends AbstractPart
 
         $setSql      = [];
         $i           = 0;
+        $pi          = 0;
         $isPdoDriver = $processor->driver instanceof PdoDriverInterface;
 
         foreach ($this->model as $column => $arg) {
-            $prefix = $processor->renderIdentifierArgument($this->columnIds[$column]) . ' = ';
+            $prefix = $this->columnIds[$column]->render($processor, '', $pi) . ' = ';
 
             $setSql[] = $prefix . match ($arg->getType()) {
                 ArgumentType::Parameter => $processor->renderParameter(

@@ -6,12 +6,8 @@ namespace PhpDb\Sql\Argument;
 
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ArgumentType;
+use PhpDb\Sql\Part\SqlProcessor;
 
-/**
- * Represents a bound parameter value in SQL.
- * Used for values that will be sent as bound parameters to the database,
- * providing protection against SQL injection.
- */
 final readonly class Value implements ArgumentInterface
 {
     /**
@@ -32,8 +28,10 @@ final readonly class Value implements ArgumentInterface
         return $this->value;
     }
 
-    public function getSpecification(): string
+    public function render(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
     {
-        return '%s';
+        return $processor->parameterContainer !== null
+            ? $processor->bindValue($this->value, $paramPrefix, $paramIndex)
+            : $processor->platform->quoteValue((string) $this->value);
     }
 }

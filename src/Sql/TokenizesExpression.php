@@ -51,7 +51,7 @@ trait TokenizesExpression
     {
         $sql = '';
         foreach ($this->tokens as $token) {
-            $sql .= $processor->renderArgument($token, $paramPrefix, $paramIndex);
+            $sql .= $token->render($processor, $paramPrefix, $paramIndex);
         }
         return $sql;
     }

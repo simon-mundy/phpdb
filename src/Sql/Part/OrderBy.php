@@ -34,10 +34,11 @@ class OrderBy extends AbstractPart
         }
 
         $orders = [];
+        $pi     = 0;
         foreach ($this->order as $spec) {
             $orders[] = match ($spec->column->getType()) {
                 ArgumentType::Select     => $processor->renderExpression($spec->column->getValue()),
-                ArgumentType::Identifier => $processor->renderIdentifierArgument($spec->column)
+                ArgumentType::Identifier => $spec->column->render($processor, '', $pi)
                                              . ' ' . $spec->direction,
                 default => throw new ValueError('Unexpected ArgumentType: ' . $spec->column->getType()->name),
             };

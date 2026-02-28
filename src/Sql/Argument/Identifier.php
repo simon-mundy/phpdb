@@ -6,15 +6,11 @@ namespace PhpDb\Sql\Argument;
 
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ArgumentType;
+use PhpDb\Sql\Part\SqlProcessor;
 
 use function explode;
+use function implode;
 
-/**
- * Represents a SQL identifier (table name, column name, alias, etc.).
- * Dot-separated identifiers (e.g. "table.column") are pre-split into segments
- * at construction time so rendering can quote each segment individually
- * without regex.
- */
 final readonly class Identifier implements ArgumentInterface
 {
     /** @var string[] Pre-split segments (e.g. ['foo','bar'] for 'foo.bar') */
@@ -36,8 +32,16 @@ final readonly class Identifier implements ArgumentInterface
         return $this->identifier;
     }
 
-    public function getSpecification(): string
+    public function render(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
     {
-        return '%s';
+        if (!isset($this->segments[1])) {
+            return $processor->platform->quoteIdentifier($this->segments[0]);
+        }
+
+        $parts = [];
+        foreach ($this->segments as $s) {
+            $parts[] = $processor->platform->quoteIdentifier($s);
+        }
+        return implode($processor->identifierSeparator, $parts);
     }
 }

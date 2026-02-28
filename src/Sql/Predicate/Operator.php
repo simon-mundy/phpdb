@@ -138,21 +138,19 @@ class Operator extends AbstractExpression implements PredicateInterface
     #[Override]
     public function renderSql(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
     {
-        if (! $this->left instanceof ArgumentInterface) {
-            throw new InvalidArgumentException('Left expression must be specified');
+        if ($this->left === null || $this->right === null) {
+            throw new InvalidArgumentException(
+                ($this->left === null ? 'Left' : 'Right') . ' expression must be specified'
+            );
         }
 
-        if (! $this->right instanceof ArgumentInterface) {
-            throw new InvalidArgumentException('Right expression must be specified');
-        }
-
-        $left  = $processor->renderArgument($this->left, $paramPrefix, $paramIndex);
-        $right = $processor->renderArgument($this->right, $paramPrefix, $paramIndex);
+        $leftSql  = $this->left->render($processor, $paramPrefix, $paramIndex);
+        $rightSql = $this->right->render($processor, $paramPrefix, $paramIndex);
 
         if ($this->specification !== null) {
-            return vsprintf($this->specification, [$left, $right]);
+            return vsprintf($this->specification, [$leftSql, $rightSql]);
         }
 
-        return "{$left} {$this->operator} {$right}";
+        return "{$leftSql} {$this->operator} {$rightSql}";
     }
 }

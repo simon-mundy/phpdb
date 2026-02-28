@@ -6,15 +6,8 @@ namespace PhpDb\Sql\Argument;
 
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ArgumentType;
+use PhpDb\Sql\Part\SqlProcessor;
 
-/**
- * Represents a value that should be bound as a driver parameter.
- * Carries optional metadata for parameter naming and type hinting.
- *
- * Unlike Value (which is rendered via renderArgument with auto-named params),
- * Parameter is used for direct bind scenarios (SET, INSERT VALUES, LIMIT, OFFSET)
- * where the parameter name and type hint are predetermined.
- */
 final readonly class Parameter implements ArgumentInterface
 {
     /**
@@ -49,8 +42,8 @@ final readonly class Parameter implements ArgumentInterface
         return $this->typeHint;
     }
 
-    public function getSpecification(): string
+    public function render(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
     {
-        return '%s';
+        return $processor->renderParameter($this);
     }
 }

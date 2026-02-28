@@ -6,13 +6,8 @@ namespace PhpDb\Sql\Argument;
 
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ArgumentType;
+use PhpDb\Sql\Part\SqlProcessor;
 
-/**
- * Represents a raw SQL literal expression.
- * The value will be inserted directly into the SQL without escaping.
- * Use with caution - ensure the value is safe and does not contain
- * user-provided input.
- */
 final readonly class Literal implements ArgumentInterface
 {
     public function __construct(
@@ -30,8 +25,8 @@ final readonly class Literal implements ArgumentInterface
         return $this->literal;
     }
 
-    public function getSpecification(): string
+    public function render(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
     {
-        return '%s';
+        return $this->literal;
     }
 }

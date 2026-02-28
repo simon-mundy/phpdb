@@ -7,13 +7,9 @@ namespace PhpDb\Sql\Argument;
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ArgumentType;
 use PhpDb\Sql\ExpressionInterface;
+use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\SqlInterface;
 
-/**
- * Represents a subquery or expression in SQL.
- * Used when embedding a SELECT statement or expression as part of
- * another query (e.g., subqueries, derived tables).
- */
 final readonly class Select implements ArgumentInterface
 {
     public function __construct(
@@ -31,8 +27,12 @@ final readonly class Select implements ArgumentInterface
         return $this->select;
     }
 
-    public function getSpecification(): string
+    public function render(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
     {
-        return '%s';
+        if ($this->select instanceof \PhpDb\Sql\Select) {
+            return '(' . $processor->processSubSelect($this->select) . ')';
+        }
+
+        return $this->select->renderSql($processor, $paramPrefix, $paramIndex);
     }
 }

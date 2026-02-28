@@ -26,9 +26,10 @@ class GroupBy extends AbstractPart
         }
 
         $groups = [];
+        $pi     = 0;
         foreach ($this->group as $ref) {
             $groups[] = match ($ref->arg->getType()) {
-                ArgumentType::Identifier => $processor->renderIdentifierArgument($ref->arg),
+                ArgumentType::Identifier => $ref->arg->render($processor, '', $pi),
                 ArgumentType::Select     => $processor->renderExpression($ref->arg->getValue()),
                 ArgumentType::Literal    => $ref->arg->getValue(),
                 default => throw new ValueError('Unexpected ArgumentType: ' . $ref->arg->getType()->name),

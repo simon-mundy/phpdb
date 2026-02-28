@@ -16,13 +16,15 @@ class From extends AbstractPart
 {
     private ?TableRef $ref = null;
 
+    private ?string $resolvedTable = null;
+
     public function toSql(SqlProcessor $processor): ?string
     {
         if ($this->ref === null) {
             return null;
         }
 
-        $resolved = $processor->resolveTable($this->ref->table);
+        $resolved = $this->resolvedTable ?? $processor->resolveTable($this->ref->table);
 
         if ($this->ref->alias !== null) {
             $quotedAlias = $processor->platform->quoteIdentifier($this->ref->alias);
@@ -44,6 +46,7 @@ class From extends AbstractPart
         } else {
             $this->ref = new TableRef($table);
         }
+        $this->resolvedTable = null;
         return $this;
     }
 
@@ -78,9 +81,9 @@ class From extends AbstractPart
                 . $processor->identifierSeparator;
         }
 
-        $resolved = $processor->resolveTable($this->ref->table);
-        if ($resolved) {
-            return $resolved . $processor->identifierSeparator;
+        $this->resolvedTable = $processor->resolveTable($this->ref->table);
+        if ($this->resolvedTable) {
+            return $this->resolvedTable . $processor->identifierSeparator;
         }
 
         return '';

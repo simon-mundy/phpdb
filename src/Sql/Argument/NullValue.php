@@ -6,12 +6,8 @@ namespace PhpDb\Sql\Argument;
 
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ArgumentType;
+use PhpDb\Sql\Part\SqlProcessor;
 
-/**
- * Represents a SQL NULL value.
- * Renders as the literal string 'NULL' in SQL output.
- * getValue() returns PHP null for raw-state introspection.
- */
 final readonly class NullValue implements ArgumentInterface
 {
     public function getType(): ArgumentType
@@ -24,8 +20,8 @@ final readonly class NullValue implements ArgumentInterface
         return null;
     }
 
-    public function getSpecification(): string
+    public function render(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
     {
-        return '%s';
+        return 'NULL';
     }
 }
