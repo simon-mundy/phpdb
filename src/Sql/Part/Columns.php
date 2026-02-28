@@ -155,6 +155,12 @@ class Columns extends AbstractPart
         return $this;
     }
 
+    public function addJoinSpec(JoinSpec $spec): static
+    {
+        $this->joinSpecs[] = $spec;
+        return $this;
+    }
+
     /** @param JoinSpec[] $specs */
     public function setJoinSpecs(array $specs): static
     {

@@ -12,6 +12,7 @@ use PhpDb\Sql\Part\From;
 use PhpDb\Sql\Part\Set as SetPart;
 use PhpDb\Sql\Part\SqlFragment;
 use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Part\Table;
 use PhpDb\Sql\Platform\AbstractPlatform as SqlPlatform;
 use PhpDb\Sql\Predicate\PredicateInterface;
 
@@ -100,7 +101,7 @@ class Update extends AbstractPreparableSql
         PredicateInterface|string $on,
         string $type = Join::JOIN_INNER
     ): static {
-        ($this->joins ??= new Join())->join($name, $on, [], $type);
+        ($this->joins ??= new Join())->add(Table::createJoinSpec($name, $on, [], $type));
         return $this;
     }
 

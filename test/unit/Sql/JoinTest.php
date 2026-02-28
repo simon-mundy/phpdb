@@ -6,6 +6,7 @@ namespace PhpDbTest\Sql;
 
 use PhpDb\Sql\Join;
 use PhpDb\Sql\Part\JoinSpec;
+use PhpDb\Sql\Part\Table;
 use PhpDb\Sql\Select;
 use PhpDbTest\DeprecatedAssertionsTrait;
 use PHPUnit\Framework\Attributes\CoversMethod;
@@ -25,7 +26,7 @@ use TypeError;
 #[CoversMethod(Join::class, 'next')]
 #[CoversMethod(Join::class, 'valid')]
 #[CoversMethod(Join::class, 'getJoins')]
-#[CoversMethod(Join::class, 'join')]
+#[CoversMethod(Join::class, 'add')]
 #[CoversMethod(Join::class, 'count')]
 #[CoversMethod(Join::class, 'reset')]
 #[CoversMethod(Join::class, 'isEmpty')]
@@ -89,7 +90,7 @@ class JoinTest extends TestCase
         $on   = 'foo.id = baz.id';
 
         $join = new Join();
-        $join->join($name, $on);
+        $join->add(Table::createJoinSpec($name, $on));
 
         $expectedSpecification = [
             'name'    => $name,
@@ -104,7 +105,7 @@ class JoinTest extends TestCase
     public function testValidReturnsTrueIfTheIteratorIsAtAValidPositionAndFalseIfNot(): void
     {
         $join = new Join();
-        $join->join('baz', 'foo.id = baz.id');
+        $join->add(Table::createJoinSpec('baz', 'foo.id = baz.id'));
 
         self::assertTrue($join->valid());
 
@@ -117,32 +118,30 @@ class JoinTest extends TestCase
     public function testJoin(): void
     {
         $join   = new Join();
-        $return = $join->join('baz', 'foo.fooId = baz.fooId', Join::JOIN_LEFT);
+        $return = $join->add(Table::createJoinSpec('baz', 'foo.fooId = baz.fooId', [], Join::JOIN_LEFT));
         self::assertSame($join, $return);
     }
 
     public function testJoinFullOuter(): void
     {
         $join   = new Join();
-        $return = $join->join('baz', 'foo.fooId = baz.fooId', Join::JOIN_FULL_OUTER);
+        $return = $join->add(Table::createJoinSpec('baz', 'foo.fooId = baz.fooId', [], Join::JOIN_FULL_OUTER));
         self::assertSame($join, $return);
     }
 
     public function testJoinWillThrowAnExceptionIfNameIsNoValid(): void
     {
-        $join = new Join();
-
         $this->expectException(TypeError::class);
         /** @noinspection PhpArgumentWithoutNamedIdentifierInspection */
-        $join->join([], false);
+        Table::createJoinSpec([], false);
     }
 
     #[TestDox('unit test: Test count() returns correct count')]
     public function testCount(): void
     {
         $join = new Join();
-        $join->join('baz', 'foo.fooId = baz.fooId', Join::JOIN_LEFT);
-        $join->join('bar', 'foo.fooId = bar.fooId', Join::JOIN_LEFT);
+        $join->add(Table::createJoinSpec('baz', 'foo.fooId = baz.fooId', [], Join::JOIN_LEFT));
+        $join->add(Table::createJoinSpec('bar', 'foo.fooId = bar.fooId', [], Join::JOIN_LEFT));
 
         self::assertEquals(2, $join->count());
         self::assertCount($join->count(), $join->getJoins());
@@ -152,8 +151,8 @@ class JoinTest extends TestCase
     public function testReset(): void
     {
         $join = new Join();
-        $join->join('baz', 'foo.fooId = baz.fooId', Join::JOIN_LEFT);
-        $join->join('bar', 'foo.fooId = bar.fooId', Join::JOIN_LEFT);
+        $join->add(Table::createJoinSpec('baz', 'foo.fooId = baz.fooId', [], Join::JOIN_LEFT));
+        $join->add(Table::createJoinSpec('bar', 'foo.fooId = bar.fooId', [], Join::JOIN_LEFT));
         $join->reset();
 
         self::assertEquals(0, $join->count());
@@ -168,15 +167,15 @@ class JoinTest extends TestCase
     public function testIsEmptyReturnsFalseAfterJoin(): void
     {
         $join = new Join();
-        $join->join('baz', 'foo.id = baz.id');
+        $join->add(Table::createJoinSpec('baz', 'foo.id = baz.id'));
         self::assertFalse($join->isEmpty());
     }
 
     public function testGetSpecsReturnsJoinSpecObjects(): void
     {
         $join = new Join();
-        $join->join('baz', 'foo.id = baz.id');
-        $join->join('bar', 'foo.id = bar.id');
+        $join->add(Table::createJoinSpec('baz', 'foo.id = baz.id'));
+        $join->add(Table::createJoinSpec('bar', 'foo.id = bar.id'));
 
         $specs = $join->getSpecs();
         self::assertCount(2, $specs);
@@ -186,7 +185,7 @@ class JoinTest extends TestCase
     public function testResetClearsSpecs(): void
     {
         $join = new Join();
-        $join->join('baz', 'foo.id = baz.id');
+        $join->add(Table::createJoinSpec('baz', 'foo.id = baz.id'));
         $join->reset();
 
         self::assertSame([], $join->getSpecs());

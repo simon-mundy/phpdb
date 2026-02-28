@@ -12,15 +12,10 @@ use PhpDb\Sql\Part\JoinSpec;
 use PhpDb\Sql\Part\SqlProcessor;
 use ReturnTypeWillChange;
 
-use function array_shift;
 use function count;
 use function explode;
 use function implode;
-use function is_array;
-use function is_string;
-use function key;
 use function preg_replace_callback;
-use function sprintf;
 
 /**
  * Aggregate JOIN specifications.
@@ -100,38 +95,9 @@ class Join extends AbstractPart implements Iterator, Countable
         return $raw;
     }
 
-    /**
-     * @param array|string|TableIdentifier $name    A table name on which to join, or a single
-     *     element associative array, of the form alias => table, or TableIdentifier instance
-     * @param string|Predicate\Expression  $on      A specification describing the fields to join on.
-     * @param int|string|int[]|string[]    $columns A single column name, an array
-     *     of column names, or (a) specification(s) such as SQL_STAR representing
-     *     the columns to join.
-     * @param string                       $type    The JOIN type to use; see the JOIN_* constants.
-     * @throws Exception\InvalidArgumentException For invalid $name values.
-     */
-    // phpcs:ignore Generic.NamingConventions.ConstructorName.OldStyle
-    public function join(
-        array|string|TableIdentifier $name,
-        string|Predicate\PredicateInterface $on,
-        array|int|string $columns = [Select::SQL_STAR],
-        string $type = self::JOIN_INNER
-    ): static {
-        if (is_array($name) && (! is_string(key($name)) || count($name) !== 1)) {
-            throw new Exception\InvalidArgumentException(
-                sprintf("join() expects '%s' as a single element associative array", array_shift($name))
-            );
-        }
-
-        if (! is_array($columns)) {
-            $columns = [$columns];
-        }
-
-        $raw   = ['name' => $name, 'on' => $on, 'columns' => $columns, 'type' => $type];
-        $table = $name instanceof TableIdentifier ? $name : new TableIdentifier($name);
-
-        $this->specs[] = new JoinSpec($table, $on, $type, $raw, $columns);
-
+    public function add(JoinSpec $spec): static
+    {
+        $this->specs[] = $spec;
         return $this;
     }
 
@@ -164,16 +130,16 @@ class Join extends AbstractPart implements Iterator, Countable
         foreach ($this->specs as $j => $spec) {
             $renderedTable = $spec->table->resolveTableWithAlias($processor);
 
-            if ($spec->isExpressionOn) {
-                $onClause = $processor->renderExpression(
-                    $spec->on,
-                    'join' . ($j + 1) . 'part'
-                );
-            } else {
+            if (! $spec->isExpressionOn) {
                 $onClause = preg_replace_callback(
                     self::IDENTIFIER_PATTERN,
                     static fn($m) => $platform->quoteIdentifier(...explode('.', $m[1], 2)),
                     $spec->on,
+                );
+            } else {
+                $onClause = $processor->renderExpression(
+                    $spec->on,
+                    'join' . ($j + 1) . 'part'
                 );
             }
 
