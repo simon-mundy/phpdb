@@ -10,6 +10,7 @@ use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Adapter\Platform\PlatformInterface;
 use PhpDb\Sql\Part\Joins as JoinsPart;
 use PhpDb\Sql\Part\Set as SetPart;
+use PhpDb\Sql\Part\SqlFragment;
 use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Part\From;
 use PhpDb\Sql\Part\Where as WherePart;
@@ -135,19 +136,11 @@ class Update extends AbstractPreparableSql
         $processor->setParamPrefix($this->processInfo['paramPrefix']);
         $sqlPlatform?->getTypeDecorator($this)?->prepare($this, $processor);
 
-        $sql = $this->getStatementKeyword();
-        $sql .= ' ' . $this->table->renderTable($processor);
-        if (($part = $this->joins?->toSql($processor)) !== null) {
-            $sql .= ' ' . $part;
-        }
-        if (($part = $this->set->toSql($processor)) !== null) {
-            $sql .= ' ' . $part;
-        }
-        if (($part = $this->where?->toSql($processor)) !== null) {
-            $sql .= ' ' . $part;
-        }
-
-        return $sql;
+        return (string) SqlFragment::of($this->getStatementKeyword())
+            ->part($this->table->renderTable($processor))
+            ->part($this->joins?->toSql($processor))
+            ->part($this->set->toSql($processor))
+            ->part($this->where?->toSql($processor));
     }
 
     /**
