@@ -112,7 +112,7 @@ class Update extends AbstractPreparableSql
             'table'                => $this->table->get(),
             'set'                  => $this->set->toArray(),
             'where'                => $where->model ??= new Where(),
-            'joins'                => $joins->model ??= new Join(),
+            'joins'                => $joins->getModel(),
         ];
         return $key !== null && array_key_exists($key, $rawState) ? $rawState[$key] : $rawState;
     }
@@ -154,7 +154,7 @@ class Update extends AbstractPreparableSql
                 return $where->model ??= new Where();
             case 'joins':
                 $joins = $this->joins ??= new JoinsPart();
-                return $joins->model ??= new Join();
+                return $joins->getModel();
             default:
                 return null;
         }

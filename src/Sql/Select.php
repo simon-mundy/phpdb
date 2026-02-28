@@ -351,7 +351,7 @@ class Select extends AbstractPreparableSql
             self::TABLE      => $this->table->getFrom(),
             self::QUANTIFIER => $this->quantifier?->get(),
             self::COLUMNS    => $this->table->getColumns(),
-            self::JOINS      => $joins !== null ? ($joins->model ??= new Join()) : ($this->table->joinModel ??= new Join()),
+            self::JOINS      => $joins !== null ? $joins->getModel() : ($this->table->joinModel ??= new Join()),
             self::WHERE      => $where->model  ??= new Where(),
             self::ORDER      => $this->orderBy?->get() ?? [],
             self::GROUP      => $this->groupBy?->get() ?? [],
@@ -418,7 +418,7 @@ class Select extends AbstractPreparableSql
             case 'joins':
                 $joins = $this->table->joins();
                 if ($joins !== null) {
-                    return $joins->model ??= new Join();
+                    return $joins->getModel();
                 }
                 return $this->table->joinModel ??= new Join();
             default:

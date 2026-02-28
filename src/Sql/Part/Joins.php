@@ -12,6 +12,9 @@ use PhpDb\Sql\TableIdentifier;
 use function count;
 use function explode;
 use function implode;
+use function is_array;
+use function is_string;
+use function key;
 use function preg_replace_callback;
 use function spl_object_id;
 
@@ -30,6 +33,9 @@ class Joins extends AbstractPart
 
     /** @var JoinSpec[] Normalized join specifications, built at join() time */
     private array $specs = [];
+
+    /** @var array[] Raw join data for lazy Join model building */
+    private array $rawJoins = [];
 
     private ?string $sqlCache = null;
     private ?int $sqlCachePlatformId = null;
@@ -110,20 +116,39 @@ class Joins extends AbstractPart
         array|string $columns = Select::SQL_STAR,
         string $type = Join::JOIN_INNER
     ): static {
-        $this->model ??= new Join();
-        $this->model->join($name, $on, $columns, $type);
+        if (is_array($name) && (! is_string(key($name)) || count($name) !== 1)) {
+            throw new \PhpDb\Sql\Exception\InvalidArgumentException(
+                \sprintf("join() expects '%s' as a single element associative array", \array_shift($name))
+            );
+        }
+        if (! is_array($columns)) {
+            $columns = [$columns];
+        }
 
-        // Normalize eagerly — the last join added is the one we just created
-        $rawJoins      = $this->model->getJoins();
-        $this->specs[] = new JoinSpec($rawJoins[count($rawJoins) - 1]);
-        $this->sqlCache = null;
+        $raw = ['name' => $name, 'on' => $on, 'columns' => $columns, 'type' => $type];
+        $this->specs[]    = new JoinSpec($raw);
+        $this->rawJoins[] = $raw;
+        $this->model      = null;
+        $this->sqlCache   = null;
         return $this;
+    }
+
+    public function getModel(): Join
+    {
+        if ($this->model === null) {
+            $this->model = new Join();
+            foreach ($this->rawJoins as $raw) {
+                $this->model->join($raw['name'], $raw['on'], $raw['columns'], $raw['type']);
+            }
+        }
+        return $this->model;
     }
 
     public function reset(): static
     {
-        $this->model = null;
-        $this->specs = [];
+        $this->model    = null;
+        $this->specs    = [];
+        $this->rawJoins = [];
         $this->sqlCache = null;
         $this->sqlCachePlatformId = null;
         return $this;
