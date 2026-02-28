@@ -54,9 +54,6 @@ class Join extends AbstractPart implements Iterator, Countable
 
     private int $position = 0;
 
-    /** @var array[] */
-    protected array $joins = [];
-
     /** @var JoinSpec[] */
     private array $specs = [];
 
@@ -74,7 +71,7 @@ class Join extends AbstractPart implements Iterator, Countable
     #[ReturnTypeWillChange]
     public function current(): array
     {
-        return $this->joins[$this->position];
+        return $this->specs[$this->position]->raw;
     }
 
     #[Override]
@@ -95,12 +92,16 @@ class Join extends AbstractPart implements Iterator, Countable
     #[ReturnTypeWillChange]
     public function valid(): bool
     {
-        return isset($this->joins[$this->position]);
+        return isset($this->specs[$this->position]);
     }
 
     public function getJoins(): array
     {
-        return $this->joins;
+        $raw = [];
+        foreach ($this->specs as $spec) {
+            $raw[] = $spec->raw;
+        }
+        return $raw;
     }
 
     /**
@@ -130,15 +131,12 @@ class Join extends AbstractPart implements Iterator, Countable
             $columns = [$columns];
         }
 
-        $raw = [
+        $this->specs[]  = new JoinSpec([
             'name'    => $name,
             'on'      => $on,
             'columns' => $columns,
             'type'    => $type,
-        ];
-
-        $this->joins[]  = $raw;
-        $this->specs[]  = new JoinSpec($raw);
+        ]);
         $this->sqlCache = null;
 
         return $this;
@@ -149,7 +147,6 @@ class Join extends AbstractPart implements Iterator, Countable
      */
     public function reset(): static
     {
-        $this->joins              = [];
         $this->specs              = [];
         $this->sqlCache           = null;
         $this->sqlCachePlatformId = null;
@@ -160,7 +157,7 @@ class Join extends AbstractPart implements Iterator, Countable
     #[ReturnTypeWillChange]
     public function count(): int
     {
-        return count($this->joins);
+        return count($this->specs);
     }
 
     #[Override]

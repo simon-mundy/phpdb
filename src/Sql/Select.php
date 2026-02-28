@@ -10,7 +10,6 @@ use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Adapter\Platform\PlatformInterface;
 use PhpDb\Sql\Part\Combine as CombinePart;
 use PhpDb\Sql\Part\GroupBy;
-use PhpDb\Sql\Part\Having as HavingPart;
 use PhpDb\Sql\Part\Limit;
 use PhpDb\Sql\Part\Offset;
 use PhpDb\Sql\Part\OrderBy;
@@ -18,7 +17,6 @@ use PhpDb\Sql\Part\Quantifier;
 use PhpDb\Sql\Part\SqlFragment;
 use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Part\Table;
-use PhpDb\Sql\Part\Where as WherePart;
 use PhpDb\Sql\Platform\AbstractPlatform as SqlPlatform;
 use PhpDb\Sql\Predicate\PredicateInterface;
 
@@ -104,11 +102,11 @@ class Select extends AbstractPreparableSql
 
     protected ?Quantifier $quantifier = null;
 
-    protected ?WherePart $where = null;
+    protected ?Where $where = null;
 
     protected ?GroupBy $groupBy = null;
 
-    protected ?HavingPart $having = null;
+    protected ?Having $having = null;
 
     protected ?OrderBy $orderBy = null;
 
@@ -208,7 +206,11 @@ class Select extends AbstractPreparableSql
         PredicateInterface|array|string|Closure $predicate,
         string $combination = Predicate\PredicateSet::OP_AND
     ): static {
-        ($this->where ??= new WherePart())->addPredicates($predicate, $combination);
+        if ($predicate instanceof Where) {
+            $this->where = $predicate;
+        } else {
+            ($this->where ??= new Where())->addPredicates($predicate, $combination);
+        }
 
         return $this;
     }
@@ -229,7 +231,11 @@ class Select extends AbstractPreparableSql
         Having|PredicateInterface|array|Closure|string $predicate,
         string $combination = Predicate\PredicateSet::OP_AND
     ): static {
-        ($this->having ??= new HavingPart())->addPredicates($predicate, $combination);
+        if ($predicate instanceof Having) {
+            $this->having = $predicate;
+        } else {
+            ($this->having ??= new Having())->addPredicates($predicate, $combination);
+        }
 
         return $this;
     }
@@ -342,18 +348,15 @@ class Select extends AbstractPreparableSql
 
     public function getRawState(?string $key = null): mixed
     {
-        $where  = $this->where ??= new WherePart();
-        $having = $this->having ??= new HavingPart();
-
         $rawState = [
             self::TABLE      => $this->table->getFrom(),
             self::QUANTIFIER => $this->quantifier?->get(),
             self::COLUMNS    => $this->table->getColumns(),
             self::JOINS      => $this->table->joins() ?? new Join(),
-            self::WHERE      => $where->model  ??= new Where(),
+            self::WHERE      => $this->where  ??= new Where(),
             self::ORDER      => $this->orderBy?->get() ?? [],
             self::GROUP      => $this->groupBy?->get() ?? [],
-            self::HAVING     => $having->model ??= new Having(),
+            self::HAVING     => $this->having ??= new Having(),
             self::LIMIT      => $this->limit?->get(),
             self::OFFSET     => $this->offset?->get(),
             self::COMBINE    => $this->combine?->get() ?? [],
@@ -408,11 +411,9 @@ class Select extends AbstractPreparableSql
     {
         switch (strtolower($name)) {
             case 'where':
-                $part = $this->where ??= new WherePart();
-                return $part->model ??= new Where();
+                return $this->where ??= new Where();
             case 'having':
-                $part = $this->having ??= new HavingPart();
-                return $part->model ??= new Having();
+                return $this->having ??= new Having();
             case 'joins':
                 return $this->table->joins() ?? new Join();
             default:

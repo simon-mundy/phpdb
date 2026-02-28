@@ -30,10 +30,14 @@ final readonly class JoinSpec
     /** @var ColumnRef[] */
     public array $columnRefs;
 
+    /** @var array{name: array|string|TableIdentifier, on: PredicateInterface|string, columns: array, type: string} */
+    public array $raw;
+
     /** @param array{name: array|string|TableIdentifier, on: PredicateInterface|string, columns: array, type: string} $join */
     public function __construct(array $join)
     {
-        $name = $join['name'];
+        $this->raw = $join;
+        $name      = $join['name'];
 
         if (is_array($name)) {
             $this->alias = key($name);

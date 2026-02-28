@@ -12,7 +12,6 @@ use PhpDb\Sql\Part\From;
 use PhpDb\Sql\Part\Set as SetPart;
 use PhpDb\Sql\Part\SqlFragment;
 use PhpDb\Sql\Part\SqlProcessor;
-use PhpDb\Sql\Part\Where as WherePart;
 use PhpDb\Sql\Platform\AbstractPlatform as SqlPlatform;
 use PhpDb\Sql\Predicate\PredicateInterface;
 
@@ -35,7 +34,7 @@ class Update extends AbstractPreparableSql
 
     protected SetPart $set;
 
-    protected ?WherePart $where = null;
+    protected ?Where $where = null;
 
     protected ?Join $joins = null;
 
@@ -83,7 +82,11 @@ class Update extends AbstractPreparableSql
         PredicateInterface|array|Closure|string|Where $predicate,
         string $combination = Predicate\PredicateSet::OP_AND
     ): static {
-        ($this->where ??= new WherePart())->addPredicates($predicate, $combination);
+        if ($predicate instanceof Where) {
+            $this->where = $predicate;
+        } else {
+            ($this->where ??= new Where())->addPredicates($predicate, $combination);
+        }
         return $this;
     }
 
@@ -103,13 +106,11 @@ class Update extends AbstractPreparableSql
 
     public function getRawState(?string $key = null): mixed
     {
-        $where = $this->where ??= new WherePart();
-
         $rawState = [
             'emptyWhereProtection' => $this->emptyWhereProtection,
             'table'                => $this->table->get(),
             'set'                  => $this->set->toArray(),
-            'where'                => $where->model ??= new Where(),
+            'where'                => $this->where ??= new Where(),
             'joins'                => $this->joins ?? new Join(),
         ];
         return $key !== null && array_key_exists($key, $rawState) ? $rawState[$key] : $rawState;
@@ -148,8 +149,7 @@ class Update extends AbstractPreparableSql
     {
         switch (strtolower($name)) {
             case 'where':
-                $where = $this->where ??= new WherePart();
-                return $where->model ??= new Where();
+                return $this->where ??= new Where();
             case 'joins':
                 return $this->joins ?? new Join();
             default:
