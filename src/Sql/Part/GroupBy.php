@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace PhpDb\Sql\Part;
 
-use PhpDb\Sql\ArgumentType;
-use ValueError;
+use PhpDb\Sql\ExpressionInterface;
 
+use function explode;
 use function implode;
 use function is_array;
+use function is_string;
 
 /**
  * Holds and renders GROUP BY clause.
@@ -25,15 +26,18 @@ class GroupBy extends AbstractPart
             return null;
         }
 
-        $groups = [];
-        $pi     = 0;
+        $platform = $processor->platform;
+        $groups   = [];
+
         foreach ($this->group as $ref) {
-            $groups[] = match ($ref->arg->getType()) {
-                ArgumentType::Identifier => $ref->arg->render($processor, '', $pi),
-                ArgumentType::Select     => $processor->renderExpression($ref->arg->getValue()),
-                ArgumentType::Literal    => $ref->arg->getValue(),
-                default => throw new ValueError('Unexpected ArgumentType: ' . $ref->arg->getType()->name),
-            };
+            $column = $ref->column;
+
+            if (is_string($column)) {
+                $parts    = explode('.', $column, 2);
+                $groups[] = $platform->quoteIdentifier($parts[0], $parts[1] ?? null);
+            } else {
+                $groups[] = $processor->renderExpression($column);
+            }
         }
 
         return 'GROUP BY ' . implode(', ', $groups);
@@ -67,7 +71,7 @@ class GroupBy extends AbstractPart
 
         $result = [];
         foreach ($this->group as $ref) {
-            $result[] = $ref->arg->getValue();
+            $result[] = $ref->column;
         }
         return $result;
     }
