@@ -20,7 +20,6 @@ use function is_array;
 use function is_string;
 use function key;
 use function preg_replace_callback;
-use function spl_object_id;
 use function sprintf;
 
 /**
@@ -56,9 +55,6 @@ class Join extends AbstractPart implements Iterator, Countable
 
     /** @var JoinSpec[] */
     private array $specs = [];
-
-    private ?string $sqlCache        = null;
-    private ?int $sqlCachePlatformId = null;
 
     #[Override]
     #[ReturnTypeWillChange]
@@ -131,13 +127,12 @@ class Join extends AbstractPart implements Iterator, Countable
             $columns = [$columns];
         }
 
-        $this->specs[]  = new JoinSpec([
+        $this->specs[] = new JoinSpec([
             'name'    => $name,
             'on'      => $on,
             'columns' => $columns,
             'type'    => $type,
         ]);
-        $this->sqlCache = null;
 
         return $this;
     }
@@ -147,9 +142,7 @@ class Join extends AbstractPart implements Iterator, Countable
      */
     public function reset(): static
     {
-        $this->specs              = [];
-        $this->sqlCache           = null;
-        $this->sqlCachePlatformId = null;
+        $this->specs = [];
         return $this;
     }
 
@@ -165,14 +158,6 @@ class Join extends AbstractPart implements Iterator, Countable
     {
         if ($this->specs === []) {
             return null;
-        }
-
-        $canCache = $processor->parameterContainer === null;
-        if ($canCache) {
-            $platformId = spl_object_id($processor->platform);
-            if ($this->sqlCachePlatformId === $platformId) {
-                return $this->sqlCache;
-            }
         }
 
         $platform     = $processor->platform;
@@ -197,14 +182,7 @@ class Join extends AbstractPart implements Iterator, Countable
             $joinSqlParts[] = "{$spec->type} JOIN {$renderedTable} ON {$onClause}";
         }
 
-        $result = implode(' ', $joinSqlParts);
-
-        if ($canCache) {
-            $this->sqlCache           = $result;
-            $this->sqlCachePlatformId = $platformId;
-        }
-
-        return $result;
+        return implode(' ', $joinSqlParts);
     }
 
     #[Override]
@@ -217,11 +195,5 @@ class Join extends AbstractPart implements Iterator, Countable
     public function getSpecs(): array
     {
         return $this->specs;
-    }
-
-    public function __clone()
-    {
-        $this->sqlCache           = null;
-        $this->sqlCachePlatformId = null;
     }
 }
