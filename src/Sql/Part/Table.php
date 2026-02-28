@@ -9,6 +9,8 @@ use PhpDb\Sql\Predicate\PredicateInterface;
 use PhpDb\Sql\Select;
 use PhpDb\Sql\TableIdentifier;
 
+use function spl_object_id;
+
 /**
  * Unified container for FROM, Columns, and Joins.
  *
@@ -21,6 +23,7 @@ class Table
     private From $from;
     private Columns $columns;
     private ?Joins $joins = null;
+    private ?int $preparedPlatformId = null;
 
     /** Backward-compat model exposed via getRawState / __get */
     public ?Join $joinModel = null;
@@ -36,6 +39,7 @@ class Table
     public function setFrom(string|array|TableIdentifier|Select|null $table): static
     {
         $this->from->set($table);
+        $this->preparedPlatformId = null;
         return $this;
     }
 
@@ -52,6 +56,7 @@ class Table
     public function resetFrom(): static
     {
         $this->from->set(null);
+        $this->preparedPlatformId = null;
         return $this;
     }
 
@@ -71,6 +76,7 @@ class Table
     public function setPrefixColumnsWithTable(bool $prefix): static
     {
         $this->columns->setPrefixColumnsWithTable($prefix);
+        $this->preparedPlatformId = null;
         return $this;
     }
 
@@ -94,6 +100,7 @@ class Table
         string $type = Join::JOIN_INNER,
     ): static {
         ($this->joins ??= new Joins())->join($name, $on, $columns, $type);
+        $this->preparedPlatformId = null;
         return $this;
     }
 
@@ -105,6 +112,7 @@ class Table
     public function resetJoins(): static
     {
         $this->joins = null;
+        $this->preparedPlatformId = null;
         return $this;
     }
 
@@ -112,12 +120,18 @@ class Table
 
     public function prepare(SqlProcessor $processor): void
     {
+        $platformId = spl_object_id($processor->platform);
+        if ($this->preparedPlatformId === $platformId) {
+            return;
+        }
+
         if ($this->columns->getPrefixColumnsWithTable() && !$this->from->isEmpty()) {
             $this->columns->setFromTablePrefix($this->from->getQuotedPrefix($processor));
         } else {
             $this->columns->setFromTablePrefix('');
         }
         $this->columns->setJoinSpecs($this->joins !== null ? $this->joins->getSpecs() : []);
+        $this->preparedPlatformId = $platformId;
     }
 
     // --- PartInterface accessors ---
@@ -146,5 +160,6 @@ class Table
         if ($this->joins !== null) {
             $this->joins = clone $this->joins;
         }
+        $this->preparedPlatformId = null;
     }
 }

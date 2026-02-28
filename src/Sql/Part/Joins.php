@@ -11,6 +11,7 @@ use PhpDb\Sql\TableIdentifier;
 
 use function count;
 use function implode;
+use function spl_object_id;
 
 /**
  * Wraps a Join model and renders all JOIN clauses.
@@ -26,10 +27,21 @@ class Joins extends AbstractPart
     /** @var JoinSpec[] Normalized join specifications, built at join() time */
     private array $specs = [];
 
+    private ?string $sqlCache = null;
+    private ?int $sqlCachePlatformId = null;
+
     public function toSql(SqlProcessor $processor): ?string
     {
         if ($this->specs === []) {
             return null;
+        }
+
+        $canCache = $processor->parameterContainer === null;
+        if ($canCache) {
+            $platformId = spl_object_id($processor->platform);
+            if ($this->sqlCachePlatformId === $platformId) {
+                return $this->sqlCache;
+            }
         }
 
         $joinSqlParts = [];
@@ -59,7 +71,14 @@ class Joins extends AbstractPart
             $joinSqlParts[] = "{$spec->type} JOIN {$renderedTable} ON {$onClause}";
         }
 
-        return implode(' ', $joinSqlParts);
+        $result = implode(' ', $joinSqlParts);
+
+        if ($canCache) {
+            $this->sqlCache = $result;
+            $this->sqlCachePlatformId = $platformId;
+        }
+
+        return $result;
     }
 
     public function isEmpty(): bool
@@ -88,6 +107,7 @@ class Joins extends AbstractPart
         // Normalize eagerly — the last join added is the one we just created
         $rawJoins      = $this->model->getJoins();
         $this->specs[] = new JoinSpec($rawJoins[count($rawJoins) - 1]);
+        $this->sqlCache = null;
         return $this;
     }
 
@@ -95,6 +115,8 @@ class Joins extends AbstractPart
     {
         $this->model = null;
         $this->specs = [];
+        $this->sqlCache = null;
+        $this->sqlCachePlatformId = null;
         return $this;
     }
 
@@ -103,5 +125,7 @@ class Joins extends AbstractPart
         if ($this->model !== null) {
             $this->model = clone $this->model;
         }
+        $this->sqlCache = null;
+        $this->sqlCachePlatformId = null;
     }
 }

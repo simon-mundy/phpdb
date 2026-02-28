@@ -195,7 +195,7 @@ class SqlProcessor
     {
         $sql = '';
         foreach ($tokens as $token) {
-            $sql .= $token->getType() === ArgumentType::Identifier
+            $sql .= $token instanceof Identifier
                 ? $this->renderIdentifierArgument($token)
                 : $token->getValue();
         }

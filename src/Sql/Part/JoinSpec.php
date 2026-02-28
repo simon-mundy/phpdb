@@ -31,7 +31,7 @@ use function substr;
  */
 final readonly class JoinSpec
 {
-    private const IDENTIFIER_PATTERN = '/\b(?!(?:AS|AND|OR|BETWEEN)\b)([a-zA-Z_]\w*+)(?!\s*\()/i';
+    private const IDENTIFIER_PATTERN = '/\b(?!(?:AS|AND|OR|BETWEEN)\b)([a-zA-Z_]\w*+(?:\.[a-zA-Z_]\w*+)*)(?!\s*\()/i';
 
     public string|TableIdentifier|Select|ExpressionInterface $table;
     public JoinTableType $tableType;
