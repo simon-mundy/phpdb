@@ -60,7 +60,7 @@ class InsertValues extends AbstractPart
             };
         }
 
-        $tableSql = $processor->resolveTable($this->table->get());
+        $tableSql = $this->table->renderTable($processor);
 
         return $this->keyword . ' ' . $tableSql
             . ' (' . implode(', ', $columns) . ')'

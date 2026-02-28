@@ -69,12 +69,11 @@ class Columns extends AbstractPart
         }
 
         if ($this->joinSpecs !== []) {
-            $separator = $processor->identifierSeparator;
             foreach ($this->joinSpecs as $spec) {
                 if ($spec->columnRefs === []) {
                     continue;
                 }
-                $joinPrefix = $processor->resolveTable($spec->alias ?? $spec->table) . $separator;
+                $joinPrefix = $spec->table->getQuotedPrefix($processor);
                 foreach ($spec->columnRefs as $ref) {
                     if ($ref->isStar) {
                         $fragments[] = $joinPrefix . '*';

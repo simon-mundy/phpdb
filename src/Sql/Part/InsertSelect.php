@@ -37,7 +37,7 @@ class InsertSelect extends AbstractPart
         }
         $columnsSql = implode(', ', $columns);
 
-        $tableSql = $processor->resolveTable($this->table->get());
+        $tableSql = $this->table->renderTable($processor);
 
         return $this->keyword . ' ' . $tableSql
             . ' ' . ($columnsSql ? "({$columnsSql})" : '')

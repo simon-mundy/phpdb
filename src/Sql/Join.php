@@ -9,7 +9,6 @@ use Iterator;
 use Override;
 use PhpDb\Sql\Part\AbstractPart;
 use PhpDb\Sql\Part\JoinSpec;
-use PhpDb\Sql\Part\JoinTableType;
 use PhpDb\Sql\Part\SqlProcessor;
 use ReturnTypeWillChange;
 
@@ -36,7 +35,8 @@ use function sprintf;
  */
 class Join extends AbstractPart implements Iterator, Countable
 {
-    private const IDENTIFIER_PATTERN = '/\b(?!(?:AS|AND|OR|BETWEEN)\b)([a-zA-Z_]\w*+(?:\.[a-zA-Z_]\w*+)*)(?!\s*\()/i';
+    private const IDENTIFIER_PATTERN
+        = '/\b(?!(?:AS|AND|OR|BETWEEN)\b)([a-zA-Z_]\w*+(?:\.[a-zA-Z_]\w*+)*)(?!\s*\()/i';
 
     final public const JOIN_INNER = 'INNER';
 
@@ -179,17 +179,7 @@ class Join extends AbstractPart implements Iterator, Countable
         $joinSqlParts = [];
 
         foreach ($this->specs as $j => $spec) {
-            $joinName = match ($spec->tableType) {
-                JoinTableType::Identifier      => $platform->quoteIdentifier($spec->table),
-                JoinTableType::TableIdentifier => $processor->resolveTable($spec->table),
-                JoinTableType::Expression      => $spec->table->getExpression(), // @phpstan-ignore method.nonObject
-                JoinTableType::Select          => '(' . $processor->processSubSelect($spec->table) . ')',
-            };
-            $quotedAlias = $spec->alias !== null
-                ? $platform->quoteIdentifier($spec->alias)
-                : null;
-
-            $renderedTable = $processor->renderTable($joinName, $quotedAlias);
+            $renderedTable = $spec->table->resolveTableWithAlias($processor);
 
             if ($spec->isExpressionOn) {
                 $onClause = $processor->renderExpression(

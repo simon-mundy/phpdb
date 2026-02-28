@@ -200,13 +200,10 @@ final class SelectTest extends TestCase
     #[TestDox('unit test: Test buildSqlString() exception with bad join name')]
     public function testBadJoinName(): void
     {
-        $mockExpression = $this->getMockBuilder(ExpressionInterface::class)
-            ->getMock();
-
         $this->expectException(InvalidArgumentException::class);
 
         $select = new Select();
-        $select->join(['foo' => $mockExpression], 'x = y');
+        $select->join(['foo' => ''], 'x = y');
     }
 
     #[TestDox('unit test: Test where() returns Select object (is chainable)')]

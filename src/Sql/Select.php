@@ -388,7 +388,7 @@ class Select extends AbstractPreparableSql
         $sqlPlatform?->getTypeDecorator($this)?->prepare($this, $processor);
         $this->table->prepare($processor);
 
-        return (string) SqlFragment::of('SELECT')
+        $fragment = SqlFragment::of('SELECT')
             ->part($this->quantifier?->toSql($processor))
             ->part($this->table->columns()->toSql($processor))
             ->part($this->table->from()->toSql($processor))
@@ -398,8 +398,14 @@ class Select extends AbstractPreparableSql
             ->part($this->having?->toSql($processor))
             ->part($this->orderBy?->toSql($processor))
             ->part($this->limit?->toSql($processor))
-            ->part($this->offset?->toSql($processor))
-            ->wrap($this->combine?->toSql($processor));
+            ->part($this->offset?->toSql($processor));
+
+        $combine = $this->combine?->toSql($processor);
+        if ($combine !== null) {
+            $fragment->wrap($combine);
+        }
+
+        return (string) $fragment;
     }
 
     /**

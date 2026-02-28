@@ -158,7 +158,7 @@ class Insert extends AbstractPreparableSql
         $processor->setParamPrefix($this->processInfo['paramPrefix']);
 
         $keyword  = $this->getStatementKeyword();
-        $tableSql = $processor->resolveTable($this->table->get());
+        $tableSql = $this->table->renderTable($processor);
 
         if ($this->select !== null) {
             $selectSql   = $processor->processSubSelect($this->select);

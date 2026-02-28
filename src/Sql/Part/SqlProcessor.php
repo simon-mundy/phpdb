@@ -14,7 +14,6 @@ use PhpDb\Sql\Platform\AbstractPlatform as SqlPlatform;
 use PhpDb\Sql\Select;
 use PhpDb\Sql\TableIdentifier;
 
-use function is_string;
 use function str_replace;
 
 class SqlProcessor
@@ -89,26 +88,15 @@ class SqlProcessor
 
     public function resolveTable(Select|string|TableIdentifier|null $table): string|null
     {
-        if (is_string($table)) {
-            return $this->platform->quoteIdentifier($table);
+        if ($table === null || $table === '') {
+            return $table;
         }
 
-        $schema = null;
         if ($table instanceof TableIdentifier) {
-            [$table, $schema] = $table->getTableAndSchema();
+            return $table->resolveTable($this);
         }
 
-        if ($table instanceof Select) {
-            $table = '(' . $this->processSubSelect($table) . ')';
-        } elseif ($table) {
-            $table = $this->platform->quoteIdentifier($table);
-        }
-
-        if ($schema && $table) {
-            $table = $this->platform->quoteIdentifier($schema) . $this->identifierSeparator . $table;
-        }
-
-        return $table;
+        return (new TableIdentifier($table))->resolveTable($this);
     }
 
     public function renderTable(string $table, ?string $alias = null): string
