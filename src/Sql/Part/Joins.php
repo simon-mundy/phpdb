@@ -10,7 +10,9 @@ use PhpDb\Sql\Select;
 use PhpDb\Sql\TableIdentifier;
 
 use function count;
+use function explode;
 use function implode;
+use function preg_replace_callback;
 use function spl_object_id;
 
 /**
@@ -22,6 +24,8 @@ use function spl_object_id;
  */
 class Joins extends AbstractPart
 {
+    private const IDENTIFIER_PATTERN = '/\b(?!(?:AS|AND|OR|BETWEEN)\b)([a-zA-Z_]\w*+(?:\.[a-zA-Z_]\w*+)*)(?!\s*\()/i';
+
     public ?Join $model = null;
 
     /** @var JoinSpec[] Normalized join specifications, built at join() time */
@@ -44,6 +48,7 @@ class Joins extends AbstractPart
             }
         }
 
+        $platform     = $processor->platform;
         $joinSqlParts = [];
 
         foreach ($this->specs as $j => $spec) {
@@ -51,10 +56,10 @@ class Joins extends AbstractPart
                 JoinTableType::Expression      => $spec->table->getExpression(), // @phpstan-ignore method.nonObject
                 JoinTableType::TableIdentifier => $processor->resolveTable($spec->table),
                 JoinTableType::Select          => '(' . $processor->processSubSelect($spec->table) . ')',
-                JoinTableType::Identifier      => $processor->platform->quoteIdentifier($spec->table),
+                JoinTableType::Identifier      => $platform->quoteIdentifier($spec->table),
             };
             $quotedAlias = $spec->alias !== null
-                ? $processor->platform->quoteIdentifier($spec->alias)
+                ? $platform->quoteIdentifier($spec->alias)
                 : null;
 
             $renderedTable = $processor->renderTable($joinName, $quotedAlias);
@@ -65,7 +70,11 @@ class Joins extends AbstractPart
                     'join' . ($j + 1) . 'part'
                 );
             } else {
-                $onClause = $processor->renderIdentifierFragment($spec->onTokens);
+                $onClause = preg_replace_callback(
+                    self::IDENTIFIER_PATTERN,
+                    static fn($m) => $platform->quoteIdentifier(...explode('.', $m[1], 2)),
+                    $spec->on,
+                );
             }
 
             $joinSqlParts[] = "{$spec->type} JOIN {$renderedTable} ON {$onClause}";

@@ -131,19 +131,6 @@ class SqlProcessor
         return $expression->renderSql($this, $namedParameterPrefix, $paramIndex);
     }
 
-    /**
-     * @param ArgumentInterface[] $tokens
-     */
-    public function renderIdentifierFragment(array $tokens): string
-    {
-        $sql = '';
-        $pi  = 0;
-        foreach ($tokens as $token) {
-            $sql .= $token->render($this, '', $pi);
-        }
-        return $sql;
-    }
-
     public function renderArgument(
         ArgumentInterface $argument,
         string $paramPrefix,
