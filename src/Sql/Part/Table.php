@@ -15,10 +15,8 @@ class Table
 {
     private From $from;
     private Columns $columns;
-    private ?Joins $joins = null;
+    private ?Join $join              = null;
     private ?int $preparedPlatformId = null;
-
-    public ?Join $joinModel = null;
 
     public function __construct()
     {
@@ -40,7 +38,7 @@ class Table
 
     public function hasFrom(): bool
     {
-        return !$this->from->isEmpty();
+        return ! $this->from->isEmpty();
     }
 
     public function resetFrom(): static
@@ -85,19 +83,19 @@ class Table
         array|string $columns = Select::SQL_STAR,
         string $type = Join::JOIN_INNER,
     ): static {
-        ($this->joins ??= new Joins())->join($name, $on, $columns, $type);
+        ($this->join ??= new Join())->join($name, $on, $columns, $type);
         $this->preparedPlatformId = null;
         return $this;
     }
 
     public function hasJoins(): bool
     {
-        return $this->joins !== null && !$this->joins->isEmpty();
+        return $this->join !== null && ! $this->join->isEmpty();
     }
 
     public function resetJoins(): static
     {
-        $this->joins = null;
+        $this->join               = null;
         $this->preparedPlatformId = null;
         return $this;
     }
@@ -109,12 +107,12 @@ class Table
             return;
         }
 
-        if ($this->columns->getPrefixColumnsWithTable() && !$this->from->isEmpty()) {
+        if ($this->columns->getPrefixColumnsWithTable() && ! $this->from->isEmpty()) {
             $this->columns->setFromTablePrefix($this->from->getQuotedPrefix($processor));
         } else {
             $this->columns->setFromTablePrefix('');
         }
-        $this->columns->setJoinSpecs($this->joins !== null ? $this->joins->getSpecs() : []);
+        $this->columns->setJoinSpecs($this->join !== null ? $this->join->getSpecs() : []);
         $this->preparedPlatformId = $platformId;
     }
 
@@ -128,17 +126,17 @@ class Table
         return $this->columns;
     }
 
-    public function joins(): ?Joins
+    public function joins(): ?Join
     {
-        return $this->joins;
+        return $this->join;
     }
 
     public function __clone()
     {
         $this->from    = clone $this->from;
         $this->columns = clone $this->columns;
-        if ($this->joins !== null) {
-            $this->joins = clone $this->joins;
+        if ($this->join !== null) {
+            $this->join = clone $this->join;
         }
         $this->preparedPlatformId = null;
     }

@@ -12,7 +12,7 @@ final class SqlFragment
 
     public static function of(string $keyword): self
     {
-        $f = new self();
+        $f          = new self();
         $f->parts[] = $keyword;
         return $f;
     }

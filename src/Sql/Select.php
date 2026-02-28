@@ -345,13 +345,11 @@ class Select extends AbstractPreparableSql
         $where  = $this->where ??= new WherePart();
         $having = $this->having ??= new HavingPart();
 
-        $joins = $this->table->joins();
-
         $rawState = [
             self::TABLE      => $this->table->getFrom(),
             self::QUANTIFIER => $this->quantifier?->get(),
             self::COLUMNS    => $this->table->getColumns(),
-            self::JOINS      => $joins !== null ? $joins->getModel() : ($this->table->joinModel ??= new Join()),
+            self::JOINS      => $this->table->joins() ?? new Join(),
             self::WHERE      => $where->model  ??= new Where(),
             self::ORDER      => $this->orderBy?->get() ?? [],
             self::GROUP      => $this->groupBy?->get() ?? [],
@@ -416,11 +414,7 @@ class Select extends AbstractPreparableSql
                 $part = $this->having ??= new HavingPart();
                 return $part->model ??= new Having();
             case 'joins':
-                $joins = $this->table->joins();
-                if ($joins !== null) {
-                    return $joins->getModel();
-                }
-                return $this->table->joinModel ??= new Join();
+                return $this->table->joins() ?? new Join();
             default:
                 throw new Exception\InvalidArgumentException('Not a valid magic property for this object');
         }

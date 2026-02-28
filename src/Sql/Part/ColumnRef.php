@@ -24,7 +24,7 @@ final readonly class ColumnRef
         string $star = Select::SQL_STAR,
     ) {
         $this->column = $column;
-        $this->isStar = ($column === $star);
+        $this->isStar = $column === $star;
 
         if ($this->isStar) {
             $this->alias         = null;

@@ -76,7 +76,8 @@ final class TimestampTest extends TestCase
         $paramIndex = 1;
         $sql        = $column->renderSql($processor, '', $paramIndex);
 
-        self::assertEquals('"updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP', $sql);
+        $expected = '"updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP';
+        self::assertEquals($expected, $sql);
     }
 
     public function testInheritanceFromAbstractTimestampColumn(): void

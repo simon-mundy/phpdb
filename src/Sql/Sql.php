@@ -106,7 +106,7 @@ class Sql
     }
 
     public function prepareStatementForSqlObject(
-        PreparableSqlInterface $sqlObject,
+        AbstractPreparableSql $sqlObject,
         ?StatementInterface $statement = null,
         ?AdapterInterface $adapter = null
     ): StatementInterface {
@@ -134,7 +134,7 @@ class Sql
     /**
      * @throws Exception\InvalidArgumentException
      */
-    public function buildSqlString(SqlInterface $sqlObject, ?AdapterInterface $adapter = null): string
+    public function buildSqlString(AbstractSql $sqlObject, ?AdapterInterface $adapter = null): string
     {
         $platform = ($adapter ?? $this->adapter)->getPlatform();
 

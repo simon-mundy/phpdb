@@ -8,8 +8,8 @@ use PhpDb\Adapter\Driver\DriverInterface;
 use PhpDb\Adapter\Driver\PdoDriverInterface;
 use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Adapter\Platform\PlatformInterface;
-use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Part\From;
+use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Platform\AbstractPlatform as SqlPlatform;
 
 use function array_flip;

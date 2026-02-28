@@ -298,13 +298,12 @@ abstract class AbstractSqlFunctionalTestCase extends TestCase
             ->willReturn('?');
         $mockDriver->expects($this->any())
             ->method('createStatement')
-            ->willReturnCallback(function (): MockObject {
-                $container = new Adapter\StatementContainer();
-                // Create a mock statement that delegates to the container for SQL/params
+            ->willReturnCallback(function () {
+                $container     = new Adapter\StatementContainer();
                 $mockStatement = $this->createMock(StatementInterface::class);
                 $mockStatement->expects($this->any())
                     ->method('setSql')
-                    ->willReturnCallback(function ($sql) use ($container, $mockStatement): MockObject {
+                    ->willReturnCallback(function ($sql) use ($container, $mockStatement) {
                         $container->setSql($sql);
                         return $mockStatement;
                     });
@@ -314,7 +313,7 @@ abstract class AbstractSqlFunctionalTestCase extends TestCase
                 $mockStatement->expects($this->any())
                     ->method('setParameterContainer')
                     ->willReturnCallback(
-                        function (ParameterContainer $params) use ($container, $mockStatement): MockObject {
+                        function (ParameterContainer $params) use ($container, $mockStatement) {
                             $container->setParameterContainer($params);
                             return $mockStatement;
                         }

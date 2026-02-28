@@ -107,5 +107,4 @@ final class Sql92Test extends TestCase
     {
         self::assertEquals('.', $this->platform->getIdentifierSeparator());
     }
-
 }

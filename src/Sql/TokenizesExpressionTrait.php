@@ -11,7 +11,7 @@ use PhpDb\Sql\Part\SqlProcessor;
 use function count;
 use function explode;
 
-trait TokenizesExpression
+trait TokenizesExpressionTrait
 {
     private ?array $tokens = null;
 

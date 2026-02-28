@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace PhpDb\Sql\Part;
 
-use PhpDb\Sql\ExpressionInterface;
-
 use function explode;
 use function implode;
 use function is_array;

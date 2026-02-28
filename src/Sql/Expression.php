@@ -17,7 +17,8 @@ use function is_array;
 
 class Expression extends AbstractExpression
 {
-    use TokenizesExpression;
+    use TokenizesExpressionTrait;
+
     /**
      * @const
      */

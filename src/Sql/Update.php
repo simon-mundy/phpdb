@@ -8,11 +8,10 @@ use Closure;
 use PhpDb\Adapter\Driver\DriverInterface;
 use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Adapter\Platform\PlatformInterface;
-use PhpDb\Sql\Part\Joins as JoinsPart;
+use PhpDb\Sql\Part\From;
 use PhpDb\Sql\Part\Set as SetPart;
 use PhpDb\Sql\Part\SqlFragment;
 use PhpDb\Sql\Part\SqlProcessor;
-use PhpDb\Sql\Part\From;
 use PhpDb\Sql\Part\Where as WherePart;
 use PhpDb\Sql\Platform\AbstractPlatform as SqlPlatform;
 use PhpDb\Sql\Predicate\PredicateInterface;
@@ -38,7 +37,7 @@ class Update extends AbstractPreparableSql
 
     protected ?WherePart $where = null;
 
-    protected ?JoinsPart $joins = null;
+    protected ?Join $joins = null;
 
     /**
      * Constructor
@@ -98,21 +97,20 @@ class Update extends AbstractPreparableSql
         PredicateInterface|string $on,
         string $type = Join::JOIN_INNER
     ): static {
-        ($this->joins ??= new JoinsPart())->join($name, $on, [], $type);
+        ($this->joins ??= new Join())->join($name, $on, [], $type);
         return $this;
     }
 
     public function getRawState(?string $key = null): mixed
     {
         $where = $this->where ??= new WherePart();
-        $joins = $this->joins ??= new JoinsPart();
 
         $rawState = [
             'emptyWhereProtection' => $this->emptyWhereProtection,
             'table'                => $this->table->get(),
             'set'                  => $this->set->toArray(),
             'where'                => $where->model ??= new Where(),
-            'joins'                => $joins->getModel(),
+            'joins'                => $this->joins ?? new Join(),
         ];
         return $key !== null && array_key_exists($key, $rawState) ? $rawState[$key] : $rawState;
     }
@@ -153,8 +151,7 @@ class Update extends AbstractPreparableSql
                 $where = $this->where ??= new WherePart();
                 return $where->model ??= new Where();
             case 'joins':
-                $joins = $this->joins ??= new JoinsPart();
-                return $joins->getModel();
+                return $this->joins ?? new Join();
             default:
                 return null;
         }

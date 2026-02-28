@@ -46,7 +46,8 @@ class PlatformTest extends TestCase
 
         $platform->setTypeDecorator(Select::class, $decorator);
 
-        $subclass = new class extends Select {};
+        $subclass = new class extends Select {
+        };
 
         self::assertSame($decorator, $platform->getTypeDecorator($subclass));
     }

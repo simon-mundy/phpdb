@@ -126,13 +126,9 @@ class PredicateSet implements PredicateInterface, Countable
             return $this;
         }
 
-        if (is_string($predicates)) {
-            $predicate = str_contains($predicates, Expression::PLACEHOLDER)
-                ? new PredicateExpression($predicates) : new Literal($predicates);
-            $this->addPredicate($predicate, $combination);
-
-            return $this;
-        }
+        $predicate = str_contains($predicates, Expression::PLACEHOLDER)
+            ? new PredicateExpression($predicates) : new Literal($predicates);
+        $this->addPredicate($predicate, $combination);
 
         return $this;
     }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PhpDbTest\Sql;
 
 use PhpDb\Sql\Join;
+use PhpDb\Sql\Part\JoinSpec;
 use PhpDb\Sql\Select;
 use PhpDbTest\DeprecatedAssertionsTrait;
 use PHPUnit\Framework\Attributes\CoversMethod;
@@ -27,6 +28,9 @@ use TypeError;
 #[CoversMethod(Join::class, 'join')]
 #[CoversMethod(Join::class, 'count')]
 #[CoversMethod(Join::class, 'reset')]
+#[CoversMethod(Join::class, 'isEmpty')]
+#[CoversMethod(Join::class, 'getSpecs')]
+#[CoversMethod(Join::class, 'toSql')]
 class JoinTest extends TestCase
 {
     use DeprecatedAssertionsTrait;
@@ -153,5 +157,39 @@ class JoinTest extends TestCase
         $join->reset();
 
         self::assertEquals(0, $join->count());
+    }
+
+    public function testIsEmptyReturnsTrueWhenNoJoins(): void
+    {
+        $join = new Join();
+        self::assertTrue($join->isEmpty());
+    }
+
+    public function testIsEmptyReturnsFalseAfterJoin(): void
+    {
+        $join = new Join();
+        $join->join('baz', 'foo.id = baz.id');
+        self::assertFalse($join->isEmpty());
+    }
+
+    public function testGetSpecsReturnsJoinSpecObjects(): void
+    {
+        $join = new Join();
+        $join->join('baz', 'foo.id = baz.id');
+        $join->join('bar', 'foo.id = bar.id');
+
+        $specs = $join->getSpecs();
+        self::assertCount(2, $specs);
+        self::assertContainsOnlyInstancesOf(JoinSpec::class, $specs);
+    }
+
+    public function testResetClearsSpecs(): void
+    {
+        $join = new Join();
+        $join->join('baz', 'foo.id = baz.id');
+        $join->reset();
+
+        self::assertSame([], $join->getSpecs());
+        self::assertTrue($join->isEmpty());
     }
 }

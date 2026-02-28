@@ -44,7 +44,7 @@ abstract class AbstractPlatform implements PlatformInterface
         }
 
         if ($identifier2 !== null) {
-            $key = $identifier . '.' . $identifier2;
+            $key                                  = $identifier . '.' . $identifier2;
             return $this->identifierCache[$key]
                 ??= $this->quoteIdentifier[0]
                     . str_replace($this->quoteIdentifier[0], $this->quoteIdentifierTo, $identifier)

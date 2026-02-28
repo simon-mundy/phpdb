@@ -19,10 +19,10 @@ use function key;
 class Columns extends AbstractPart
 {
     /** @var ColumnRef[] */
-    private array $columnRefs = [];
-    private array $rawColumns = [Select::SQL_STAR];
+    private array $columnRefs            = [];
+    private array $rawColumns            = [Select::SQL_STAR];
     private bool $prefixColumnsWithTable = true;
-    private string $fromTablePrefix = '';
+    private string $fromTablePrefix      = '';
     /** @var JoinSpec[] */
     private array $joinSpecs = [];
 
