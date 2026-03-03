@@ -6,7 +6,7 @@ namespace PhpDb\Sql\Argument;
 
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ArgumentType;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 
 use function array_values;
 use function implode;
@@ -37,17 +37,17 @@ final readonly class Values implements ArgumentInterface
         return $this->values;
     }
 
-    public function render(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
+    public function render(AbstractSqlRenderer $renderer, string $paramPrefix, int &$paramIndex): string
     {
         $rendered = [];
 
-        if ($processor->parameterContainer !== null) {
+        if ($renderer->parameterContainer !== null) {
             foreach ($this->values as $value) {
-                $rendered[] = $processor->bindValue($value, $paramPrefix, $paramIndex);
+                $rendered[] = $renderer->bindValue($value, $paramPrefix, $paramIndex);
             }
         } else {
             foreach ($this->values as $value) {
-                $rendered[] = $processor->platform->quoteValue((string) $value);
+                $rendered[] = $renderer->platform->quoteValue((string) $value);
             }
         }
 

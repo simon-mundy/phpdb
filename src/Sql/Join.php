@@ -9,7 +9,7 @@ use Iterator;
 use Override;
 use PhpDb\Sql\Part\AbstractPart;
 use PhpDb\Sql\Part\JoinSpec;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use ReturnTypeWillChange;
 
 use function count;
@@ -113,7 +113,7 @@ class Join extends AbstractPart implements Iterator, Countable
     }
 
     #[Override]
-    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
+    public function toSql(AbstractSqlRenderer $renderer, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         if ($this->specs === []) {
             return null;
@@ -122,12 +122,12 @@ class Join extends AbstractPart implements Iterator, Countable
         $joinSqlParts = [];
 
         foreach ($this->specs as $j => $spec) {
-            $table = $processor->resolveTableWithAlias($spec->table);
+            $table = $renderer->resolveTable($spec->table, withAlias: true);
 
             if (! $spec->isExpressionOn) {
-                $onClause = $processor->renderQuotedIdentifiers($spec->on);
+                $onClause = $renderer->quoteIdentifiersIn($spec->on);
             } else {
-                $onClause = $processor->renderExpression($spec->on, 'join' . ($j + 1) . 'part');
+                $onClause = $renderer->render($spec->on, 'join' . ($j + 1) . 'part');
             }
 
             $joinSqlParts[] = "{$spec->type} JOIN {$table} ON {$onClause}";

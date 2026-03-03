@@ -6,7 +6,7 @@ namespace PhpDbTest\Sql\Predicate;
 
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ArgumentType;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\Sql92Renderer;
 use PhpDb\Sql\Predicate\Like;
 use PhpDb\Sql\Predicate\NotLike;
 use PhpDbTest\TestAsset\TrustingSql92Platform;
@@ -92,9 +92,9 @@ final class NotLikeTest extends TestCase
     {
         $notLike = new NotLike('bar', 'Foo%');
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $notLike->toSql($processor, '', $paramIndex);
+        $sql        = $notLike->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('"bar" NOT LIKE \'Foo%\'', $sql);
     }

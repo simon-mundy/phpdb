@@ -8,7 +8,7 @@ use ErrorException;
 use PhpDb\Adapter\Exception\VunerablePlatformQuoteException;
 use PhpDb\Adapter\Platform\Sql92;
 use PhpDb\Sql\Expression;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\Sql92Renderer;
 use PhpDb\Sql\Predicate\Predicate;
 use PhpDb\Sql\Select;
 use PhpDbTest\TestAsset\TrustingSql92Platform;
@@ -22,9 +22,9 @@ final class PredicateTest extends TestCase
         $predicate = new Predicate();
         $predicate->equalTo('foo.bar', 'bar');
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $predicate->toSql($processor, '', $paramIndex);
+        $sql        = $predicate->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('"foo"."bar" = \'bar\'', $sql);
     }
@@ -34,9 +34,9 @@ final class PredicateTest extends TestCase
         $predicate = new Predicate();
         $predicate->notEqualTo('foo.bar', 'bar');
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $predicate->toSql($processor, '', $paramIndex);
+        $sql        = $predicate->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('"foo"."bar" != \'bar\'', $sql);
     }
@@ -46,9 +46,9 @@ final class PredicateTest extends TestCase
         $predicate = new Predicate();
         $predicate->lessThan('foo.bar', 'bar');
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $predicate->toSql($processor, '', $paramIndex);
+        $sql        = $predicate->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('"foo"."bar" < \'bar\'', $sql);
     }
@@ -58,9 +58,9 @@ final class PredicateTest extends TestCase
         $predicate = new Predicate();
         $predicate->greaterThan('foo.bar', 'bar');
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $predicate->toSql($processor, '', $paramIndex);
+        $sql        = $predicate->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('"foo"."bar" > \'bar\'', $sql);
     }
@@ -70,9 +70,9 @@ final class PredicateTest extends TestCase
         $predicate = new Predicate();
         $predicate->lessThanOrEqualTo('foo.bar', 'bar');
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $predicate->toSql($processor, '', $paramIndex);
+        $sql        = $predicate->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('"foo"."bar" <= \'bar\'', $sql);
     }
@@ -82,9 +82,9 @@ final class PredicateTest extends TestCase
         $predicate = new Predicate();
         $predicate->greaterThanOrEqualTo('foo.bar', 'bar');
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $predicate->toSql($processor, '', $paramIndex);
+        $sql        = $predicate->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('"foo"."bar" >= \'bar\'', $sql);
     }
@@ -94,9 +94,9 @@ final class PredicateTest extends TestCase
         $predicate = new Predicate();
         $predicate->like('foo.bar', 'bar%');
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $predicate->toSql($processor, '', $paramIndex);
+        $sql        = $predicate->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('"foo"."bar" LIKE \'bar%\'', $sql);
     }
@@ -106,9 +106,9 @@ final class PredicateTest extends TestCase
         $predicate = new Predicate();
         $predicate->notLike('foo.bar', 'bar%');
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $predicate->toSql($processor, '', $paramIndex);
+        $sql        = $predicate->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('"foo"."bar" NOT LIKE \'bar%\'', $sql);
     }
@@ -118,9 +118,9 @@ final class PredicateTest extends TestCase
         $predicate = new Predicate();
         $predicate->literal('foo.bar = ?');
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $predicate->toSql($processor, '', $paramIndex);
+        $sql        = $predicate->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('foo.bar = ?', $sql);
     }
@@ -130,9 +130,9 @@ final class PredicateTest extends TestCase
         $predicate = new Predicate();
         $predicate->isNull('foo.bar');
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $predicate->toSql($processor, '', $paramIndex);
+        $sql        = $predicate->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('"foo"."bar" IS NULL', $sql);
     }
@@ -142,9 +142,9 @@ final class PredicateTest extends TestCase
         $predicate = new Predicate();
         $predicate->isNotNull('foo.bar');
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $predicate->toSql($processor, '', $paramIndex);
+        $sql        = $predicate->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('"foo"."bar" IS NOT NULL', $sql);
     }
@@ -154,9 +154,9 @@ final class PredicateTest extends TestCase
         $predicate = new Predicate();
         $predicate->in('foo.bar', ['foo', 'bar']);
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $predicate->toSql($processor, '', $paramIndex);
+        $sql        = $predicate->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('"foo"."bar" IN (\'foo\', \'bar\')', $sql);
     }
@@ -166,9 +166,9 @@ final class PredicateTest extends TestCase
         $predicate = new Predicate();
         $predicate->notIn('foo.bar', ['foo', 'bar']);
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $predicate->toSql($processor, '', $paramIndex);
+        $sql        = $predicate->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('"foo"."bar" NOT IN (\'foo\', \'bar\')', $sql);
     }
@@ -178,9 +178,9 @@ final class PredicateTest extends TestCase
         $predicate = new Predicate();
         $predicate->between('foo.bar', 1, 10);
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $predicate->toSql($processor, '', $paramIndex);
+        $sql        = $predicate->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('"foo"."bar" BETWEEN \'1\' AND \'10\'', $sql);
     }
@@ -190,9 +190,9 @@ final class PredicateTest extends TestCase
         $predicate = new Predicate();
         $predicate->notBetween('foo.bar', 1, 10);
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $predicate->toSql($processor, '', $paramIndex);
+        $sql        = $predicate->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('"foo"."bar" NOT BETWEEN \'1\' AND \'10\'', $sql);
     }
@@ -206,9 +206,9 @@ final class PredicateTest extends TestCase
             ->and
             ->equalTo('baz.bat', 'foo');
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $predicate->toSql($processor, '', $paramIndex);
+        $sql        = $predicate->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('"foo"."bar" IS NULL OR "bar"."baz" IS NOT NULL AND "baz"."bat" = \'foo\'', $sql);
     }
@@ -223,9 +223,9 @@ final class PredicateTest extends TestCase
             ->equalTo('baz.bat', 'foo')
             ->unnest();
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $predicate->toSql($processor, '', $paramIndex);
+        $sql        = $predicate->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('"foo"."bar" IS NULL AND ("bar"."baz" IS NOT NULL AND "baz"."bat" = \'foo\')', $sql);
     }
@@ -238,9 +238,9 @@ final class PredicateTest extends TestCase
         // is chainable
         self::assertSame($predicate, $predicate->expression('foo = ?', 0));
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $predicate->toSql($processor, '', $paramIndex);
+        $sql        = $predicate->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('foo = \'0\'', $sql);
     }
@@ -271,9 +271,9 @@ final class PredicateTest extends TestCase
         // is chainable
         self::assertSame($predicate, $predicate->literal('foo = bar'));
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $predicate->toSql($processor, '', $paramIndex);
+        $sql        = $predicate->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('foo = bar', $sql);
 
@@ -282,7 +282,7 @@ final class PredicateTest extends TestCase
         $predicate->expression('foo = ?', 'bar');
 
         $paramIndex = 1;
-        $sql        = $predicate->toSql($processor, '', $paramIndex);
+        $sql        = $predicate->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('foo = \'bar\'', $sql);
 
@@ -291,7 +291,7 @@ final class PredicateTest extends TestCase
         $predicate->expression('foo = ?', 0);
 
         $paramIndex = 1;
-        $sql        = $predicate->toSql($processor, '', $paramIndex);
+        $sql        = $predicate->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('foo = \'0\'', $sql);
     }

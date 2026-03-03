@@ -16,7 +16,7 @@ class Sql
 
     protected TableIdentifier|string|array|null $table;
 
-    protected Platform\AbstractPlatform $sqlPlatform;
+    protected Platform\AbstractSqlRenderer $sqlRenderer;
 
     public function __construct(
         AdapterInterface $adapter,
@@ -24,7 +24,7 @@ class Sql
     ) {
         $this->adapter     = $adapter;
         $this->table       = $table;
-        $this->sqlPlatform = new Platform\Sql92Platform();
+        $this->sqlRenderer = new Platform\Sql92Renderer();
     }
 
     public function getAdapter(): ?AdapterInterface
@@ -52,9 +52,9 @@ class Sql
         return $this->table;
     }
 
-    public function getSqlPlatform(): ?Platform\AbstractPlatform
+    public function getSqlPlatform(): ?Platform\AbstractSqlRenderer
     {
-        return $this->sqlPlatform;
+        return $this->sqlRenderer;
     }
 
     public function select(string|TableIdentifier|null $table = null): Select
@@ -119,14 +119,8 @@ class Sql
             $statement->setParameterContainer($parameterContainer);
         }
 
-        $statement->setSql(
-            $sqlObject->buildSqlString(
-                $adapter->getPlatform(),
-                $adapter->getDriver(),
-                $parameterContainer,
-                $this->sqlPlatform,
-            )
-        );
+        $this->sqlRenderer->init($adapter->getPlatform(), $adapter->getDriver(), $parameterContainer);
+        $statement->setSql($sqlObject->buildSqlString($this->sqlRenderer));
 
         return $statement;
     }
@@ -136,8 +130,8 @@ class Sql
      */
     public function buildSqlString(AbstractSql $sqlObject, ?AdapterInterface $adapter = null): string
     {
-        $platform = ($adapter ?? $this->adapter)->getPlatform();
+        $this->sqlRenderer->init(($adapter ?? $this->adapter)->getPlatform());
 
-        return $sqlObject->buildSqlString($platform, null, null, $this->sqlPlatform);
+        return $sqlObject->buildSqlString($this->sqlRenderer);
     }
 }

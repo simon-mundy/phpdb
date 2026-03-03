@@ -6,7 +6,7 @@ namespace PhpDbTest\Sql\Ddl\Constraint;
 
 use PhpDb\Sql\Ddl\Constraint\AbstractConstraint;
 use PhpDb\Sql\Ddl\Constraint\ForeignKey;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\Sql92Renderer;
 use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\TestCase;
@@ -136,9 +136,9 @@ final class ForeignKeyTest extends TestCase
     {
         $fk = new ForeignKey('foo', 'bar', 'baz', 'bam', 'CASCADE', 'SET NULL');
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $fk->toSql($processor, '', $paramIndex);
+        $sql        = $fk->toSql($renderer, '', $paramIndex);
 
         self::assertEquals(
             'CONSTRAINT "foo" FOREIGN KEY ("bar") REFERENCES "baz" ("bam") ON DELETE CASCADE ON UPDATE SET NULL',

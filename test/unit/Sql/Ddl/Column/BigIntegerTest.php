@@ -6,7 +6,7 @@ namespace PhpDbTest\Sql\Ddl\Column;
 
 use PhpDb\Sql\Ddl\Column\BigInteger;
 use PhpDb\Sql\Ddl\Column\Column;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\Sql92Renderer;
 use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\TestCase;
@@ -23,11 +23,11 @@ final class BigIntegerTest extends TestCase
 
     public function testGetExpressionData(): void
     {
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
 
         $column = new BigInteger('foo');
-        $sql    = $column->toSql($processor, '', $paramIndex);
+        $sql    = $column->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('"foo" BIGINT NOT NULL', $sql);
     }

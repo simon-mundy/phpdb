@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace PhpDb\Sql;
 
 use Closure;
-use PhpDb\Adapter\Driver\DriverInterface;
-use PhpDb\Adapter\ParameterContainer;
-use PhpDb\Adapter\Platform\PlatformInterface;
+use Override;
 use PhpDb\Sql\Part\Combine as CombinePart;
 use PhpDb\Sql\Part\GroupBy;
 use PhpDb\Sql\Part\Limit;
@@ -15,9 +13,8 @@ use PhpDb\Sql\Part\Offset;
 use PhpDb\Sql\Part\OrderBy;
 use PhpDb\Sql\Part\Quantifier;
 use PhpDb\Sql\Part\SqlFragment;
-use PhpDb\Sql\Part\SqlProcessor;
 use PhpDb\Sql\Part\Table;
-use PhpDb\Sql\Platform\AbstractPlatform as SqlPlatform;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use PhpDb\Sql\Predicate\PredicateInterface;
 
 use function array_key_exists;
@@ -377,30 +374,25 @@ class Select extends AbstractPreparableSql
         return $this->table;
     }
 
-    public function buildSqlString(
-        PlatformInterface $platform,
-        ?DriverInterface $driver = null,
-        ?ParameterContainer $parameterContainer = null,
-        ?SqlPlatform $sqlPlatform = null,
-    ): string {
-        $processor = new SqlProcessor($platform, $driver, $parameterContainer, $sqlPlatform);
-        $processor->setParamPrefix($this->processInfo['paramPrefix']);
-        $sqlPlatform?->getTypeDecorator($this)?->prepare($this, $processor);
-        $this->table->prepare($processor);
+    #[Override]
+    public function buildSqlString(AbstractSqlRenderer $renderer): string
+    {
+        $renderer->getTypeDecorator($this)?->prepare($this, $renderer);
+        $this->table->prepare($renderer);
 
         $fragment = SqlFragment::of('SELECT')
-            ->part($this->quantifier?->toSql($processor))
-            ->part($this->table->columns()->toSql($processor))
-            ->part($this->table->from()->toSql($processor))
-            ->part($this->table->joins()?->toSql($processor))
-            ->part($this->where?->toSql($processor))
-            ->part($this->groupBy?->toSql($processor))
-            ->part($this->having?->toSql($processor))
-            ->part($this->orderBy?->toSql($processor))
-            ->part($this->limit?->toSql($processor))
-            ->part($this->offset?->toSql($processor));
+            ->part($this->quantifier?->toSql($renderer))
+            ->part($this->table->columns()->toSql($renderer))
+            ->part($this->table->from()->toSql($renderer))
+            ->part($this->table->joins()?->toSql($renderer))
+            ->part($this->where?->toSql($renderer))
+            ->part($this->groupBy?->toSql($renderer))
+            ->part($this->having?->toSql($renderer))
+            ->part($this->orderBy?->toSql($renderer))
+            ->part($this->limit?->toSql($renderer))
+            ->part($this->offset?->toSql($renderer));
 
-        $combine = $this->combine?->toSql($processor);
+        $combine = $this->combine?->toSql($renderer);
         if ($combine !== null) {
             $fragment->wrap($combine);
         }

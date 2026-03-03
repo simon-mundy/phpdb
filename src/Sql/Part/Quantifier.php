@@ -9,13 +9,14 @@ use PhpDb\Sql\Argument\Select as SelectArgument;
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ArgumentType;
 use PhpDb\Sql\ExpressionInterface;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use ValueError;
 
 class Quantifier extends AbstractPart
 {
     private ?ArgumentInterface $quantifier = null;
 
-    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
+    public function toSql(AbstractSqlRenderer $renderer, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         if ($this->quantifier === null) {
             return null;
@@ -23,7 +24,7 @@ class Quantifier extends AbstractPart
 
         return match ($this->quantifier->getType()) {
             ArgumentType::Literal => $this->quantifier->getValue(),
-            ArgumentType::Select  => $processor->renderExpression($this->quantifier->getValue(), 'quantifier'),
+            ArgumentType::Select  => $renderer->render($this->quantifier->getValue(), 'quantifier'),
             default => throw new ValueError('Unexpected ArgumentType: ' . $this->quantifier->getType()->name),
         };
     }

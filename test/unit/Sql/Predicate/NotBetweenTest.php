@@ -6,7 +6,7 @@ namespace PhpDbTest\Sql\Predicate;
 
 use Override;
 use PhpDb\Sql\Argument;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\Sql92Renderer;
 use PhpDb\Sql\Predicate\NotBetween;
 use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\CoversMethod;
@@ -36,9 +36,9 @@ final class NotBetweenTest extends TestCase
             ->setMinValue(10)
             ->setMaxValue(19);
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $this->notBetween->toSql($processor, '', $paramIndex);
+        $sql        = $this->notBetween->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('"foo"."bar" NOT BETWEEN \'10\' AND \'19\'', $sql);
 
@@ -48,7 +48,7 @@ final class NotBetweenTest extends TestCase
             ->setMaxValue(Argument::identifier('foo.baz'));
 
         $paramIndex = 1;
-        $sql        = $this->notBetween->toSql($processor, '', $paramIndex);
+        $sql        = $this->notBetween->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('\'10\' NOT BETWEEN "foo"."bar" AND "foo"."baz"', $sql);
     }

@@ -7,7 +7,7 @@ namespace PhpDbTest\Sql\Ddl\Column;
 use PhpDb\Sql\Ddl\Column\Column;
 use PhpDb\Sql\Ddl\Column\Integer;
 use PhpDb\Sql\Ddl\Constraint\PrimaryKey;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\Sql92Renderer;
 use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\TestCase;
@@ -24,11 +24,11 @@ final class IntegerTest extends TestCase
 
     public function testGetExpressionData(): void
     {
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
 
         $column = new Integer('foo');
-        $sql    = $column->toSql($processor, '', $paramIndex);
+        $sql    = $column->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('"foo" INTEGER NOT NULL', $sql);
 
@@ -36,7 +36,7 @@ final class IntegerTest extends TestCase
         $column->addConstraint(new PrimaryKey());
 
         $paramIndex = 1;
-        $sql        = $column->toSql($processor, '', $paramIndex);
+        $sql        = $column->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('"foo" INTEGER NOT NULL PRIMARY KEY', $sql);
     }

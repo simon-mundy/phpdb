@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace PhpDb\Sql\Part;
 
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use PhpDb\Sql\Select;
 
 class Combine extends AbstractPart
 {
     private array $combine = [];
 
-    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
+    public function toSql(AbstractSqlRenderer $renderer, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         if ($this->combine === []) {
             return null;
@@ -21,7 +22,7 @@ class Combine extends AbstractPart
             : $this->combine['type'];
 
         return $type . ' ( '
-            . $processor->processSubSelect($this->combine['select'])
+            . $renderer->processSubSelect($this->combine['select'])
             . ' )';
     }
 

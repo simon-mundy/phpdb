@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace PhpDb\Sql\Part;
 
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
+
 use function implode;
 use function is_array;
 use function is_string;
@@ -13,13 +15,13 @@ class GroupBy extends AbstractPart
     /** @var ColumnRef[]|null */
     private ?array $group = null;
 
-    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
+    public function toSql(AbstractSqlRenderer $renderer, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         if ($this->group === null) {
             return null;
         }
 
-        $platform = $processor->platform;
+        $platform = $renderer->platform;
         $groups   = [];
 
         foreach ($this->group as $ref) {
@@ -28,7 +30,7 @@ class GroupBy extends AbstractPart
             if (is_string($column)) {
                 $groups[] = $platform->quoteIdentifier($column);
             } else {
-                $groups[] = $processor->renderExpression($column);
+                $groups[] = $renderer->render($column);
             }
         }
 

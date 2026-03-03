@@ -9,7 +9,7 @@ use PhpDb\Sql\AbstractExpression;
 use PhpDb\Sql\Argument\Identifier;
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\Exception\InvalidArgumentException;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 
 use function vsprintf;
 
@@ -50,13 +50,13 @@ class IsNull extends AbstractExpression implements PredicateInterface
     }
 
     #[Override]
-    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
+    public function toSql(AbstractSqlRenderer $renderer, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         if (! $this->identifier instanceof ArgumentInterface) {
             throw new InvalidArgumentException('Identifier must be specified');
         }
 
-        $id = $processor->renderArgument($this->identifier, $paramPrefix, $paramIndex);
+        $id = $renderer->renderArgument($this->identifier, $paramPrefix, $paramIndex);
 
         if ($this->specification !== null) {
             return vsprintf($this->specification, [$id]);

@@ -6,7 +6,7 @@ namespace PhpDb\Sql\Ddl\Constraint;
 
 use Override;
 use PhpDb\Sql\Argument\Identifier;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 
 use function implode;
 
@@ -103,11 +103,11 @@ class ForeignKey extends AbstractConstraint
     }
 
     #[Override]
-    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
+    public function toSql(AbstractSqlRenderer $renderer, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
-        $sql = parent::toSql($processor, $paramPrefix, $paramIndex);
+        $sql = parent::toSql($renderer, $paramPrefix, $paramIndex);
 
-        $sql .= ' REFERENCES ' . $processor->renderArgument(
+        $sql .= ' REFERENCES ' . $renderer->renderArgument(
             new Identifier($this->referenceTable),
             $paramPrefix,
             $paramIndex,
@@ -116,7 +116,7 @@ class ForeignKey extends AbstractConstraint
         if ($this->referenceColumn !== []) {
             $quotedColumns = [];
             foreach ($this->referenceColumn as $column) {
-                $quotedColumns[] = $processor->renderArgument(
+                $quotedColumns[] = $renderer->renderArgument(
                     new Identifier($column),
                     $paramPrefix,
                     $paramIndex,

@@ -12,7 +12,7 @@ use PhpDb\Sql\Argument\Value;
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\Exception\InvalidArgumentException;
 use PhpDb\Sql\ExpressionInterface;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use PhpDb\Sql\SqlInterface;
 
 use function vsprintf;
@@ -136,7 +136,7 @@ class Operator extends AbstractExpression implements PredicateInterface
     }
 
     #[Override]
-    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
+    public function toSql(AbstractSqlRenderer $renderer, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         if ($this->left === null || $this->right === null) {
             throw new InvalidArgumentException(
@@ -144,8 +144,8 @@ class Operator extends AbstractExpression implements PredicateInterface
             );
         }
 
-        $leftSql  = $this->left->render($processor, $paramPrefix, $paramIndex);
-        $rightSql = $this->right->render($processor, $paramPrefix, $paramIndex);
+        $leftSql  = $this->left->render($renderer, $paramPrefix, $paramIndex);
+        $rightSql = $this->right->render($renderer, $paramPrefix, $paramIndex);
 
         if ($this->specification !== null) {
             return vsprintf($this->specification, [$leftSql, $rightSql]);

@@ -8,7 +8,7 @@ use PhpDb\Sql\Argument\Select;
 use PhpDb\Sql\Argument\Value;
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ArgumentType;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\Sql92Renderer;
 use PhpDb\Sql\Predicate\Expression;
 use PhpDb\Sql\Predicate\IsNull;
 use PhpDbTest\TestAsset\TrustingSql92Platform;
@@ -192,9 +192,9 @@ final class ExpressionTest extends TestCase
             ->setExpression('foo.bar = ? AND id != ?')
             ->setParameters(['foo', 'bar']);
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $expression->toSql($processor, '', $paramIndex);
+        $sql        = $expression->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('foo.bar = \'foo\' AND id != \'bar\'', $sql);
     }

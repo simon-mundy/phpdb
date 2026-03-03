@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace PhpDb\Sql\Ddl;
 
-use PhpDb\Adapter\Driver\DriverInterface;
-use PhpDb\Adapter\ParameterContainer;
+use Override;
 use PhpDb\Adapter\Platform\PlatformInterface;
 use PhpDb\Sql\Literal;
-use PhpDb\Sql\Part\SqlProcessor;
-use PhpDb\Sql\Platform\AbstractPlatform as SqlPlatform;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use PhpDb\Sql\TableIdentifier;
 
 use function array_key_exists;
@@ -119,25 +117,19 @@ class CreateTable extends AbstractDdl
         return isset($key) && array_key_exists($key, $rawState) ? $rawState[$key] : $rawState;
     }
 
-    public function buildSqlString(
-        PlatformInterface $platform,
-        ?DriverInterface $driver = null,
-        ?ParameterContainer $parameterContainer = null,
-        ?SqlPlatform $sqlPlatform = null,
-    ): string {
-        $processor = new SqlProcessor($platform, $driver, $parameterContainer, $sqlPlatform);
-        $processor->setParamPrefix($this->processInfo['paramPrefix']);
-
+    #[Override]
+    public function buildSqlString(AbstractSqlRenderer $renderer): string
+    {
         $sql = 'CREATE '
             . ($this->isTemporary ? 'TEMPORARY ' : '')
             . 'TABLE '
             . ($this->ifNotExists ? 'IF NOT EXISTS ' : '')
-            . $processor->resolveTable($this->table) . ' (';
+            . $renderer->resolveTable($this->table) . ' (';
 
         if ($this->columns) {
             $columnSqls = [];
             foreach ($this->columns as $column) {
-                $columnSqls[] = $processor->renderExpression($column);
+                $columnSqls[] = $renderer->render($column);
             }
             $sql .= " \n    " . implode(",\n    ", $columnSqls);
         }
@@ -149,7 +141,7 @@ class CreateTable extends AbstractDdl
         if ($this->constraints) {
             $constraintSqls = [];
             foreach ($this->constraints as $constraint) {
-                $constraintSqls[] = $processor->renderExpression($constraint);
+                $constraintSqls[] = $renderer->render($constraint);
             }
             $sql .= " \n    " . implode(",\n    ", $constraintSqls);
         }
@@ -157,7 +149,7 @@ class CreateTable extends AbstractDdl
         $sql .= " \n)";
 
         if ($this->options) {
-            $sql .= ' ' . $this->renderTableOptions($platform);
+            $sql .= ' ' . $this->renderTableOptions($renderer->platform);
         }
 
         return $sql;

@@ -8,7 +8,7 @@ use Override;
 use PhpDb\Sql\Argument\Select as SelectArgument;
 use PhpDb\Sql\Argument\Value;
 use PhpDb\Sql\Argument\Values;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 
 use function array_slice;
 use function func_get_args;
@@ -103,12 +103,12 @@ class Expression extends AbstractExpression
     }
 
     #[Override]
-    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
+    public function toSql(AbstractSqlRenderer $renderer, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         if ($this->tokens === null) {
             $this->tokenize($this->expression, $this->parameters);
         }
 
-        return $this->renderTokens($processor, $paramPrefix, $paramIndex);
+        return $this->renderTokens($renderer, $paramPrefix, $paramIndex);
     }
 }

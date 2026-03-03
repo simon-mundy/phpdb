@@ -6,7 +6,7 @@ namespace PhpDb\Sql\Argument;
 
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ArgumentType;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 
 final readonly class NullValue implements ArgumentInterface
 {
@@ -20,7 +20,7 @@ final readonly class NullValue implements ArgumentInterface
         return null;
     }
 
-    public function render(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
+    public function render(AbstractSqlRenderer $renderer, string $paramPrefix, int &$paramIndex): string
     {
         return 'NULL';
     }

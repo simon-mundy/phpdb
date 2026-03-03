@@ -6,6 +6,7 @@ namespace PhpDb\Sql\Part;
 
 use PhpDb\Sql\Exception\InvalidArgumentException;
 use PhpDb\Sql\Join;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use PhpDb\Sql\Predicate\PredicateInterface;
 use PhpDb\Sql\Select;
 use PhpDb\Sql\TableIdentifier;
@@ -126,10 +127,10 @@ class Table
         return $this;
     }
 
-    public function prepare(SqlProcessor $processor): void
+    public function prepare(AbstractSqlRenderer $renderer): void
     {
         if ($this->columns->getPrefixColumnsWithTable() && ! $this->from->isEmpty()) {
-            $this->columns->setFromTablePrefix($this->from->getQuotedPrefix($processor));
+            $this->columns->setFromTablePrefix($this->from->getQuotedPrefix($renderer));
         } else {
             $this->columns->setFromTablePrefix('');
         }

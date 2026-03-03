@@ -5,38 +5,26 @@ declare(strict_types=1);
 namespace PhpDb\Sql;
 
 use Override;
-use PhpDb\Adapter\Driver\DriverInterface;
-use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Adapter\Platform\PlatformInterface;
 use PhpDb\Adapter\Platform\Sql92 as DefaultAdapterPlatform;
-use PhpDb\Sql\Platform\AbstractPlatform as SqlPlatform;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
+use PhpDb\Sql\Platform\Sql92Renderer;
 
 abstract class AbstractSql implements SqlInterface
 {
-    /**
-     * Information used during processing
-     *
-     * @var array{paramPrefix: string, subselectCount: int}
-     */
-    public array $processInfo = ['paramPrefix' => '', 'subselectCount' => 0];
-
     /**
      * {@inheritDoc}
      */
     #[Override]
     public function getSqlString(?PlatformInterface $adapterPlatform = null): string
     {
-        $adapterPlatform = $adapterPlatform ?: new DefaultAdapterPlatform();
-
-        return $this->buildSqlString($adapterPlatform);
+        return $this->buildSqlString(
+            (new Sql92Renderer())->init($adapterPlatform ?? new DefaultAdapterPlatform())
+        );
     }
 
-    public function buildSqlString(
-        PlatformInterface $platform,
-        ?DriverInterface $driver = null,
-        ?ParameterContainer $parameterContainer = null,
-        ?SqlPlatform $sqlPlatform = null,
-    ): string {
+    public function buildSqlString(AbstractSqlRenderer $renderer): string
+    {
         return '';
     }
 }

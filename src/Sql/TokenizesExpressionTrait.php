@@ -6,7 +6,7 @@ namespace PhpDb\Sql;
 
 use PhpDb\Sql\Argument\Literal;
 use PhpDb\Sql\Exception\RuntimeException;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 
 use function count;
 use function explode;
@@ -47,11 +47,11 @@ trait TokenizesExpressionTrait
         $this->tokens = null;
     }
 
-    protected function renderTokens(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
+    protected function renderTokens(AbstractSqlRenderer $renderer, string $paramPrefix, int &$paramIndex): string
     {
         $sql = '';
         foreach ($this->tokens as $token) {
-            $sql .= $token->render($processor, $paramPrefix, $paramIndex);
+            $sql .= $token->render($renderer, $paramPrefix, $paramIndex);
         }
         return $sql;
     }

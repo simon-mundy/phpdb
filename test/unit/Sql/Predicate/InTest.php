@@ -8,7 +8,7 @@ use PhpDb\Sql\Argument;
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ArgumentType;
 use PhpDb\Sql\Exception\InvalidArgumentException;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\Sql92Renderer;
 use PhpDb\Sql\Predicate\In;
 use PhpDb\Sql\Select;
 use PhpDbTest\TestAsset\TrustingSql92Platform;
@@ -122,9 +122,9 @@ final class InTest extends TestCase
         $in->setIdentifier('foo.bar')
             ->setValueSet([1, 2, 3]);
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $in->toSql($processor, '', $paramIndex);
+        $sql        = $in->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('"foo"."bar" IN (\'1\', \'2\', \'3\')', $sql);
     }
@@ -134,9 +134,9 @@ final class InTest extends TestCase
         $select = new Select('foo');
         $in     = new In(Argument::value('foo'), $select);
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $in->toSql($processor, '', $paramIndex);
+        $sql        = $in->toSql($renderer, '', $paramIndex);
 
         self::assertStringStartsWith('\'foo\' IN (SELECT "foo"', $sql);
     }
@@ -145,9 +145,9 @@ final class InTest extends TestCase
     {
         $in = new In('foo', []);
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $in->toSql($processor, '', $paramIndex);
+        $sql        = $in->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('"foo" IN ()', $sql);
     }
@@ -157,9 +157,9 @@ final class InTest extends TestCase
         $select = new Select('foo');
         $in     = new In(Argument::identifier('foo'), $select);
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $in->toSql($processor, '', $paramIndex);
+        $sql        = $in->toSql($renderer, '', $paramIndex);
 
         self::assertStringStartsWith('"foo" IN (SELECT "foo"', $sql);
     }
@@ -169,9 +169,9 @@ final class InTest extends TestCase
         $select = new Select('foo');
         $in     = new In(Argument::identifiers(['foo', 'bar']), $select);
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $in->toSql($processor, '', $paramIndex);
+        $sql        = $in->toSql($renderer, '', $paramIndex);
 
         self::assertStringStartsWith('"foo", "bar" IN (SELECT "foo"', $sql);
     }
@@ -181,12 +181,12 @@ final class InTest extends TestCase
         $in = new In();
         $in->setValueSet([1, 2]);
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Identifier must be specified');
-        $in->toSql($processor, '', $paramIndex);
+        $in->toSql($renderer, '', $paramIndex);
     }
 
     public function testGetExpressionDataThrowsExceptionWhenValueSetNotSet(): void
@@ -194,11 +194,11 @@ final class InTest extends TestCase
         $in = new In();
         $in->setIdentifier('foo');
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Value set must be provided for IN predicate');
-        $in->toSql($processor, '', $paramIndex);
+        $in->toSql($renderer, '', $paramIndex);
     }
 }

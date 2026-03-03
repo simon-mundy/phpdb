@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace PhpDbTest\Sql\Ddl\Column;
 
 use PhpDb\Sql\Ddl\Column\Boolean;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\Sql92Renderer;
 use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\CoversMethod;
@@ -20,10 +20,10 @@ final class BooleanTest extends TestCase
     {
         $column = new Boolean('foo');
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
 
-        $sql = $column->toSql($processor, '', $paramIndex);
+        $sql = $column->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('"foo" BOOLEAN NOT NULL', $sql);
     }

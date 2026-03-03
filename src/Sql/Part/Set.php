@@ -13,6 +13,7 @@ use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ArgumentType;
 use PhpDb\Sql\Exception;
 use PhpDb\Sql\ExpressionInterface;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use PhpDb\Sql\Select;
 
 use function implode;
@@ -26,7 +27,7 @@ class Set extends AbstractPart
     /** @var array<string, Identifier> */
     private array $columnIds = [];
 
-    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
+    public function toSql(AbstractSqlRenderer $renderer, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         if ($this->model === null || $this->model === []) {
             return null;
@@ -35,20 +36,20 @@ class Set extends AbstractPart
         $setSql      = [];
         $i           = 0;
         $pi          = 0;
-        $isPdoDriver = $processor->driver instanceof PdoDriverInterface;
+        $isPdoDriver = $renderer->driver instanceof PdoDriverInterface;
 
         foreach ($this->model as $column => $arg) {
-            $prefix = $this->columnIds[$column]->render($processor, '', $pi) . ' = ';
+            $prefix = $this->columnIds[$column]->render($renderer, '', $pi) . ' = ';
 
             $setSql[] = $prefix . match ($arg->getType()) {
-                ArgumentType::Parameter => $processor->renderParameter(
+                ArgumentType::Parameter => $renderer->bindParameter(
                     $arg,
                     $isPdoDriver ? 'c_' . $i++ : null
                 ),
-                ArgumentType::Select  => $processor->renderExpression($arg->getValue()),
+                ArgumentType::Select  => $renderer->render($arg->getValue()),
                 ArgumentType::Literal => $arg->getValue(),
                 ArgumentType::Null    => 'NULL',
-                default               => $processor->platform->quoteValue((string) $arg->getValue()),
+                default               => $renderer->platform->quoteValue((string) $arg->getValue()),
             };
         }
 

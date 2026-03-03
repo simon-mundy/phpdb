@@ -6,7 +6,7 @@ namespace PhpDb\Sql\Ddl\Constraint;
 
 use Override;
 use PhpDb\Sql\Argument\Identifier;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 
 use function implode;
 use function str_replace;
@@ -64,12 +64,12 @@ abstract class AbstractConstraint implements ConstraintInterface
     }
 
     #[Override]
-    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
+    public function toSql(AbstractSqlRenderer $renderer, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         $parts = [];
 
         if ($this->name !== '') {
-            $parts[] = 'CONSTRAINT ' . $processor->renderArgument(
+            $parts[] = 'CONSTRAINT ' . $renderer->renderArgument(
                 new Identifier($this->name),
                 $paramPrefix,
                 $paramIndex,
@@ -83,7 +83,7 @@ abstract class AbstractConstraint implements ConstraintInterface
         if ($this->columns !== []) {
             $quotedColumns = [];
             foreach ($this->columns as $column) {
-                $quotedColumns[] = $processor->renderArgument(
+                $quotedColumns[] = $renderer->renderArgument(
                     new Identifier($column),
                     $paramPrefix,
                     $paramIndex,

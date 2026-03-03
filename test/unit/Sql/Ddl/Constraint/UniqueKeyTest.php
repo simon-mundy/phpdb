@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace PhpDbTest\Sql\Ddl\Constraint;
 
 use PhpDb\Sql\Ddl\Constraint\UniqueKey;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\Sql92Renderer;
 use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\TestCase;
@@ -17,9 +17,9 @@ final class UniqueKeyTest extends TestCase
     {
         $uk = new UniqueKey('foo', 'my_uk');
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $uk->toSql($processor, '', $paramIndex);
+        $sql        = $uk->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('CONSTRAINT "my_uk" UNIQUE ("foo")', $sql);
     }

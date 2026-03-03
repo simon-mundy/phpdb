@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace PhpDb\Sql\Ddl\Column;
 
 use Override;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 
 /**
  * @see doc section http://dev.mysql.com/doc/refman/5.6/en/timestamp-initialization.html
@@ -13,9 +13,9 @@ use PhpDb\Sql\Part\SqlProcessor;
 abstract class AbstractTimestampColumn extends Column
 {
     #[Override]
-    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
+    public function toSql(AbstractSqlRenderer $renderer, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
-        $sql     = parent::toSql($processor, $paramPrefix, $paramIndex);
+        $sql     = parent::toSql($renderer, $paramPrefix, $paramIndex);
         $options = $this->getOptions();
 
         if (isset($options['on_update'])) {

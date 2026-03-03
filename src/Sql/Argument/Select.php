@@ -7,7 +7,7 @@ namespace PhpDb\Sql\Argument;
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ArgumentType;
 use PhpDb\Sql\ExpressionInterface;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use PhpDb\Sql\SqlInterface;
 
 final readonly class Select implements ArgumentInterface
@@ -27,12 +27,12 @@ final readonly class Select implements ArgumentInterface
         return $this->select;
     }
 
-    public function render(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
+    public function render(AbstractSqlRenderer $renderer, string $paramPrefix, int &$paramIndex): string
     {
         if ($this->select instanceof \PhpDb\Sql\Select) {
-            return '(' . $processor->processSubSelect($this->select) . ')';
+            return '(' . $renderer->processSubSelect($this->select) . ')';
         }
 
-        return $this->select->toSql($processor, $paramPrefix, $paramIndex);
+        return $this->select->toSql($renderer, $paramPrefix, $paramIndex);
     }
 }

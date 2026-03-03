@@ -6,7 +6,7 @@ namespace PhpDb\Sql\Argument;
 
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ArgumentType;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 
 final readonly class Parameter implements ArgumentInterface
 {
@@ -42,8 +42,8 @@ final readonly class Parameter implements ArgumentInterface
         return $this->typeHint;
     }
 
-    public function render(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
+    public function render(AbstractSqlRenderer $renderer, string $paramPrefix, int &$paramIndex): string
     {
-        return $processor->renderParameter($this);
+        return $renderer->bindParameter($this);
     }
 }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace PhpDb\Adapter\Platform;
 
-use PhpDb\Sql\Platform\AbstractPlatform as SqlPlatform;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 
 interface PlatformInterface
 {
@@ -16,7 +16,7 @@ interface PlatformInterface
     /**
      * Get Sql platform decorator registry
      */
-    public function getSqlPlatformDecorator(): SqlPlatform;
+    public function getSqlPlatformDecorator(): AbstractSqlRenderer;
 
     /**
      * Get quote identifier symbol

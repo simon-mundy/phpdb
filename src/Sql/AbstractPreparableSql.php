@@ -8,6 +8,7 @@ use Override;
 use PhpDb\Adapter\AdapterInterface;
 use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Adapter\StatementContainerInterface;
+use PhpDb\Sql\Platform\Sql92Renderer;
 
 abstract class AbstractPreparableSql extends AbstractSql implements PreparableSqlInterface
 {
@@ -25,7 +26,9 @@ abstract class AbstractPreparableSql extends AbstractSql implements PreparableSq
         }
 
         $statementContainer->setSql(
-            $this->buildSqlString($adapter->getPlatform(), $adapter->getDriver(), $parameterContainer)
+            $this->buildSqlString(
+                (new Sql92Renderer())->init($adapter->getPlatform(), $adapter->getDriver(), $parameterContainer)
+            )
         );
 
         return $statementContainer;

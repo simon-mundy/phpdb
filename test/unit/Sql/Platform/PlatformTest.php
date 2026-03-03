@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace PhpDbTest\Sql\Platform;
 
-use PhpDb\Sql\Part\SqlProcessor;
-use PhpDb\Sql\Platform\Sql92Platform;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
+use PhpDb\Sql\Platform\Sql92Renderer;
 use PhpDb\Sql\Platform\SqlDecoratorInterface;
 use PhpDb\Sql\Select;
 use PhpDb\Sql\Update;
@@ -15,16 +15,16 @@ class PlatformTest extends TestCase
 {
     public function testGetTypeDecoratorReturnsNullWhenEmpty(): void
     {
-        $platform = new Sql92Platform();
+        $platform = new Sql92Renderer();
 
         self::assertNull($platform->getTypeDecorator(new Select()));
     }
 
     public function testGetTypeDecoratorExactClassMatch(): void
     {
-        $platform  = new Sql92Platform();
+        $platform  = new Sql92Renderer();
         $decorator = new class implements SqlDecoratorInterface {
-            public function prepare(object $subject, SqlProcessor $processor): void
+            public function prepare(object $subject, AbstractSqlRenderer $renderer): void
             {
             }
         };
@@ -37,9 +37,9 @@ class PlatformTest extends TestCase
 
     public function testGetTypeDecoratorInstanceofFallback(): void
     {
-        $platform  = new Sql92Platform();
+        $platform  = new Sql92Renderer();
         $decorator = new class implements SqlDecoratorInterface {
-            public function prepare(object $subject, SqlProcessor $processor): void
+            public function prepare(object $subject, AbstractSqlRenderer $renderer): void
             {
             }
         };

@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace PhpDb\Sql\Ddl\Column;
 
 use Override;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 
 class Integer extends Column
 {
     #[Override]
-    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
+    public function toSql(AbstractSqlRenderer $renderer, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
-        $sql     = parent::toSql($processor, $paramPrefix, $paramIndex);
+        $sql     = parent::toSql($renderer, $paramPrefix, $paramIndex);
         $options = $this->getOptions();
 
         if (isset($options['length'])) {

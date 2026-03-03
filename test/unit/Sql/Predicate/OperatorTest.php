@@ -9,7 +9,7 @@ use PhpDb\Sql\Argument\Value;
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ArgumentType;
 use PhpDb\Sql\Exception\InvalidArgumentException;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\Sql92Renderer;
 use PhpDb\Sql\Predicate\Operator;
 use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\CoversMethod;
@@ -150,9 +150,9 @@ final class OperatorTest extends TestCase
             ->setOperator('>=')
             ->setRight(new Identifier('foo.bar'));
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $operator->toSql($processor, '', $paramIndex);
+        $sql        = $operator->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('\'foo\' >= "foo"."bar"', $sql);
     }
@@ -162,12 +162,12 @@ final class OperatorTest extends TestCase
         $operator = new Operator();
         $operator->setRight('value');
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Left expression must be specified');
-        $operator->toSql($processor, '', $paramIndex);
+        $operator->toSql($renderer, '', $paramIndex);
     }
 
     public function testGetExpressionDataThrowsExceptionWhenRightNotSet(): void
@@ -175,11 +175,11 @@ final class OperatorTest extends TestCase
         $operator = new Operator();
         $operator->setLeft('left');
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Right expression must be specified');
-        $operator->toSql($processor, '', $paramIndex);
+        $operator->toSql($renderer, '', $paramIndex);
     }
 }

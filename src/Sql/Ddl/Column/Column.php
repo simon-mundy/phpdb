@@ -10,7 +10,7 @@ use PhpDb\Sql\Argument\Literal;
 use PhpDb\Sql\Argument\Value;
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\Ddl\Constraint\ConstraintInterface;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 
 class Column implements ColumnInterface
 {
@@ -103,9 +103,9 @@ class Column implements ColumnInterface
     }
 
     #[Override]
-    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
+    public function toSql(AbstractSqlRenderer $renderer, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
-        $sql = $processor->renderArgument(new Identifier($this->name), $paramPrefix, $paramIndex)
+        $sql = $renderer->renderArgument(new Identifier($this->name), $paramPrefix, $paramIndex)
             . ' ' . $this->type;
 
         $sql .= $this->renderTypeModifier();
@@ -118,11 +118,11 @@ class Column implements ColumnInterface
             $defaultArg = $this->default instanceof ArgumentInterface
                 ? $this->default
                 : new Value($this->default);
-            $sql       .= ' DEFAULT ' . $processor->renderArgument($defaultArg, $paramPrefix, $paramIndex);
+            $sql       .= ' DEFAULT ' . $renderer->renderArgument($defaultArg, $paramPrefix, $paramIndex);
         }
 
         foreach ($this->constraints as $constraint) {
-            $sql .= ' ' . $constraint->toSql($processor, $paramPrefix, $paramIndex);
+            $sql .= ' ' . $constraint->toSql($renderer, $paramPrefix, $paramIndex);
         }
 
         return $sql;

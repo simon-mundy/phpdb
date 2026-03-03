@@ -6,7 +6,7 @@ namespace PhpDbTest\Sql\Predicate;
 
 use PhpDb\Sql\Argument;
 use PhpDb\Sql\Expression as SqlExpression;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\Sql92Renderer;
 use PhpDb\Sql\Predicate\Expression;
 use PhpDb\Sql\Predicate\In;
 use PhpDb\Sql\Predicate\IsNotNull;
@@ -50,9 +50,9 @@ final class PredicateSetTest extends TestCase
             ->addPredicate(new IsNull('foo'))
             ->addPredicate(new IsNull('bar'));
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $predicateSet->toSql($processor, '', $paramIndex);
+        $sql        = $predicateSet->toSql($renderer, '', $paramIndex);
 
         self::assertStringContainsString('AND', $sql);
         self::assertStringNotContainsString('OR', $sql);
@@ -67,9 +67,9 @@ final class PredicateSetTest extends TestCase
             new IsNull('bar'),
         ], 'OR');
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $predicateSet->toSql($processor, '', $paramIndex);
+        $sql        = $predicateSet->toSql($renderer, '', $paramIndex);
 
         self::assertStringContainsString('OR', $sql);
         self::assertStringNotContainsString('AND', $sql);
@@ -85,9 +85,9 @@ final class PredicateSetTest extends TestCase
             ->addPredicate(new IsNull('baz'), 'OR')
             ->addPredicate(new IsNull('bat'), 'AND');
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $predicateSet->toSql($processor, '', $paramIndex);
+        $sql        = $predicateSet->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('"foo" IS NULL AND "bar" IS NULL OR "baz" IS NULL AND "bat" IS NULL', $sql);
     }
@@ -100,9 +100,9 @@ final class PredicateSetTest extends TestCase
                      ->orPredicate(new IsNull('baz'))
                      ->andPredicate(new IsNull('bat'));
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $predicateSet->toSql($processor, '', $paramIndex);
+        $sql        = $predicateSet->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('"foo" IS NULL AND "bar" IS NULL OR "baz" IS NULL AND "bat" IS NULL', $sql);
     }
@@ -185,9 +185,9 @@ final class PredicateSetTest extends TestCase
         self::assertInstanceOf(Expression::class, $predicates[0][1]);
 
         // Verify the rendered SQL contains COUNT
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $predicateSet->toSql($processor, '', $paramIndex);
+        $sql        = $predicateSet->toSql($renderer, '', $paramIndex);
         self::assertStringContainsString('COUNT', $sql);
     }
 

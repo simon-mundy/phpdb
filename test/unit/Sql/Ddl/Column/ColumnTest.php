@@ -7,7 +7,7 @@ namespace PhpDbTest\Sql\Ddl\Column;
 use PhpDb\Sql\Argument\Literal;
 use PhpDb\Sql\Argument\Value;
 use PhpDb\Sql\Ddl\Column\Column;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\Sql92Renderer;
 use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\TestCase;
@@ -137,31 +137,31 @@ final class ColumnTest extends TestCase
 
     public function testGetExpressionData(): void
     {
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
 
         $column = new Column();
         $column->setName('foo');
 
-        $sql = $column->toSql($processor, '', $paramIndex);
+        $sql = $column->toSql($renderer, '', $paramIndex);
         self::assertEquals('"foo" INTEGER NOT NULL', $sql);
 
         $column->setNullable(true);
 
         $paramIndex = 1;
-        $sql        = $column->toSql($processor, '', $paramIndex);
+        $sql        = $column->toSql($renderer, '', $paramIndex);
         self::assertEquals('"foo" INTEGER', $sql);
 
         $column->setDefault('bar');
 
         $paramIndex = 1;
-        $sql        = $column->toSql($processor, '', $paramIndex);
+        $sql        = $column->toSql($renderer, '', $paramIndex);
         self::assertEquals('"foo" INTEGER DEFAULT \'bar\'', $sql);
     }
 
     public function testLiteralDefaultRendersUnquoted(): void
     {
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
 
         $column = new Column();
@@ -169,7 +169,7 @@ final class ColumnTest extends TestCase
         $column->setNullable(true);
         $column->setDefault(new Literal('CURRENT_TIMESTAMP'));
 
-        $sql = $column->toSql($processor, '', $paramIndex);
+        $sql = $column->toSql($renderer, '', $paramIndex);
         self::assertEquals('"created_at" INTEGER DEFAULT CURRENT_TIMESTAMP', $sql);
 
         self::assertInstanceOf(Literal::class, $column->getDefault());
@@ -189,14 +189,14 @@ final class ColumnTest extends TestCase
 
     public function testGetExpressionDataWithLiteralDefault(): void
     {
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
 
         $column = new Column();
         $column->setName('created_at');
         $column->setDefault(new Literal('CURRENT_TIMESTAMP'));
 
-        $sql = $column->toSql($processor, '', $paramIndex);
+        $sql = $column->toSql($renderer, '', $paramIndex);
         self::assertEquals('"created_at" INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP', $sql);
     }
 
@@ -214,14 +214,14 @@ final class ColumnTest extends TestCase
 
     public function testGetExpressionDataWithValueDefault(): void
     {
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
 
         $column = new Column();
         $column->setName('score');
         $column->setDefault(new Value(42));
 
-        $sql = $column->toSql($processor, '', $paramIndex);
+        $sql = $column->toSql($renderer, '', $paramIndex);
         self::assertEquals('"score" INTEGER NOT NULL DEFAULT \'42\'', $sql);
     }
 
@@ -238,14 +238,14 @@ final class ColumnTest extends TestCase
 
     public function testGetExpressionDataWithFloatDefault(): void
     {
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
 
         $column = new Column();
         $column->setName('rate');
         $column->setDefault(9.99);
 
-        $sql = $column->toSql($processor, '', $paramIndex);
+        $sql = $column->toSql($renderer, '', $paramIndex);
         self::assertEquals('"rate" INTEGER NOT NULL DEFAULT \'9.99\'', $sql);
     }
 
@@ -262,14 +262,14 @@ final class ColumnTest extends TestCase
 
     public function testGetExpressionDataWithBoolDefault(): void
     {
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
 
         $column = new Column();
         $column->setName('is_active');
         $column->setDefault(false);
 
-        $sql = $column->toSql($processor, '', $paramIndex);
+        $sql = $column->toSql($renderer, '', $paramIndex);
         self::assertEquals('"is_active" INTEGER NOT NULL DEFAULT \'\'', $sql);
     }
 }

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace PhpDbTest\Sql;
 
 use PhpDb\Sql\Literal;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\Sql92Renderer;
 use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\TestCase;
 
@@ -40,10 +40,10 @@ class LiteralTest extends TestCase
     public function testGetExpressionData(): void
     {
         $literal    = new Literal('bar');
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
 
-        $sql = $literal->toSql($processor, '', $paramIndex);
+        $sql = $literal->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('bar', $sql);
     }
@@ -51,11 +51,11 @@ class LiteralTest extends TestCase
     public function testGetExpressionDataWillEscapePercent(): void
     {
         $literal    = new Literal('X LIKE "foo%"');
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
 
         // toSql returns the literal as-is (no percent escaping needed in toSql path)
-        $sql = $literal->toSql($processor, '', $paramIndex);
+        $sql = $literal->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('X LIKE "foo%"', $sql);
     }

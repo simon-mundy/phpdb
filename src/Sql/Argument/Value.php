@@ -6,7 +6,7 @@ namespace PhpDb\Sql\Argument;
 
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ArgumentType;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 
 final readonly class Value implements ArgumentInterface
 {
@@ -28,10 +28,10 @@ final readonly class Value implements ArgumentInterface
         return $this->value;
     }
 
-    public function render(SqlProcessor $processor, string $paramPrefix, int &$paramIndex): string
+    public function render(AbstractSqlRenderer $renderer, string $paramPrefix, int &$paramIndex): string
     {
-        return $processor->parameterContainer !== null
-            ? $processor->bindValue($this->value, $paramPrefix, $paramIndex)
-            : $processor->platform->quoteValue((string) $this->value);
+        return $renderer->parameterContainer !== null
+            ? $renderer->bindValue($this->value, $paramPrefix, $paramIndex)
+            : $renderer->platform->quoteValue((string) $this->value);
     }
 }

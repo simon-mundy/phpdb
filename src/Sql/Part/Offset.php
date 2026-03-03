@@ -6,18 +6,19 @@ namespace PhpDb\Sql\Part;
 
 use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Sql\Argument\Parameter;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 
 class Offset extends AbstractPart
 {
     private ?Parameter $offset = null;
 
-    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
+    public function toSql(AbstractSqlRenderer $renderer, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         if ($this->offset === null) {
             return null;
         }
 
-        return 'OFFSET ' . $processor->renderParameter($this->offset);
+        return 'OFFSET ' . $renderer->bindParameter($this->offset);
     }
 
     public function isEmpty(): bool

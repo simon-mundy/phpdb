@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace PhpDb\Sql;
 
-use PhpDb\Adapter\Driver\DriverInterface;
+use Override;
 use PhpDb\Adapter\Driver\PdoDriverInterface;
 use PhpDb\Adapter\ParameterContainer;
-use PhpDb\Adapter\Platform\PlatformInterface;
 use PhpDb\Sql\Part\From;
-use PhpDb\Sql\Part\SqlProcessor;
-use PhpDb\Sql\Platform\AbstractPlatform as SqlPlatform;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 
 use function array_flip;
 use function array_key_exists;
@@ -148,25 +146,19 @@ class Insert extends AbstractPreparableSql
         return 'INSERT INTO';
     }
 
-    public function buildSqlString(
-        PlatformInterface $platform,
-        ?DriverInterface $driver = null,
-        ?ParameterContainer $parameterContainer = null,
-        ?SqlPlatform $sqlPlatform = null,
-    ): string {
-        $processor = new SqlProcessor($platform, $driver, $parameterContainer, $sqlPlatform);
-        $processor->setParamPrefix($this->processInfo['paramPrefix']);
-
+    #[Override]
+    public function buildSqlString(AbstractSqlRenderer $renderer): string
+    {
         $keyword  = $this->getStatementKeyword();
-        $tableSql = $this->table->renderTable($processor);
+        $tableSql = $this->table->renderTable($renderer);
 
         if ($this->select !== null) {
-            $selectSql   = $processor->processSubSelect($this->select);
+            $selectSql   = $renderer->processSubSelect($this->select);
             $columnNames = array_keys($this->columns);
             if ($columnNames !== []) {
                 $columns = [];
                 foreach ($columnNames as $col) {
-                    $columns[] = $platform->quoteIdentifier($col);
+                    $columns[] = $renderer->platform->quoteIdentifier($col);
                 }
                 return $keyword . ' ' . $tableSql
                     . ' (' . implode(', ', $columns) . ') ' . $selectSql;
@@ -181,44 +173,43 @@ class Insert extends AbstractPreparableSql
         $columns           = [];
         $values            = [];
         $i                 = 0;
-        $isPdoDriver       = $driver instanceof PdoDriverInterface;
-        $paramPrefix       = $this->processInfo['paramPrefix'];
-        $hasParamContainer = $parameterContainer instanceof ParameterContainer;
+        $isPdoDriver       = $renderer->driver instanceof PdoDriverInterface;
+        $paramPrefix       = $renderer->getParamPrefix();
+        $hasParamContainer = $renderer->parameterContainer instanceof ParameterContainer;
 
         foreach ($this->columns as $column => $value) {
-            $columns[] = $platform->quoteIdentifier($column);
+            $columns[] = $renderer->platform->quoteIdentifier($column);
 
             if ($value === null) {
                 $values[] = 'NULL';
             } elseif (! is_object($value)) {
-                // Scalar value — most common path
                 if ($hasParamContainer) {
                     $name = $paramPrefix
                         . ($isPdoDriver ? 'c_' . $i++ : $column);
-                    $parameterContainer->offsetSet($name, $value);
-                    $values[] = $driver->formatParameterName($name);
+                    $renderer->parameterContainer->offsetSet($name, $value);
+                    $values[] = $renderer->driver->formatParameterName($name);
                 } else {
-                    $values[] = $platform->quoteValue((string) $value);
+                    $values[] = $renderer->platform->quoteValue((string) $value);
                 }
             } elseif ($value instanceof ArgumentInterface) {
                 $values[] = match ($value->getType()) {
-                    ArgumentType::Parameter => $processor->renderParameter(
+                    ArgumentType::Parameter => $renderer->bindParameter(
                         $value,
                         $isPdoDriver ? 'c_' . $i++ : null,
                     ),
-                    ArgumentType::Select => $processor->renderExpression(
+                    ArgumentType::Select => $renderer->render(
                         $value->getValue(),
                     ),
                     ArgumentType::Literal => $value->getValue(),
                     ArgumentType::Null    => 'NULL',
-                    default => $platform->quoteValue(
+                    default => $renderer->platform->quoteValue(
                         (string) $value->getValue(),
                     ),
                 };
             } elseif ($value instanceof Select) {
-                $values[] = '(' . $processor->processSubSelect($value) . ')';
+                $values[] = '(' . $renderer->processSubSelect($value) . ')';
             } else {
-                $values[] = $processor->renderExpression($value);
+                $values[] = $renderer->render($value);
             }
         }
 

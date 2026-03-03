@@ -12,6 +12,7 @@ use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ArgumentType;
 use PhpDb\Sql\Exception;
 use PhpDb\Sql\ExpressionInterface;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use PhpDb\Sql\Select;
 
 use function implode;
@@ -31,7 +32,7 @@ class InsertValues extends AbstractPart
         $this->table = $table;
     }
 
-    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
+    public function toSql(AbstractSqlRenderer $renderer, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         if ($this->hasSelect) {
             return null;
@@ -44,23 +45,23 @@ class InsertValues extends AbstractPart
         $columns     = [];
         $values      = [];
         $i           = 0;
-        $isPdoDriver = $processor->driver instanceof PdoDriverInterface;
+        $isPdoDriver = $renderer->driver instanceof PdoDriverInterface;
 
         foreach ($this->columnValues as $cv) {
-            $columns[] = $processor->platform->quoteIdentifier($cv->column);
+            $columns[] = $renderer->platform->quoteIdentifier($cv->column);
 
             $values[] = match ($cv->value->getType()) {
-                ArgumentType::Parameter => $processor->renderParameter(
+                ArgumentType::Parameter => $renderer->bindParameter(
                     $cv->value,
                     $isPdoDriver ? 'c_' . $i++ : null
                 ),
-                ArgumentType::Select  => $processor->renderExpression($cv->value->getValue()),
+                ArgumentType::Select  => $renderer->render($cv->value->getValue()),
                 ArgumentType::Literal => $cv->value->getValue(),
-                default               => $processor->platform->quoteValue((string) $cv->value->getValue()),
+                default               => $renderer->platform->quoteValue((string) $cv->value->getValue()),
             };
         }
 
-        $tableSql = $this->table->renderTable($processor);
+        $tableSql = $this->table->renderTable($renderer);
 
         return $this->keyword . ' ' . $tableSql
             . ' (' . implode(', ', $columns) . ')'

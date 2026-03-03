@@ -5,13 +5,10 @@ declare(strict_types=1);
 namespace PhpDb\Sql;
 
 use Closure;
-use PhpDb\Adapter\Driver\DriverInterface;
-use PhpDb\Adapter\ParameterContainer;
-use PhpDb\Adapter\Platform\PlatformInterface;
+use Override;
 use PhpDb\Sql\Part\From;
 use PhpDb\Sql\Part\SqlFragment;
-use PhpDb\Sql\Part\SqlProcessor;
-use PhpDb\Sql\Platform\AbstractPlatform as SqlPlatform;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use PhpDb\Sql\Predicate\PredicateInterface;
 
 use function array_key_exists;
@@ -81,19 +78,14 @@ class Delete extends AbstractPreparableSql
         return 'DELETE';
     }
 
-    public function buildSqlString(
-        PlatformInterface $platform,
-        ?DriverInterface $driver = null,
-        ?ParameterContainer $parameterContainer = null,
-        ?SqlPlatform $sqlPlatform = null,
-    ): string {
-        $processor = new SqlProcessor($platform, $driver, $parameterContainer, $sqlPlatform);
-        $processor->setParamPrefix($this->processInfo['paramPrefix']);
-        $sqlPlatform?->getTypeDecorator($this)?->prepare($this, $processor);
+    #[Override]
+    public function buildSqlString(AbstractSqlRenderer $renderer): string
+    {
+        $renderer->getTypeDecorator($this)?->prepare($this, $renderer);
 
         return (string) SqlFragment::of($this->getStatementKeyword())
-            ->part($this->table->toSql($processor))
-            ->part($this->where?->toSql($processor));
+            ->part($this->table->toSql($renderer))
+            ->part($this->where?->toSql($renderer));
     }
 
     /**

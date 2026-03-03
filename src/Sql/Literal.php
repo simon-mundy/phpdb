@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace PhpDb\Sql;
 
 use Override;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 
 class Literal implements ExpressionInterface
 {
@@ -26,7 +26,7 @@ class Literal implements ExpressionInterface
     }
 
     #[Override]
-    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
+    public function toSql(AbstractSqlRenderer $renderer, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         return $this->literal;
     }

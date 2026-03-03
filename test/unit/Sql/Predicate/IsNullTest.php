@@ -7,7 +7,7 @@ namespace PhpDbTest\Sql\Predicate;
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ArgumentType;
 use PhpDb\Sql\Exception\InvalidArgumentException;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\Sql92Renderer;
 use PhpDb\Sql\Predicate\IsNotNull;
 use PhpDb\Sql\Predicate\IsNull;
 use PhpDbTest\TestAsset\TrustingSql92Platform;
@@ -83,9 +83,9 @@ final class IsNullTest extends TestCase
         $isNotNull = new IsNotNull();
         $isNotNull->setIdentifier('foo.bar');
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $isNotNull->toSql($processor, '', $paramIndex);
+        $sql        = $isNotNull->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('"foo"."bar" IS NOT NULL', $sql);
     }
@@ -94,11 +94,11 @@ final class IsNullTest extends TestCase
     {
         $isNull = new IsNull();
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Identifier must be specified');
-        $isNull->toSql($processor, '', $paramIndex);
+        $isNull->toSql($renderer, '', $paramIndex);
     }
 }

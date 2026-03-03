@@ -7,27 +7,28 @@ namespace PhpDb\Sql;
 use Override;
 use PhpDb\Adapter\Platform\Sql92;
 use PhpDb\Sql\Part\PartInterface;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
+use PhpDb\Sql\Platform\Sql92Renderer;
 
 class Where extends Predicate\Predicate implements PartInterface
 {
     #[Override]
-    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
+    public function toSql(AbstractSqlRenderer $renderer, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         if ($this->count() === 0) {
             return null;
         }
 
         if ($paramPrefix !== '') {
-            return parent::toSql($processor, $paramPrefix, $paramIndex);
+            return parent::toSql($renderer, $paramPrefix, $paramIndex);
         }
 
-        if ($processor->parameterContainer !== null) {
-            return 'WHERE ' . $processor->renderExpression($this, 'where');
+        if ($renderer->parameterContainer !== null) {
+            return 'WHERE ' . $renderer->render($this, 'where');
         }
 
         $pi = 0;
-        return 'WHERE ' . parent::toSql($processor, '', $pi);
+        return 'WHERE ' . parent::toSql($renderer, '', $pi);
     }
 
     #[Override]
@@ -38,6 +39,6 @@ class Where extends Predicate\Predicate implements PartInterface
 
     public function __toString(): string
     {
-        return $this->toSql(new SqlProcessor(new Sql92())) ?? '';
+        return $this->toSql((new Sql92Renderer())->init(new Sql92())) ?? '';
     }
 }

@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace PhpDb\Sql\Ddl;
 
-use PhpDb\Adapter\Driver\DriverInterface;
-use PhpDb\Adapter\ParameterContainer;
+use Override;
 use PhpDb\Adapter\Platform\PlatformInterface;
 use PhpDb\Sql\Literal;
-use PhpDb\Sql\Part\SqlProcessor;
-use PhpDb\Sql\Platform\AbstractPlatform as SqlPlatform;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use PhpDb\Sql\TableIdentifier;
 
 use function array_key_exists;
@@ -145,46 +143,40 @@ class AlterTable extends AbstractDdl
         return isset($key) && array_key_exists($key, $rawState) ? $rawState[$key] : $rawState;
     }
 
-    public function buildSqlString(
-        PlatformInterface $platform,
-        ?DriverInterface $driver = null,
-        ?ParameterContainer $parameterContainer = null,
-        ?SqlPlatform $sqlPlatform = null,
-    ): string {
-        $processor = new SqlProcessor($platform, $driver, $parameterContainer, $sqlPlatform);
-        $processor->setParamPrefix($this->processInfo['paramPrefix']);
-
-        $sql = "ALTER TABLE " . $processor->resolveTable($this->table) . "\n";
+    #[Override]
+    public function buildSqlString(AbstractSqlRenderer $renderer): string
+    {
+        $sql = "ALTER TABLE " . $renderer->resolveTable($this->table) . "\n";
 
         $clauses = [];
 
         foreach ($this->addColumns as $column) {
-            $clauses[] = 'ADD COLUMN ' . $processor->renderExpression($column);
+            $clauses[] = 'ADD COLUMN ' . $renderer->render($column);
         }
 
         foreach ($this->changeColumns as $name => $column) {
-            $clauses[] = 'CHANGE COLUMN ' . $platform->quoteIdentifier($name)
-                . ' ' . $processor->renderExpression($column);
+            $clauses[] = 'CHANGE COLUMN ' . $renderer->platform->quoteIdentifier($name)
+                . ' ' . $renderer->render($column);
         }
 
         foreach ($this->dropColumns as $column) {
-            $clauses[] = 'DROP COLUMN ' . $platform->quoteIdentifier($column);
+            $clauses[] = 'DROP COLUMN ' . $renderer->platform->quoteIdentifier($column);
         }
 
         foreach ($this->addConstraints as $constraint) {
-            $clauses[] = 'ADD ' . $processor->renderExpression($constraint);
+            $clauses[] = 'ADD ' . $renderer->render($constraint);
         }
 
         foreach ($this->dropConstraints as $constraint) {
-            $clauses[] = 'DROP CONSTRAINT ' . $platform->quoteIdentifier($constraint);
+            $clauses[] = 'DROP CONSTRAINT ' . $renderer->platform->quoteIdentifier($constraint);
         }
 
         foreach ($this->dropIndexes as $index) {
-            $clauses[] = 'DROP INDEX ' . $platform->quoteIdentifier($index);
+            $clauses[] = 'DROP INDEX ' . $renderer->platform->quoteIdentifier($index);
         }
 
         if ($this->options) {
-            $clauses[] = $this->renderTableOptions($platform);
+            $clauses[] = $this->renderTableOptions($renderer->platform);
         }
 
         $sql .= ' ' . implode(",\n ", $clauses);

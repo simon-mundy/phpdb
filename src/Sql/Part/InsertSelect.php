@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpDb\Sql\Part;
 
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use PhpDb\Sql\Select;
 
 use function array_keys;
@@ -23,21 +24,21 @@ class InsertSelect extends AbstractPart
         $this->table = $table;
     }
 
-    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
+    public function toSql(AbstractSqlRenderer $renderer, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         if ($this->select === null) {
             return null;
         }
 
-        $selectSql = $processor->processSubSelect($this->select);
+        $selectSql = $renderer->processSubSelect($this->select);
 
         $columns = [];
         foreach (array_keys($this->columns) as $name) {
-            $columns[] = $processor->platform->quoteIdentifier($name);
+            $columns[] = $renderer->platform->quoteIdentifier($name);
         }
         $columnsSql = implode(', ', $columns);
 
-        $tableSql = $this->table->renderTable($processor);
+        $tableSql = $this->table->renderTable($renderer);
 
         return $this->keyword . ' ' . $tableSql
             . ' ' . ($columnsSql ? "({$columnsSql})" : '')

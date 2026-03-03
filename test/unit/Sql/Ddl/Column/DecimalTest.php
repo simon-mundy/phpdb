@@ -6,7 +6,7 @@ namespace PhpDbTest\Sql\Ddl\Column;
 
 use PhpDb\Sql\Ddl\Column\AbstractPrecisionColumn;
 use PhpDb\Sql\Ddl\Column\Decimal;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\Sql92Renderer;
 use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\TestCase;
@@ -24,10 +24,10 @@ final class DecimalTest extends TestCase
     {
         $column = new Decimal('foo', 10, 5);
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
 
-        $sql = $column->toSql($processor, '', $paramIndex);
+        $sql = $column->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('"foo" DECIMAL(10,5) NOT NULL', $sql);
     }
@@ -63,10 +63,10 @@ final class DecimalTest extends TestCase
         $column = new Decimal('amount', 10);
         $column->setDecimal(null);
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
 
-        $sql = $column->toSql($processor, '', $paramIndex);
+        $sql = $column->toSql($renderer, '', $paramIndex);
 
         // Without decimal, length expression should be just the digits
         self::assertEquals('"amount" DECIMAL(10) NOT NULL', $sql);

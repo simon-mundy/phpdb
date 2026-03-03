@@ -7,7 +7,7 @@ namespace PhpDb\Sql\Ddl\Constraint;
 use Override;
 use PhpDb\Sql\Argument\Identifier;
 use PhpDb\Sql\ExpressionInterface;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 
 use function implode;
 
@@ -28,12 +28,12 @@ class Check extends AbstractConstraint
     }
 
     #[Override]
-    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
+    public function toSql(AbstractSqlRenderer $renderer, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         $parts = [];
 
         if ($this->name !== '') {
-            $parts[] = 'CONSTRAINT ' . $processor->renderArgument(
+            $parts[] = 'CONSTRAINT ' . $renderer->renderArgument(
                 new Identifier($this->name),
                 $paramPrefix,
                 $paramIndex,

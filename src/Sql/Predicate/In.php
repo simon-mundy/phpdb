@@ -11,7 +11,7 @@ use PhpDb\Sql\Argument\Select as ArgumentSelect;
 use PhpDb\Sql\Argument\Values;
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\Exception\InvalidArgumentException;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use PhpDb\Sql\Select;
 
 use function vsprintf;
@@ -83,7 +83,7 @@ class In extends AbstractExpression implements PredicateInterface
     }
 
     #[Override]
-    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
+    public function toSql(AbstractSqlRenderer $renderer, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         if (! $this->identifier instanceof ArgumentInterface) {
             throw new InvalidArgumentException('Identifier must be specified');
@@ -93,8 +93,8 @@ class In extends AbstractExpression implements PredicateInterface
             throw new InvalidArgumentException('Value set must be provided for IN predicate');
         }
 
-        $id       = $processor->renderArgument($this->identifier, $paramPrefix, $paramIndex);
-        $valueSet = $processor->renderArgument($this->valueSet, $paramPrefix, $paramIndex);
+        $id       = $renderer->renderArgument($this->identifier, $paramPrefix, $paramIndex);
+        $valueSet = $renderer->renderArgument($this->valueSet, $paramPrefix, $paramIndex);
 
         if ($this->specification !== null) {
             return vsprintf($this->specification, [$id, $valueSet]);

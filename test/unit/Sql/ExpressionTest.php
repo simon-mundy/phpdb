@@ -9,7 +9,7 @@ use PhpDb\Sql\Argument\Value;
 use PhpDb\Sql\Exception\InvalidArgumentException;
 use PhpDb\Sql\Exception\RuntimeException;
 use PhpDb\Sql\Expression;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\Sql92Renderer;
 use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -33,10 +33,10 @@ final class ExpressionTest extends TestCase
 {
     private function toSql(Expression $expression): string
     {
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
 
-        return $expression->toSql($processor, '', $paramIndex);
+        return $expression->toSql($renderer, '', $paramIndex);
     }
 
     public function testSetExpression(): void

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace PhpDbTest\Sql\Ddl\Column;
 
 use PhpDb\Sql\Ddl\Column\Varbinary;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\Sql92Renderer;
 use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\TestCase;
@@ -17,10 +17,10 @@ final class VarbinaryTest extends TestCase
     {
         $column = new Varbinary('foo', 20);
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
 
-        $sql = $column->toSql($processor, '', $paramIndex);
+        $sql = $column->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('"foo" VARBINARY(20) NOT NULL', $sql);
     }

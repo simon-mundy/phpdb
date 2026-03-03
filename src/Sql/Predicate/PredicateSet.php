@@ -9,7 +9,7 @@ use Countable;
 use Override;
 use PhpDb\Sql\Exception;
 use PhpDb\Sql\Expression;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use PhpDb\Sql\Predicate\Expression as PredicateExpression;
 use ReturnTypeWillChange;
 
@@ -172,7 +172,7 @@ class PredicateSet implements PredicateInterface, Countable
     }
 
     #[Override]
-    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
+    public function toSql(AbstractSqlRenderer $renderer, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         $predicateCount = count($this->predicates);
 
@@ -182,7 +182,7 @@ class PredicateSet implements PredicateInterface, Countable
 
         if ($predicateCount === 1) {
             [, $predicate] = $this->predicates[0];
-            $sql           = $predicate->toSql($processor, $paramPrefix, $paramIndex);
+            $sql           = $predicate->toSql($renderer, $paramPrefix, $paramIndex);
 
             return $predicate instanceof self ? "({$sql})" : $sql;
         }
@@ -190,8 +190,8 @@ class PredicateSet implements PredicateInterface, Countable
         if ($predicateCount === 2) {
             [, $p1]     = $this->predicates[0];
             [$op2, $p2] = $this->predicates[1];
-            $sql1       = $p1->toSql($processor, $paramPrefix, $paramIndex);
-            $sql2       = $p2->toSql($processor, $paramPrefix, $paramIndex);
+            $sql1       = $p1->toSql($renderer, $paramPrefix, $paramIndex);
+            $sql2       = $p2->toSql($renderer, $paramPrefix, $paramIndex);
             if ($p1 instanceof self) {
                 $sql1 = "({$sql1})";
             }
@@ -206,7 +206,7 @@ class PredicateSet implements PredicateInterface, Countable
         $first = true;
 
         foreach ($this->predicates as [$operator, $predicate]) {
-            $sql = $predicate->toSql($processor, $paramPrefix, $paramIndex);
+            $sql = $predicate->toSql($renderer, $paramPrefix, $paramIndex);
 
             if ($predicate instanceof self) {
                 $sql = "({$sql})";

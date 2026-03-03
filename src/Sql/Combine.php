@@ -5,11 +5,7 @@ declare(strict_types=1);
 namespace PhpDb\Sql;
 
 use Override;
-use PhpDb\Adapter\Driver\DriverInterface;
-use PhpDb\Adapter\ParameterContainer;
-use PhpDb\Adapter\Platform\PlatformInterface;
-use PhpDb\Sql\Part\SqlProcessor;
-use PhpDb\Sql\Platform\AbstractPlatform as SqlPlatform;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 
 use function array_key_exists;
 use function array_keys;
@@ -104,22 +100,15 @@ class Combine extends AbstractPreparableSql
      * Build sql string
      */
     #[Override]
-    public function buildSqlString(
-        PlatformInterface $platform,
-        ?DriverInterface $driver = null,
-        ?ParameterContainer $parameterContainer = null,
-        ?SqlPlatform $sqlPlatform = null,
-    ): string {
+    public function buildSqlString(AbstractSqlRenderer $renderer): string
+    {
         if (! $this->combine) {
             return '';
         }
 
-        $processor = new SqlProcessor($platform, $driver, $parameterContainer, $sqlPlatform);
-        $processor->setParamPrefix($this->processInfo['paramPrefix']);
-
         $parts = [];
         foreach ($this->combine as $i => $combine) {
-            $select = $processor->processSubSelect($combine['select']);
+            $select = $renderer->processSubSelect($combine['select']);
 
             if ($i === 0) {
                 $parts[] = "({$select})";

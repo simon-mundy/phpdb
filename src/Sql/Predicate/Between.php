@@ -10,7 +10,7 @@ use PhpDb\Sql\Argument\Identifier;
 use PhpDb\Sql\Argument\Value;
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\Exception;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 
 use function vsprintf;
 
@@ -106,7 +106,7 @@ class Between extends AbstractExpression implements PredicateInterface
     }
 
     #[Override]
-    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
+    public function toSql(AbstractSqlRenderer $renderer, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         if (! $this->identifier instanceof ArgumentInterface) {
             throw new Exception\InvalidArgumentException('Identifier must be specified');
@@ -120,9 +120,9 @@ class Between extends AbstractExpression implements PredicateInterface
             throw new Exception\InvalidArgumentException('maxValue must be specified');
         }
 
-        $id  = $processor->renderArgument($this->identifier, $paramPrefix, $paramIndex);
-        $min = $processor->renderArgument($this->minValue, $paramPrefix, $paramIndex);
-        $max = $processor->renderArgument($this->maxValue, $paramPrefix, $paramIndex);
+        $id  = $renderer->renderArgument($this->identifier, $paramPrefix, $paramIndex);
+        $min = $renderer->renderArgument($this->minValue, $paramPrefix, $paramIndex);
+        $max = $renderer->renderArgument($this->maxValue, $paramPrefix, $paramIndex);
 
         if ($this->specification !== null) {
             return vsprintf($this->specification, [$id, $min, $max]);

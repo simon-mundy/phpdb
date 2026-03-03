@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace PhpDbTest\Sql\Ddl\Constraint;
 
 use PhpDb\Sql\Ddl\Constraint\Check;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\Sql92Renderer;
 use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\TestCase;
@@ -18,9 +18,9 @@ final class CheckTest extends TestCase
     {
         $check = new Check('id>0', 'foo');
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $check->toSql($processor, '', $paramIndex);
+        $sql        = $check->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('CONSTRAINT "foo" CHECK (id>0)', $sql);
     }

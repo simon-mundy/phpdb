@@ -6,18 +6,19 @@ namespace PhpDb\Sql\Part;
 
 use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Sql\Argument\Parameter;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 
 class Limit extends AbstractPart
 {
     private ?Parameter $limit = null;
 
-    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
+    public function toSql(AbstractSqlRenderer $renderer, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         if ($this->limit === null) {
             return null;
         }
 
-        return 'LIMIT ' . $processor->renderParameter($this->limit);
+        return 'LIMIT ' . $renderer->bindParameter($this->limit);
     }
 
     public function isEmpty(): bool

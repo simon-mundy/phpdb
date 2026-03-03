@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PhpDb\Sql\Part;
 
 use PhpDb\Sql\ExpressionInterface;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use PhpDb\Sql\Select;
 
 use function count;
@@ -30,7 +31,7 @@ class Columns extends AbstractPart
         $this->normalizeColumns();
     }
 
-    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
+    public function toSql(AbstractSqlRenderer $renderer, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         $refs       = $this->columnRefs;
         $fromPrefix = $this->fromTablePrefix;
@@ -41,7 +42,7 @@ class Columns extends AbstractPart
 
         $fragments   = [];
         $exprCounter = 1;
-        $platform    = $processor->platform;
+        $platform    = $renderer->platform;
 
         foreach ($refs as $ref) {
             if ($ref->isStar) {
@@ -54,7 +55,7 @@ class Columns extends AbstractPart
             if (is_string($column)) {
                 $columnSql = $fromPrefix . $platform->quoteIdentifier($column);
             } else {
-                $columnSql = $processor->renderExpression($column, $ref->alias ?? 'column');
+                $columnSql = $renderer->render($column, $ref->alias ?? 'column');
             }
 
             if ($ref->alias !== null) {
@@ -71,7 +72,7 @@ class Columns extends AbstractPart
                 if ($spec->columnRefs === []) {
                     continue;
                 }
-                $joinPrefix = $processor->getQuotedPrefix($spec->table);
+                $joinPrefix = $renderer->tablePrefix($spec->table);
                 foreach ($spec->columnRefs as $ref) {
                     if ($ref->isStar) {
                         $fragments[] = $joinPrefix . '*';
@@ -83,7 +84,7 @@ class Columns extends AbstractPart
                     if (is_string($column)) {
                         $columnSql = $joinPrefix . $platform->quoteIdentifier($column);
                     } else {
-                        $columnSql = $processor->renderExpression($column, $ref->alias ?? 'column');
+                        $columnSql = $renderer->render($column, $ref->alias ?? 'column');
                     }
 
                     if ($ref->alias !== null) {

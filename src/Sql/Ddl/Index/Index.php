@@ -6,7 +6,7 @@ namespace PhpDb\Sql\Ddl\Index;
 
 use Override;
 use PhpDb\Sql\Argument\Identifier;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 
 use function implode;
 
@@ -37,9 +37,9 @@ class Index extends AbstractIndex
     }
 
     #[Override]
-    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
+    public function toSql(AbstractSqlRenderer $renderer, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
-        $quotedName = $processor->renderArgument(
+        $quotedName = $renderer->renderArgument(
             new Identifier($this->name),
             $paramPrefix,
             $paramIndex,
@@ -47,7 +47,7 @@ class Index extends AbstractIndex
 
         $columnParts = [];
         foreach ($this->columns as $i => $column) {
-            $part = $processor->renderArgument(
+            $part = $renderer->renderArgument(
                 new Identifier($column),
                 $paramPrefix,
                 $paramIndex,

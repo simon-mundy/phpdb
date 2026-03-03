@@ -7,7 +7,7 @@ namespace PhpDbTest\Sql\Ddl\Column;
 use PhpDb\Sql\Argument\Literal;
 use PhpDb\Sql\Ddl\Column\AbstractTimestampColumn;
 use PhpDb\Sql\Ddl\Column\Timestamp;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\Sql92Renderer;
 use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\TestCase;
@@ -20,10 +20,10 @@ final class TimestampTest extends TestCase
     {
         $column = new Timestamp('foo');
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
 
-        $sql = $column->toSql($processor, '', $paramIndex);
+        $sql = $column->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('"foo" TIMESTAMP NOT NULL', $sql);
     }
@@ -33,10 +33,10 @@ final class TimestampTest extends TestCase
         $column = new Timestamp('created_at');
         $column->setOption('on_update', true);
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
 
-        $sql = $column->toSql($processor, '', $paramIndex);
+        $sql = $column->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('"created_at" TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP', $sql);
     }
@@ -45,10 +45,10 @@ final class TimestampTest extends TestCase
     {
         $column = new Timestamp('updated_at');
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
 
-        $sql = $column->toSql($processor, '', $paramIndex);
+        $sql = $column->toSql($renderer, '', $paramIndex);
 
         // Should NOT include ON UPDATE
         self::assertEquals('"updated_at" TIMESTAMP NOT NULL', $sql);
@@ -59,9 +59,9 @@ final class TimestampTest extends TestCase
         $column = new Timestamp('created_at');
         $column->setDefault(new Literal('CURRENT_TIMESTAMP'));
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $column->toSql($processor, '', $paramIndex);
+        $sql        = $column->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('"created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP', $sql);
     }
@@ -72,9 +72,9 @@ final class TimestampTest extends TestCase
         $column->setDefault(new Literal('CURRENT_TIMESTAMP'));
         $column->setOption('on_update', true);
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $column->toSql($processor, '', $paramIndex);
+        $sql        = $column->toSql($renderer, '', $paramIndex);
 
         $expected = '"updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP';
         self::assertEquals($expected, $sql);

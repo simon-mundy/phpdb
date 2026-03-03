@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PhpDb\Sql\Part;
 
 use PhpDb\Sql\ExpressionInterface;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 
 use function explode;
 use function implode;
@@ -21,13 +22,13 @@ class OrderBy extends AbstractPart
     /** @var OrderSpec[] */
     private array $order = [];
 
-    public function toSql(SqlProcessor $processor, string $paramPrefix = '', int &$paramIndex = 0): ?string
+    public function toSql(AbstractSqlRenderer $renderer, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         if ($this->order === []) {
             return null;
         }
 
-        $platform = $processor->platform;
+        $platform = $renderer->platform;
         $orders   = [];
 
         foreach ($this->order as $spec) {
@@ -37,7 +38,7 @@ class OrderBy extends AbstractPart
                 $orders[] = $platform->quoteIdentifier($column)
                            . ' ' . $spec->direction;
             } else {
-                $orders[] = $processor->renderExpression($column);
+                $orders[] = $renderer->render($column);
             }
         }
 

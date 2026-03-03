@@ -9,7 +9,8 @@ use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Sql\Argument\Identifier;
 use PhpDb\Sql\Expression;
 use PhpDb\Sql\ExpressionInterface;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
+use PhpDb\Sql\Platform\Sql92Renderer;
 use PhpDb\Sql\Predicate;
 use PhpDb\Sql\Select;
 use PhpDb\Sql\TableIdentifier;
@@ -29,8 +30,8 @@ use function uniqid;
 
 #[IgnoreDeprecations]
 #[RequiresPhp('<= 8.6')]
-#[CoversMethod(SqlProcessor::class, 'renderExpression')]
-#[CoversMethod(SqlProcessor::class, 'resolveTable')]
+#[CoversMethod(AbstractSqlRenderer::class, 'render')]
+#[CoversMethod(AbstractSqlRenderer::class, 'resolveTable')]
 final class AbstractSqlTest extends TestCase
 {
     protected DriverInterface&MockObject $mockDriver;
@@ -155,10 +156,10 @@ final class AbstractSqlTest extends TestCase
 
     public function testResolveTableWithTableIdentifierAndSchema(): void
     {
-        $table     = new TableIdentifier('users', 'public');
-        $processor = new SqlProcessor(new TrustingSql92Platform(), $this->mockDriver);
+        $table    = new TableIdentifier('users', 'public');
+        $renderer = (new Sql92Renderer())->init(new TrustingSql92Platform(), $this->mockDriver);
 
-        $result = $processor->resolveTable($table);
+        $result = $renderer->resolveTable($table);
 
         self::assertStringContainsString('public', $result);
         self::assertStringContainsString('users', $result);
@@ -166,10 +167,10 @@ final class AbstractSqlTest extends TestCase
 
     public function testResolveTableWithSelect(): void
     {
-        $select    = new Select('foo');
-        $processor = new SqlProcessor(new TrustingSql92Platform(), $this->mockDriver);
+        $select   = new Select('foo');
+        $renderer = (new Sql92Renderer())->init(new TrustingSql92Platform(), $this->mockDriver);
 
-        $result = $processor->resolveTable($select);
+        $result = $renderer->resolveTable($select);
 
         self::assertStringStartsWith('(', $result);
         self::assertStringEndsWith(')', $result);
@@ -181,12 +182,12 @@ final class AbstractSqlTest extends TestCase
         ParameterContainer|null $parameterContainer = null,
         string|null $namedParameterPrefix = null
     ): string {
-        $processor = new SqlProcessor(
+        $renderer = (new Sql92Renderer())->init(
             new TrustingSql92Platform(),
             $this->mockDriver,
             $parameterContainer,
         );
 
-        return $processor->renderExpression($expression, $namedParameterPrefix);
+        return $renderer->render($expression, $namedParameterPrefix);
     }
 }

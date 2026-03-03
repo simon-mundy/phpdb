@@ -8,7 +8,7 @@ use PhpDb\Sql\Argument;
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ArgumentType;
 use PhpDb\Sql\Exception\InvalidArgumentException;
-use PhpDb\Sql\Part\SqlProcessor;
+use PhpDb\Sql\Platform\Sql92Renderer;
 use PhpDb\Sql\Predicate\Like;
 use PhpDbTest\TestAsset\TrustingSql92Platform;
 use PHPUnit\Framework\Attributes\CoversMethod;
@@ -102,16 +102,16 @@ final class LikeTest extends TestCase
     {
         $like = new Like('bar', 'Foo%');
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
-        $sql        = $like->toSql($processor, '', $paramIndex);
+        $sql        = $like->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('"bar" LIKE \'Foo%\'', $sql);
 
         $like = new Like(Argument::value('Foo%'), Argument::identifier('bar'));
 
         $paramIndex = 1;
-        $sql        = $like->toSql($processor, '', $paramIndex);
+        $sql        = $like->toSql($renderer, '', $paramIndex);
 
         self::assertEquals('\'Foo%\' LIKE "bar"', $sql);
     }
@@ -129,12 +129,12 @@ final class LikeTest extends TestCase
         $like = new Like();
         $like->setLike('foo%');
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Identifier must be specified');
-        $like->toSql($processor, '', $paramIndex);
+        $like->toSql($renderer, '', $paramIndex);
     }
 
     public function testGetExpressionDataThrowsExceptionWhenLikeNotSet(): void
@@ -142,11 +142,11 @@ final class LikeTest extends TestCase
         $like = new Like();
         $like->setIdentifier('bar');
 
-        $processor  = new SqlProcessor(new TrustingSql92Platform());
+        $renderer   = (new Sql92Renderer())->init(new TrustingSql92Platform());
         $paramIndex = 1;
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Like expression must be specified');
-        $like->toSql($processor, '', $paramIndex);
+        $like->toSql($renderer, '', $paramIndex);
     }
 }
