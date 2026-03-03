@@ -46,6 +46,9 @@ abstract class AbstractSqlRenderer
 
     private string $identifierSeparator = '.';
 
+    /** @var array<string, string> */
+    public array $identifier = [];
+
     /** @var array<int, string> */
     private array $tablePrefixCache = [];
 
@@ -67,6 +70,7 @@ abstract class AbstractSqlRenderer
             $this->platform            = $platform;
             $this->identifierSeparator = $platform->getIdentifierSeparator();
             $this->tablePrefixCache    = [];
+            $this->identifier          = [];
         }
 
         $this->driver                 = $driver;
@@ -120,14 +124,14 @@ abstract class AbstractSqlRenderer
         } elseif ($table instanceof Select) {
             $rendered = '(' . $this->processSubSelect($table) . ')';
         } elseif (is_string($table)) {
-            $rendered = $this->platform->quoteIdentifier($table);
+            $rendered = $this->identifier[$table] ??= $this->platform->quoteIdentifier($table);
         } else {
             $pi       = 0;
             $rendered = $table->toSql($this, '', $pi);
         }
 
         if ($alias !== null) {
-            $rendered .= ' AS ' . $this->platform->quoteIdentifier($alias);
+            $rendered .= ' AS ' . ($this->identifier[$alias] ??= $this->platform->quoteIdentifier($alias));
         }
 
         return $rendered;
@@ -143,10 +147,10 @@ abstract class AbstractSqlRenderer
 
         if ($table instanceof TableIdentifier) {
             $prefix = $alias !== null
-                ? $this->platform->quoteIdentifier($alias)
+                ? ($this->identifier[$alias] ??= $this->platform->quoteIdentifier($alias))
                 : $this->platform->quoteIdentifier(name: $table->table, prefix: $table->schema);
         } else {
-            $prefix = $this->platform->quoteIdentifier($alias);
+            $prefix = $this->identifier[$alias] ??= $this->platform->quoteIdentifier($alias);
         }
 
         return $this->tablePrefixCache[$id] = $prefix . $this->identifierSeparator;
@@ -158,7 +162,8 @@ abstract class AbstractSqlRenderer
         $count       = count($identifiers);
 
         for ($idx = 1; $idx < $count; $idx += 2) {
-            $identifiers[$idx] = $this->platform->quoteIdentifier($identifiers[$idx]);
+            $id                = $identifiers[$idx];
+            $identifiers[$idx] = $this->identifier[$id] ??= $this->platform->quoteIdentifier($id);
         }
 
         return implode('', $identifiers);
@@ -184,7 +189,8 @@ abstract class AbstractSqlRenderer
         int &$paramIndex,
     ): string {
         return match (true) {
-            $argument instanceof Identifier    => $this->platform->quoteIdentifier($argument->identifier),
+            $argument instanceof Identifier    => $this->identifier[$argument->identifier]
+                ??= $this->platform->quoteIdentifier($argument->identifier),
             $argument instanceof Literal       => $argument->literal,
             $argument instanceof NullValue     => 'NULL',
             $argument instanceof Parameter     => $this->bindParameter($argument),
@@ -245,7 +251,8 @@ abstract class AbstractSqlRenderer
     {
         $quoted = [];
         foreach ($identifiers as $id) {
-            $quoted[] = $this->platform->quoteIdentifier($id->identifier);
+            $name     = $id->identifier;
+            $quoted[] = $this->identifier[$name] ??= $this->platform->quoteIdentifier($name);
         }
         return implode(', ', $quoted);
     }

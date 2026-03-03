@@ -61,7 +61,9 @@ class Columns extends AbstractPart
             $column = $ref->column;
 
             if ($column instanceof Identifier) {
-                $columnSql = $prefix . $platform->quoteIdentifier($column->identifier);
+                $columnSql = $prefix
+                    . ($renderer->identifier[$column->identifier]
+                        ??= $platform->quoteIdentifier($column->identifier));
             } elseif ($column instanceof ArgumentInterface) {
                 $columnSql = $prefix . $renderer->renderArgument($column, '', $pi);
             } else {
@@ -69,7 +71,9 @@ class Columns extends AbstractPart
             }
 
             if ($ref->columnAlias !== null) {
-                $fragments[] = $columnSql . ' AS ' . $platform->quoteIdentifier($ref->columnAlias);
+                $fragments[] = $columnSql . ' AS '
+                    . ($renderer->identifier[$ref->columnAlias]
+                        ??= $platform->quoteIdentifier($ref->columnAlias));
             } elseif ($ref->containsAlias) {
                 $fragments[] = $columnSql;
             } else {

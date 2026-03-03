@@ -37,8 +37,9 @@ class OrderBy extends AbstractPart
             $column = $spec->column;
 
             if ($column instanceof Identifier) {
-                $orders[] = $platform->quoteIdentifier($column->identifier)
-                           . ' ' . $spec->direction;
+                $orders[] = ($renderer->identifier[$column->identifier]
+                    ??= $platform->quoteIdentifier($column->identifier))
+                    . ' ' . $spec->direction;
             } elseif ($column instanceof ArgumentInterface) {
                 $pi       = 0;
                 $orders[] = $renderer->renderArgument($column, '', $pi)

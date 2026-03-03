@@ -29,7 +29,8 @@ class GroupBy extends AbstractPart
             $column = $ref->column;
 
             if ($column instanceof Identifier) {
-                $groups[] = $platform->quoteIdentifier($column->identifier);
+                $id       = $column->identifier;
+                $groups[] = $renderer->identifier[$id] ??= $platform->quoteIdentifier($id);
             } elseif ($column instanceof ArgumentInterface) {
                 $pi       = 0;
                 $groups[] = $renderer->renderArgument($column, '', $pi);

@@ -48,7 +48,7 @@ class InsertValues extends AbstractPart
         $isPdoDriver = $renderer->driver instanceof PdoDriverInterface;
 
         foreach ($this->columnValues as $cv) {
-            $columns[] = $renderer->platform->quoteIdentifier($cv->column);
+            $columns[] = $renderer->identifier[$cv->column] ??= $renderer->platform->quoteIdentifier($cv->column);
 
             $values[] = match ($cv->value->getType()) {
                 ArgumentType::Parameter => $renderer->bindParameter(
