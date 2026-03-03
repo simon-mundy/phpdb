@@ -8,12 +8,12 @@ use Closure;
 use Override;
 use PhpDb\Sql\Part\From;
 use PhpDb\Sql\Part\Set as SetPart;
-use PhpDb\Sql\Part\SqlFragment;
 use PhpDb\Sql\Part\Table;
 use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use PhpDb\Sql\Predicate\PredicateInterface;
 
 use function array_key_exists;
+use function implode;
 use function strtolower;
 
 /**
@@ -128,11 +128,22 @@ class Update extends AbstractPreparableSql
     {
         $renderer->getTypeDecorator($this)?->prepare($this, $renderer);
 
-        return (string) SqlFragment::of($this->getStatementKeyword())
-            ->part($this->table->renderTable($renderer))
-            ->part($this->joins?->toSql($renderer))
-            ->part($this->set->toSql($renderer))
-            ->part($this->where?->toSql($renderer));
+        $parts = [$this->getStatementKeyword()];
+
+        if (($part = $this->table->renderTable($renderer)) !== null) {
+            $parts[] = $part;
+        }
+        if (($part = $this->joins?->toSql($renderer)) !== null) {
+            $parts[] = $part;
+        }
+        if (($part = $this->set->toSql($renderer)) !== null) {
+            $parts[] = $part;
+        }
+        if (($part = $this->where?->toSql($renderer)) !== null) {
+            $parts[] = $part;
+        }
+
+        return implode(' ', $parts);
     }
 
     /**

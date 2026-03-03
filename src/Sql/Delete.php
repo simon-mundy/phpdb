@@ -7,11 +7,11 @@ namespace PhpDb\Sql;
 use Closure;
 use Override;
 use PhpDb\Sql\Part\From;
-use PhpDb\Sql\Part\SqlFragment;
 use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use PhpDb\Sql\Predicate\PredicateInterface;
 
 use function array_key_exists;
+use function implode;
 use function strtolower;
 
 /**
@@ -83,9 +83,16 @@ class Delete extends AbstractPreparableSql
     {
         $renderer->getTypeDecorator($this)?->prepare($this, $renderer);
 
-        return (string) SqlFragment::of($this->getStatementKeyword())
-            ->part($this->table->toSql($renderer))
-            ->part($this->where?->toSql($renderer));
+        $parts = [$this->getStatementKeyword()];
+
+        if (($part = $this->table->toSql($renderer)) !== null) {
+            $parts[] = $part;
+        }
+        if (($part = $this->where?->toSql($renderer)) !== null) {
+            $parts[] = $part;
+        }
+
+        return implode(' ', $parts);
     }
 
     /**

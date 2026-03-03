@@ -12,7 +12,6 @@ use PhpDb\Sql\Part\Limit;
 use PhpDb\Sql\Part\Offset;
 use PhpDb\Sql\Part\OrderBy;
 use PhpDb\Sql\Part\Quantifier;
-use PhpDb\Sql\Part\SqlFragment;
 use PhpDb\Sql\Part\Table;
 use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use PhpDb\Sql\Predicate\PredicateInterface;
@@ -20,6 +19,7 @@ use PhpDb\Sql\Predicate\PredicateInterface;
 use function array_key_exists;
 use function count;
 use function gettype;
+use function implode;
 use function is_array;
 use function is_numeric;
 use function is_string;
@@ -379,24 +379,45 @@ class Select extends AbstractPreparableSql
     {
         $renderer->getTypeDecorator($this)?->prepare($this, $renderer);
 
-        $fragment = SqlFragment::of('SELECT')
-            ->part($this->quantifier?->toSql($renderer))
-            ->part($this->table->columns()->toSql($renderer))
-            ->part($this->table->from()->toSql($renderer))
-            ->part($this->table->joins()?->toSql($renderer))
-            ->part($this->where?->toSql($renderer))
-            ->part($this->groupBy?->toSql($renderer))
-            ->part($this->having?->toSql($renderer))
-            ->part($this->orderBy?->toSql($renderer))
-            ->part($this->limit?->toSql($renderer))
-            ->part($this->offset?->toSql($renderer));
+        $parts = ['SELECT'];
+
+        if (($part = $this->quantifier?->toSql($renderer)) !== null) {
+            $parts[] = $part;
+        }
+
+        $parts[] = $this->table->columns()->toSql($renderer);
+
+        if (($part = $this->table->from()->toSql($renderer)) !== null) {
+            $parts[] = $part;
+        }
+        if (($part = $this->table->joins()?->toSql($renderer)) !== null) {
+            $parts[] = $part;
+        }
+        if (($part = $this->where?->toSql($renderer)) !== null) {
+            $parts[] = $part;
+        }
+        if (($part = $this->groupBy?->toSql($renderer)) !== null) {
+            $parts[] = $part;
+        }
+        if (($part = $this->having?->toSql($renderer)) !== null) {
+            $parts[] = $part;
+        }
+        if (($part = $this->orderBy?->toSql($renderer)) !== null) {
+            $parts[] = $part;
+        }
+        if (($part = $this->limit?->toSql($renderer)) !== null) {
+            $parts[] = $part;
+        }
+        if (($part = $this->offset?->toSql($renderer)) !== null) {
+            $parts[] = $part;
+        }
 
         $combine = $this->combine?->toSql($renderer);
         if ($combine !== null) {
-            $fragment->wrap($combine);
+            return '( ' . implode(' ', $parts) . ' ) ' . $combine;
         }
 
-        return (string) $fragment;
+        return implode(' ', $parts);
     }
 
     /**
