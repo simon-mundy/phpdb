@@ -6,12 +6,11 @@ namespace PhpDb\Sql\Argument;
 
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ArgumentType;
-use PhpDb\Sql\Platform\AbstractSqlRenderer;
 
 final readonly class Literal implements ArgumentInterface
 {
     public function __construct(
-        private string $literal
+        public string $literal
     ) {
     }
 
@@ -21,11 +20,6 @@ final readonly class Literal implements ArgumentInterface
     }
 
     public function getValue(): string
-    {
-        return $this->literal;
-    }
-
-    public function render(AbstractSqlRenderer $renderer, string $paramPrefix, int &$paramIndex): string
     {
         return $this->literal;
     }

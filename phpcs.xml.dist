@@ -16,6 +16,8 @@
     <file>src</file>
     <file>test</file>
 
+    <exclude-pattern>test/*[^/]\.php$</exclude-pattern>
+
     <!-- Include all rules from Laminas Coding Standard -->
     <rule ref="LaminasCodingStandard">
         <!--

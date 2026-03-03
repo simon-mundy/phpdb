@@ -7,11 +7,19 @@ namespace PhpDb\Sql\Platform;
 use PhpDb\Adapter\Driver\DriverInterface;
 use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Adapter\Platform\PlatformInterface;
+use PhpDb\Sql\Argument\Identifier;
+use PhpDb\Sql\Argument\Identifiers;
+use PhpDb\Sql\Argument\Literal;
+use PhpDb\Sql\Argument\NullValue;
 use PhpDb\Sql\Argument\Parameter;
+use PhpDb\Sql\Argument\Select as SelectArgument;
+use PhpDb\Sql\Argument\Value;
+use PhpDb\Sql\Argument\Values;
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ExpressionInterface;
 use PhpDb\Sql\Select;
 use PhpDb\Sql\TableIdentifier;
+use UnexpectedValueException;
 
 use function count;
 use function implode;
@@ -169,7 +177,21 @@ abstract class AbstractSqlRenderer
         string $paramPrefix,
         int &$paramIndex,
     ): string {
-        return $argument->render($this, $paramPrefix, $paramIndex);
+        return match (true) {
+            $argument instanceof Identifier    => $this->platform->quoteIdentifier($argument->identifier),
+            $argument instanceof Literal       => $argument->literal,
+            $argument instanceof NullValue     => 'NULL',
+            $argument instanceof Parameter     => $this->bindParameter($argument),
+            $argument instanceof Value         => $this->parameterContainer !== null
+                ? $this->bindValue($argument->value, $paramPrefix, $paramIndex)
+                : $this->platform->quoteValue((string) $argument->value),
+            $argument instanceof SelectArgument => $argument->select instanceof Select
+                ? '(' . $this->processSubSelect($argument->select) . ')'
+                : $argument->select->toSql($this, $paramPrefix, $paramIndex),
+            $argument instanceof Values        => $this->renderValues($argument->values, $paramPrefix, $paramIndex),
+            $argument instanceof Identifiers   => $this->renderIdentifiers($argument->identifiers),
+            default => throw new UnexpectedValueException('Unknown argument type: ' . $argument::class),
+        };
     }
 
     public function bindParameter(Parameter $param, ?string $nameOverride = null): string
@@ -210,6 +232,32 @@ abstract class AbstractSqlRenderer
         }
 
         return $subselect->buildSqlString($this);
+    }
+
+    /** @param list<Identifier> $identifiers */
+    private function renderIdentifiers(array $identifiers): string
+    {
+        $quoted = [];
+        foreach ($identifiers as $id) {
+            $quoted[] = $this->platform->quoteIdentifier($id->identifier);
+        }
+        return implode(', ', $quoted);
+    }
+
+    /** @param list<null|string|int|float|bool> $values */
+    private function renderValues(array $values, string $paramPrefix, int &$paramIndex): string
+    {
+        $rendered = [];
+        if ($this->parameterContainer !== null) {
+            foreach ($values as $value) {
+                $rendered[] = $this->bindValue($value, $paramPrefix, $paramIndex);
+            }
+        } else {
+            foreach ($values as $value) {
+                $rendered[] = $this->platform->quoteValue((string) $value);
+            }
+        }
+        return '(' . implode(', ', $rendered) . ')';
     }
 
     private function resolveParamPrefix(?string $paramPrefix): string

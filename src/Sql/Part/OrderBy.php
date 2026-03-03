@@ -41,7 +41,7 @@ class OrderBy extends AbstractPart
                            . ' ' . $spec->direction;
             } elseif ($column instanceof ArgumentInterface) {
                 $pi       = 0;
-                $orders[] = $column->render($renderer, '', $pi)
+                $orders[] = $renderer->renderArgument($column, '', $pi)
                            . ' ' . $spec->direction;
             } else {
                 $orders[] = $renderer->render($column);

@@ -32,7 +32,7 @@ class GroupBy extends AbstractPart
                 $groups[] = $platform->quoteIdentifier($column->identifier);
             } elseif ($column instanceof ArgumentInterface) {
                 $pi       = 0;
-                $groups[] = $column->render($renderer, '', $pi);
+                $groups[] = $renderer->renderArgument($column, '', $pi);
             } else {
                 $groups[] = $renderer->render($column);
             }

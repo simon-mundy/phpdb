@@ -144,8 +144,8 @@ class Operator extends AbstractExpression implements PredicateInterface
             );
         }
 
-        $leftSql  = $this->left->render($renderer, $paramPrefix, $paramIndex);
-        $rightSql = $this->right->render($renderer, $paramPrefix, $paramIndex);
+        $leftSql  = $renderer->renderArgument($this->left, $paramPrefix, $paramIndex);
+        $rightSql = $renderer->renderArgument($this->right, $paramPrefix, $paramIndex);
 
         if ($this->specification !== null) {
             return vsprintf($this->specification, [$leftSql, $rightSql]);

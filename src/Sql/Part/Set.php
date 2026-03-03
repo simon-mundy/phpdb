@@ -39,7 +39,7 @@ class Set extends AbstractPart
         $isPdoDriver = $renderer->driver instanceof PdoDriverInterface;
 
         foreach ($this->model as $column => $arg) {
-            $prefix = $this->columnIds[$column]->render($renderer, '', $pi) . ' = ';
+            $prefix = $renderer->platform->quoteIdentifier($this->columnIds[$column]->identifier) . ' = ';
 
             $setSql[] = $prefix . match ($arg->getType()) {
                 ArgumentType::Parameter => $renderer->bindParameter(

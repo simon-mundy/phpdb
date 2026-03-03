@@ -6,9 +6,6 @@ namespace PhpDb\Sql\Argument;
 
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ArgumentType;
-use PhpDb\Sql\Platform\AbstractSqlRenderer;
-
-use function implode;
 
 final readonly class Identifiers implements ArgumentInterface
 {
@@ -42,14 +39,5 @@ final readonly class Identifiers implements ArgumentInterface
             $result[] = $id->getValue();
         }
         return $result;
-    }
-
-    public function render(AbstractSqlRenderer $renderer, string $paramPrefix, int &$paramIndex): string
-    {
-        $quoted = [];
-        foreach ($this->identifiers as $identifier) {
-            $quoted[] = $identifier->render($renderer, $paramPrefix, $paramIndex);
-        }
-        return implode(', ', $quoted);
     }
 }

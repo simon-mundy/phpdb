@@ -61,7 +61,7 @@ class Columns extends AbstractPart
             if ($column instanceof Identifier) {
                 $columnSql = $prefix . $platform->quoteIdentifier($column->identifier);
             } elseif ($column instanceof ArgumentInterface) {
-                $columnSql = $prefix . $column->render($renderer, '', $pi);
+                $columnSql = $prefix . $renderer->renderArgument($column, '', $pi);
             } else {
                 $columnSql = $renderer->render($column, $ref->alias ?? 'column');
             }
