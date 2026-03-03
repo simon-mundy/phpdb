@@ -79,7 +79,7 @@ class Predicate extends PredicateSet
         null|float|int|string|ArgumentInterface $right,
     ): static {
         $this->addPredicate(
-            new Operator($left, Operator::OPERATOR_EQUAL_TO, $right),
+            new EqualTo($left, $right),
             $this->getNextPredicateCombineOperator()
         );
 
@@ -95,7 +95,7 @@ class Predicate extends PredicateSet
         null|float|int|string|ArgumentInterface $right
     ): static {
         $this->addPredicate(
-            new Operator($left, Operator::OPERATOR_NOT_EQUAL_TO, $right),
+            new NotEqualTo($left, $right),
             $this->getNextPredicateCombineOperator()
         );
 
@@ -111,7 +111,7 @@ class Predicate extends PredicateSet
         null|float|int|string|ArgumentInterface $right
     ): static {
         $this->addPredicate(
-            new Operator($left, Operator::OPERATOR_LESS_THAN, $right),
+            new LessThan($left, $right),
             $this->getNextPredicateCombineOperator()
         );
 
@@ -129,7 +129,7 @@ class Predicate extends PredicateSet
         null|float|int|string|ArgumentInterface $right
     ): static {
         $this->addPredicate(
-            new Operator($left, Operator::OPERATOR_GREATER_THAN, $right),
+            new GreaterThan($left, $right),
             $this->getNextPredicateCombineOperator()
         );
 
@@ -147,7 +147,7 @@ class Predicate extends PredicateSet
         null|float|int|string|ArgumentInterface $right
     ): static {
         $this->addPredicate(
-            new Operator($left, Operator::OPERATOR_LESS_THAN_OR_EQUAL_TO, $right),
+            new LessThanOrEqualTo($left, $right),
             $this->getNextPredicateCombineOperator()
         );
 
@@ -165,7 +165,7 @@ class Predicate extends PredicateSet
         null|float|int|string|ArgumentInterface $right
     ): static {
         $this->addPredicate(
-            new Operator($left, Operator::OPERATOR_GREATER_THAN_OR_EQUAL_TO, $right),
+            new GreaterThanOrEqualTo($left, $right),
             $this->getNextPredicateCombineOperator()
         );
 
