@@ -121,10 +121,9 @@ abstract class AbstractSqlRenderer
         }
 
         if ($table instanceof TableIdentifier) {
-            $rendered = $this->platform->quoteIdentifier(
-                name: $table->table,
-                prefix: $table->schema,
-            );
+            $rendered = $table->schema === null
+                ? ($this->identifier[$table->table] ??= $this->platform->quoteIdentifier($table->table))
+                : $this->platform->quoteIdentifier(name: $table->table, prefix: $table->schema);
         } elseif ($table instanceof Select) {
             $rendered = '(' . $this->processSubSelect($table) . ')';
         } elseif (is_string($table)) {
