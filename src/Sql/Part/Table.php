@@ -7,7 +7,6 @@ namespace PhpDb\Sql\Part;
 use PhpDb\Sql\Exception\InvalidArgumentException;
 use PhpDb\Sql\ExpressionInterface;
 use PhpDb\Sql\Join;
-use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use PhpDb\Sql\Predicate\PredicateInterface;
 use PhpDb\Sql\Select;
 use PhpDb\Sql\TableIdentifier;
@@ -29,7 +28,7 @@ class Table
     public function __construct()
     {
         $this->from    = new From();
-        $this->columns = new Columns();
+        $this->columns = new Columns($this->from);
         $this->join    = new Join();
     }
 
@@ -151,15 +150,6 @@ class Table
         return $this;
     }
 
-    public function prepare(AbstractSqlRenderer $renderer): void
-    {
-        if ($this->columns->getPrefixColumnsWithTable() && ! $this->from->isEmpty()) {
-            $this->columns->setFromTablePrefix($this->from->getQuotedPrefix($renderer));
-        } else {
-            $this->columns->setFromTablePrefix('');
-        }
-    }
-
     public function from(): From
     {
         return $this->from;
@@ -179,6 +169,7 @@ class Table
     {
         $this->from    = clone $this->from;
         $this->columns = clone $this->columns;
-        $this->join    = clone $this->join;
+        $this->columns->setFrom($this->from);
+        $this->join = clone $this->join;
     }
 }

@@ -94,6 +94,10 @@ abstract class AbstractSqlRenderer
 
     public function getTypeDecorator(object $subject): ?SqlDecoratorInterface
     {
+        if ($this->decorators === []) {
+            return null;
+        }
+
         $subjectClass = $subject::class;
         if (isset($this->decorators[$subjectClass])) {
             return $this->decorators[$subjectClass];

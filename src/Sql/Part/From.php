@@ -16,14 +16,17 @@ use function key;
 
 class From extends AbstractPart
 {
-    private TableIdentifier|Select|ExpressionInterface|null $table = null;
+    public TableIdentifier|Select|ExpressionInterface|null $table = null;
 
-    private ?string $alias = null;
+    public ?string $alias = null;
 
     public function toSql(AbstractSqlRenderer $renderer, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
-        $table = $this->renderTable($renderer);
-        return $table !== null ? 'FROM ' . $table : null;
+        if ($this->table === null) {
+            return null;
+        }
+
+        return 'FROM ' . $renderer->renderTableSource($this->table, $this->alias);
     }
 
     public function renderTable(AbstractSqlRenderer $renderer): ?string
@@ -74,14 +77,5 @@ class From extends AbstractPart
     public function getAlias(): ?string
     {
         return $this->alias;
-    }
-
-    public function getQuotedPrefix(AbstractSqlRenderer $renderer): string
-    {
-        if ($this->table === null) {
-            return '';
-        }
-
-        return $renderer->renderResolvedTable($this->table, $this->alias);
     }
 }

@@ -378,7 +378,6 @@ class Select extends AbstractPreparableSql
     public function buildSqlString(AbstractSqlRenderer $renderer): string
     {
         $renderer->getTypeDecorator($this)?->prepare($this, $renderer);
-        $this->table->prepare($renderer);
 
         $fragment = SqlFragment::of('SELECT')
             ->part($this->quantifier?->toSql($renderer))

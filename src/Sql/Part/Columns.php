@@ -10,7 +10,6 @@ use PhpDb\Sql\ExpressionInterface;
 use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use PhpDb\Sql\Select;
 
-use function array_merge;
 use function count;
 use function current;
 use function implode;
@@ -24,19 +23,27 @@ class Columns extends AbstractPart
     private array $columnRefs            = [];
     private array $rawColumns            = [Select::SQL_STAR];
     private bool $prefixColumnsWithTable = true;
-    private string $fromTablePrefix      = '';
+    private ?From $from                  = null;
     /** @var ColumnRef[] */
     private array $joinRefs = [];
 
-    public function __construct()
+    public function __construct(?From $from = null)
     {
+        $this->from = $from;
         $this->normalizeColumns();
+    }
+
+    public function setFrom(?From $from): void
+    {
+        $this->from = $from;
     }
 
     public function toSql(AbstractSqlRenderer $renderer, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
         $refs       = $this->columnRefs;
-        $fromPrefix = $this->fromTablePrefix;
+        $fromPrefix = $this->prefixColumnsWithTable && $this->from !== null && $this->from->table !== null
+            ? $renderer->renderResolvedTable($this->from->table, $this->from->alias)
+            : '';
 
         if (isset($refs[0]) && ! isset($refs[1]) && $refs[0]->isStar && $this->joinRefs === []) {
             return $fromPrefix . '*';
@@ -46,38 +53,40 @@ class Columns extends AbstractPart
         $exprCounter = 1;
         $pi          = 0;
         $platform    = $renderer->platform;
-        $allRefs     = $this->joinRefs !== [] ? array_merge($refs, $this->joinRefs) : $refs;
+        $refSets     = $this->joinRefs !== [] ? [$refs, $this->joinRefs] : [$refs];
 
-        foreach ($allRefs as $ref) {
-            $prefix = $ref->table !== null
-                ? $renderer->renderResolvedTable($ref->table, $ref->tableAlias)
-                : $fromPrefix;
+        foreach ($refSets as $currentRefs) {
+            foreach ($currentRefs as $ref) {
+                $prefix = $ref->table !== null
+                    ? $renderer->renderResolvedTable($ref->table, $ref->tableAlias)
+                    : $fromPrefix;
 
-            if ($ref->isStar) {
-                $fragments[] = $prefix . '*';
-                continue;
-            }
+                if ($ref->isStar) {
+                    $fragments[] = $prefix . '*';
+                    continue;
+                }
 
-            $column = $ref->column;
+                $column = $ref->column;
 
-            if ($column instanceof Identifier) {
-                $columnSql = $prefix
-                    . ($renderer->identifier[$column->identifier]
-                        ??= $platform->quoteIdentifier($column->identifier));
-            } elseif ($column instanceof ArgumentInterface) {
-                $columnSql = $prefix . $renderer->renderArgument($column, '', $pi);
-            } else {
-                $columnSql = $renderer->render($column, $ref->columnAlias ?? 'column');
-            }
+                if ($column instanceof Identifier) {
+                    $columnSql = $prefix
+                        . ($renderer->identifier[$column->identifier]
+                            ??= $platform->quoteIdentifier($column->identifier));
+                } elseif ($column instanceof ArgumentInterface) {
+                    $columnSql = $prefix . $renderer->renderArgument($column, '', $pi);
+                } else {
+                    $columnSql = $renderer->render($column, $ref->columnAlias ?? 'column');
+                }
 
-            if ($ref->columnAlias !== null) {
-                $fragments[] = $columnSql . ' AS '
-                    . ($renderer->identifier[$ref->columnAlias]
-                        ??= $platform->quoteIdentifier($ref->columnAlias));
-            } elseif ($ref->containsAlias) {
-                $fragments[] = $columnSql;
-            } else {
-                $fragments[] = $columnSql . ' AS Expression' . $exprCounter++;
+                if ($ref->columnAlias !== null) {
+                    $fragments[] = $columnSql . ' AS '
+                        . ($renderer->identifier[$ref->columnAlias]
+                            ??= $platform->quoteIdentifier($ref->columnAlias));
+                } elseif ($ref->containsAlias) {
+                    $fragments[] = $columnSql;
+                } else {
+                    $fragments[] = $columnSql . ' AS Expression' . $exprCounter++;
+                }
             }
         }
 
@@ -128,12 +137,6 @@ class Columns extends AbstractPart
     public function getPrefixColumnsWithTable(): bool
     {
         return $this->prefixColumnsWithTable;
-    }
-
-    public function setFromTablePrefix(string $prefix): static
-    {
-        $this->fromTablePrefix = $prefix;
-        return $this;
     }
 
     /** @param ColumnRef[] $refs */
