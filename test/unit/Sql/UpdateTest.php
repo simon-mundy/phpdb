@@ -75,7 +75,7 @@ final class UpdateTest extends TestCase
     public function testTable(): void
     {
         $this->update->table('foo');
-        self::assertEquals('foo', $this->update->getRawState('table'));
+        self::assertEquals(new TableIdentifier('foo'), $this->update->getRawState('table'));
 
         $tableIdentifier = new TableIdentifier('foo', 'bar');
         $this->update->table($tableIdentifier);
@@ -88,7 +88,7 @@ final class UpdateTest extends TestCase
     public function testConstruct(): void
     {
         $update = new Update('foo');
-        self::assertEquals('foo', $update->getRawState('table'));
+        self::assertEquals(new TableIdentifier('foo'), $update->getRawState('table'));
     }
 
     public function testSet(): void
@@ -187,7 +187,7 @@ final class UpdateTest extends TestCase
             ->set(['bar' => 'baz'])
             ->where('x = y');
 
-        self::assertEquals('foo', $this->update->getRawState('table'));
+        self::assertEquals(new TableIdentifier('foo'), $this->update->getRawState('table'));
         self::assertTrue($this->update->getRawState('emptyWhereProtection'));
         self::assertEquals(['bar' => 'baz'], $this->update->getRawState('set'));
         self::assertInstanceOf(Where::class, $this->update->getRawState('where'));
@@ -474,7 +474,7 @@ final class UpdateTest extends TestCase
         self::assertArrayHasKey('emptyWhereProtection', $rawState);
         self::assertArrayHasKey('joins', $rawState);
 
-        self::assertEquals('foo', $rawState['table']);
+        self::assertEquals(new TableIdentifier('foo'), $rawState['table']);
         self::assertEquals(['bar' => 'baz'], $rawState['set']);
         self::assertInstanceOf(Where::class, $rawState['where']);
         self::assertInstanceOf(Join::class, $rawState['joins']);

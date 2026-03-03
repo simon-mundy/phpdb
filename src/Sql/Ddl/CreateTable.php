@@ -124,7 +124,7 @@ class CreateTable extends AbstractDdl
             . ($this->isTemporary ? 'TEMPORARY ' : '')
             . 'TABLE '
             . ($this->ifNotExists ? 'IF NOT EXISTS ' : '')
-            . $renderer->resolveTable($this->table) . ' (';
+            . $renderer->renderTableSource($this->table) . ' (';
 
         if ($this->columns) {
             $columnSqls = [];

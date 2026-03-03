@@ -64,7 +64,7 @@ final class SelectTest extends TestCase
     public function testConstruct(): void
     {
         $select = new Select('foo');
-        self::assertEquals('foo', $select->getRawState('table'));
+        self::assertEquals(new TableIdentifier('foo'), $select->getRawState('table'));
     }
 
     #[TestDox('unit test: Test from() returns Select object (is chainable)')]
@@ -72,20 +72,15 @@ final class SelectTest extends TestCase
     {
         $select = new Select();
 
-        // First mutation
         $result = $select->from('foo');
 
-        // Verify fluent interface
         self::assertSame($select, $result);
 
-        // Verify the first mutation occurred
-        self::assertEquals('foo', $select->getRawState('table'));
+        self::assertEquals(new TableIdentifier('foo'), $select->getRawState('table'));
 
-        // Second mutation to verify mutability
         $select->from('bar');
 
-        // Verify the instance was actually mutated
-        self::assertEquals('bar', $select->getRawState('table'));
+        self::assertEquals(new TableIdentifier('bar'), $select->getRawState('table'));
     }
 
     #[TestDox('unit test: Test quantifier() returns Select object (is chainable)')]
@@ -167,7 +162,7 @@ final class SelectTest extends TestCase
         $joinList = $joins->getJoins();
         self::assertCount(1, $joinList);
         self::assertInstanceOf(TableIdentifier::class, $joinList[0]['name']);
-        self::assertEquals('foo', $joinList[0]['name']->getTable());
+        self::assertEquals('foo', $joinList[0]['name']->table);
         self::assertEquals('x = y', $joinList[0]['on']);
         self::assertEquals(Select::JOIN_INNER, $joinList[0]['type']);
 
@@ -176,7 +171,7 @@ final class SelectTest extends TestCase
         $joins2 = $select->getRawState('joins');
         self::assertCount(2, $joins2->getJoins());
         self::assertInstanceOf(TableIdentifier::class, $joins2->getJoins()[1]['name']);
-        self::assertEquals('bar', $joins2->getJoins()[1]['name']->getTable());
+        self::assertEquals('bar', $joins2->getJoins()[1]['name']->table);
     }
 
     #[TestDox('unit test: Test join() exception with bad join')]
@@ -608,7 +603,7 @@ final class SelectTest extends TestCase
 
         // table
         $select->from('foo');
-        self::assertEquals('foo', $select->getRawState(Select::TABLE));
+        self::assertEquals(new TableIdentifier('foo'), $select->getRawState(Select::TABLE));
         $select->reset(Select::TABLE);
         self::assertNull($select->getRawState(Select::TABLE));
 
@@ -625,7 +620,7 @@ final class SelectTest extends TestCase
         $joinList = $joins->getJoins();
         self::assertCount(1, $joinList);
         self::assertInstanceOf(TableIdentifier::class, $joinList[0]['name']);
-        self::assertEquals('foo', $joinList[0]['name']->getTable());
+        self::assertEquals('foo', $joinList[0]['name']->table);
         self::assertEquals('id = boo', $joinList[0]['on']);
         self::assertEquals('INNER', $joinList[0]['type']);
         $select->reset(Select::JOINS);

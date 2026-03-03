@@ -63,7 +63,7 @@ final class InsertTest extends TestCase
     public function testInto(): void
     {
         $this->insert->into('table');
-        self::assertEquals('table', $this->insert->getRawState('table'));
+        self::assertEquals(new TableIdentifier('table'), $this->insert->getRawState('table'));
 
         $tableIdentifier = new TableIdentifier('table', 'schema');
         $this->insert->into($tableIdentifier);

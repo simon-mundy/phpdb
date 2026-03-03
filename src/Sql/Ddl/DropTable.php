@@ -37,6 +37,6 @@ class DropTable extends AbstractDdl
     {
         return 'DROP TABLE '
             . ($this->ifExists ? 'IF EXISTS ' : '')
-            . $renderer->resolveTable($this->table);
+            . $renderer->renderTableSource($this->table);
     }
 }

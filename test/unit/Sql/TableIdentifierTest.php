@@ -15,9 +15,6 @@ use TypeError;
 
 use function array_merge;
 
-/**
- * Tests for {@see TableIdentifier}
- */
 #[CoversClass(TableIdentifier::class)]
 class TableIdentifierTest extends TestCase
 {
@@ -25,21 +22,21 @@ class TableIdentifierTest extends TestCase
     {
         $tableIdentifier = new TableIdentifier('foo');
 
-        self::assertSame('foo', $tableIdentifier->getTable());
+        self::assertSame('foo', $tableIdentifier->table);
     }
 
     public function testGetDefaultSchema(): void
     {
         $tableIdentifier = new TableIdentifier('foo');
 
-        self::assertNull($tableIdentifier->getSchema());
+        self::assertNull($tableIdentifier->schema);
     }
 
     public function testGetSchema(): void
     {
         $tableIdentifier = new TableIdentifier('foo', 'bar');
 
-        self::assertSame('bar', $tableIdentifier->getSchema());
+        self::assertSame('bar', $tableIdentifier->schema);
     }
 
     public function testGetTableFromObjectStringCast(): void
@@ -47,20 +44,15 @@ class TableIdentifierTest extends TestCase
         $table           = new ObjectToString('castResult');
         $tableIdentifier = new TableIdentifier((string) $table);
 
-        self::assertSame('castResult', $tableIdentifier->getTable());
-        self::assertSame('castResult', $tableIdentifier->getTable());
+        self::assertSame('castResult', $tableIdentifier->table);
     }
 
-    /**
-     * @todo Review test to see if relevant?
-     */
     public function testGetSchemaFromObjectStringCast(): void
     {
         $schema          = new ObjectToString('castResult');
         $tableIdentifier = new TableIdentifier('foo', (string) $schema);
 
-        self::assertSame('castResult', $tableIdentifier->getSchema());
-        self::assertSame('castResult', $tableIdentifier->getSchema());
+        self::assertSame('castResult', $tableIdentifier->schema);
     }
 
     #[DataProvider('invalidTableProvider')]
@@ -79,11 +71,6 @@ class TableIdentifierTest extends TestCase
         new TableIdentifier('foo', $invalidSchema);
     }
 
-    /**
-     * Data provider
-     *
-     * @return array[]
-     */
     public static function invalidTableProvider(): array
     {
         return array_merge(
@@ -92,11 +79,6 @@ class TableIdentifierTest extends TestCase
         );
     }
 
-    /**
-     * Data provider
-     *
-     * @return array[]
-     */
     public static function invalidSchemaProvider(): array
     {
         return [

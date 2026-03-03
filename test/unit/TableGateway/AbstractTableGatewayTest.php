@@ -609,28 +609,8 @@ final class AbstractTableGatewayTest extends TestCase
 
         $cloned = clone $this->table;
 
-        // The table should be cloned, not the same instance
-        self::assertNotSame($tableIdentifier, $cloned->getTable());
-        self::assertEquals($tableIdentifier->getTable(), $cloned->getTable()->getTable());
-    }
-
-    // @codingStandardsIgnoreStart
-    public function test__cloneWithAliasedTableIdentifier(): void
-    {
-        // @codingStandardsIgnoreEnd
-        $tableIdentifier = new Sql\TableIdentifier('bar', 'schema');
-        $aliasedTable    = ['alias' => $tableIdentifier];
-
-        $tgReflection = new ReflectionClass(AbstractTableGateway::class);
-        $tableProp    = $tgReflection->getProperty('table');
-        $tableProp->setValue($this->table, $aliasedTable);
-
-        $cloned = clone $this->table;
-
-        $clonedTable = $cloned->getTable();
-        self::assertIsArray($clonedTable);
-        // The TableIdentifier inside the array should be cloned
-        self::assertNotSame($tableIdentifier, $clonedTable['alias']);
+        self::assertSame($tableIdentifier, $cloned->getTable());
+        self::assertEquals($tableIdentifier->table, $cloned->getTable()->table);
     }
 
     public function testExecuteSelectThrowsExceptionWhenArrayTableDoesNotMatch(): void

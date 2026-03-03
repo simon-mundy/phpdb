@@ -19,13 +19,8 @@ use PhpDb\Sql\Update;
 use PhpDb\Sql\Where;
 use PhpDb\TableGateway\Feature\EventFeatureEventsInterface;
 
-use function array_shift;
-use function array_values;
-use function count;
 use function end;
 use function is_array;
-use function is_object;
-use function reset;
 use function sprintf;
 
 /**
@@ -171,11 +166,10 @@ abstract class AbstractTableGateway implements TableGatewayInterface
     protected function executeSelect(Select $select): ResultSetInterface
     {
         $selectState = $select->getRawState();
+        $stateTable  = $selectState['table'] ?? null;
         if (
-            isset($selectState['table'])
-            && $selectState['table'] !== $this->table
-            && (is_array($selectState['table'])
-                && end($selectState['table']) !== $this->table)
+            $stateTable !== null
+            && ! $this->isMatchingTable($stateTable)
         ) {
             throw new Exception\RuntimeException(
                 'The table name of the provided Select object must match that of the table'
@@ -235,35 +229,19 @@ abstract class AbstractTableGateway implements TableGatewayInterface
     protected function executeInsert(Insert $insert): int
     {
         $insertState = $insert->getRawState();
-        if ($insertState['table'] !== $this->table) {
+        if (! $this->isMatchingTable($insertState['table'])) {
             throw new Exception\RuntimeException(
                 'The table name of the provided Insert object must match that of the table'
             );
         }
 
-        // apply preInsert features
         $this->featureSet->apply(EventFeatureEventsInterface::EVENT_PRE_INSERT, [$insert]);
-
-        // Most RDBMS solutions do not allow using table aliases in INSERTs
-        // See https://github.com/zendframework/zf2/issues/7311
-        $unaliasedTable = false;
-        if (is_array($insertState['table'])) {
-            $tableData      = array_values($insertState['table']);
-            $unaliasedTable = array_shift($tableData);
-            $insert->into($unaliasedTable);
-        }
 
         $statement             = $this->sql->prepareStatementForSqlObject($insert);
         $result                = $statement->execute();
         $this->lastInsertValue = $this->adapter->getDriver()->getConnection()->getLastGeneratedValue();
 
-        // apply postInsert features
         $this->featureSet->apply(EventFeatureEventsInterface::EVENT_POST_INSERT, [$statement, $result]);
-
-        // Reset original table information in Insert instance, if necessary
-        if ($unaliasedTable) {
-            $insert->into($insertState['table']);
-        }
 
         return $result->getAffectedRows();
     }
@@ -310,32 +288,18 @@ abstract class AbstractTableGateway implements TableGatewayInterface
     protected function executeUpdate(Update $update): int
     {
         $updateState = $update->getRawState();
-        if ($updateState['table'] !== $this->table) {
+        if (! $this->isMatchingTable($updateState['table'])) {
             throw new Exception\RuntimeException(
                 'The table name of the provided Update object must match that of the table'
             );
         }
 
-        // apply preUpdate features
         $this->featureSet->apply(EventFeatureEventsInterface::EVENT_PRE_UPDATE, [$update]);
-
-        $unaliasedTable = false;
-        if (is_array($updateState['table'])) {
-            $tableData      = array_values($updateState['table']);
-            $unaliasedTable = array_shift($tableData);
-            $update->table($unaliasedTable);
-        }
 
         $statement = $this->sql->prepareStatementForSqlObject($update);
         $result    = $statement->execute();
 
-        // apply postUpdate features
         $this->featureSet->apply(EventFeatureEventsInterface::EVENT_POST_UPDATE, [$statement, $result]);
-
-        // Reset original table information in Update instance, if necessary
-        if ($unaliasedTable) {
-            $update->table($updateState['table']);
-        }
 
         return $result->getAffectedRows();
     }
@@ -370,34 +334,46 @@ abstract class AbstractTableGateway implements TableGatewayInterface
     protected function executeDelete(Delete $delete): int
     {
         $deleteState = $delete->getRawState();
-        if ($deleteState['table'] !== $this->table) {
+        if (! $this->isMatchingTable($deleteState['table'])) {
             throw new Exception\RuntimeException(
                 'The table name of the provided Delete object must match that of the table'
             );
         }
 
-        // pre delete update
         $this->featureSet->apply(EventFeatureEventsInterface::EVENT_PRE_DELETE, [$delete]);
-
-        $unaliasedTable = false;
-        if (is_array($deleteState['table'])) {
-            $tableData      = array_values($deleteState['table']);
-            $unaliasedTable = array_shift($tableData);
-            $delete->from($unaliasedTable);
-        }
 
         $statement = $this->sql->prepareStatementForSqlObject($delete);
         $result    = $statement->execute();
 
-        // apply postDelete features
         $this->featureSet->apply(EventFeatureEventsInterface::EVENT_POST_DELETE, [$statement, $result]);
 
-        // Reset original table information in Delete instance, if necessary
-        if ($unaliasedTable) {
-            $delete->from($deleteState['table']);
+        return $result->getAffectedRows();
+    }
+
+    private function isMatchingTable(mixed $stateTable): bool
+    {
+        $gatewayTable = $this->table;
+        if (is_array($gatewayTable)) {
+            $gatewayTable = end($gatewayTable);
         }
 
-        return $result->getAffectedRows();
+        if ($stateTable instanceof TableIdentifier) {
+            if ($gatewayTable instanceof TableIdentifier) {
+                return $stateTable->table === $gatewayTable->table
+                    && $stateTable->schema === $gatewayTable->schema;
+            }
+            return $stateTable->table === $gatewayTable;
+        }
+
+        if ($stateTable === $gatewayTable) {
+            return true;
+        }
+
+        if (is_array($stateTable)) {
+            return end($stateTable) === $gatewayTable;
+        }
+
+        return false;
     }
 
     public function getLastInsertValue(): string|int|false|null
@@ -453,16 +429,5 @@ abstract class AbstractTableGateway implements TableGatewayInterface
     {
         $this->resultSetPrototype = isset($this->resultSetPrototype) ? clone $this->resultSetPrototype : null;
         $this->sql                = clone $this->sql;
-        if (is_object($this->table)) {
-            $this->table = clone $this->table;
-        } elseif (
-            is_array($this->table)
-            && count($this->table) === 1
-            && is_object(reset($this->table))
-        ) {
-            foreach ($this->table as &$tableObject) {
-                $tableObject = clone $tableObject;
-            }
-        }
     }
 }

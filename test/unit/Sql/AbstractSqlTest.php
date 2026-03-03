@@ -31,7 +31,7 @@ use function uniqid;
 #[IgnoreDeprecations]
 #[RequiresPhp('<= 8.6')]
 #[CoversMethod(AbstractSqlRenderer::class, 'render')]
-#[CoversMethod(AbstractSqlRenderer::class, 'resolveTable')]
+#[CoversMethod(AbstractSqlRenderer::class, 'renderTableSource')]
 final class AbstractSqlTest extends TestCase
 {
     protected DriverInterface&MockObject $mockDriver;
@@ -154,23 +154,23 @@ final class AbstractSqlTest extends TestCase
         self::assertSame('string__containing__white__space1', key($parameterContainer->getNamedArray()));
     }
 
-    public function testResolveTableWithTableIdentifierAndSchema(): void
+    public function testRenderTableSourceWithTableIdentifierAndSchema(): void
     {
         $table    = new TableIdentifier('users', 'public');
         $renderer = (new Sql92Renderer())->init(new TrustingSql92Platform(), $this->mockDriver);
 
-        $result = $renderer->resolveTable($table);
+        $result = $renderer->renderTableSource($table);
 
         self::assertStringContainsString('public', $result);
         self::assertStringContainsString('users', $result);
     }
 
-    public function testResolveTableWithSelect(): void
+    public function testRenderTableSourceWithSelect(): void
     {
         $select   = new Select('foo');
         $renderer = (new Sql92Renderer())->init(new TrustingSql92Platform(), $this->mockDriver);
 
-        $result = $renderer->resolveTable($select);
+        $result = $renderer->renderTableSource($select);
 
         self::assertStringStartsWith('(', $result);
         self::assertStringEndsWith(')', $result);

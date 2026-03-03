@@ -146,7 +146,7 @@ class AlterTable extends AbstractDdl
     #[Override]
     public function buildSqlString(AbstractSqlRenderer $renderer): string
     {
-        $sql = "ALTER TABLE " . $renderer->resolveTable($this->table) . "\n";
+        $sql = "ALTER TABLE " . $renderer->renderTableSource($this->table) . "\n";
 
         $clauses = [];
 

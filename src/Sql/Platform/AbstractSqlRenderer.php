@@ -63,11 +63,14 @@ abstract class AbstractSqlRenderer
         ?DriverInterface $driver = null,
         ?ParameterContainer $parameterContainer = null,
     ): static {
-        $this->platform               = $platform;
+        if (! isset($this->platform) || $this->platform !== $platform) {
+            $this->platform            = $platform;
+            $this->identifierSeparator = $platform->getIdentifierSeparator();
+            $this->tablePrefixCache    = [];
+        }
+
         $this->driver                 = $driver;
         $this->parameterContainer     = $parameterContainer;
-        $this->identifierSeparator    = $platform->getIdentifierSeparator();
-        $this->tablePrefixCache       = [];
         $this->paramPrefix            = '';
         $this->subselectCount         = 0;
         $this->instanceParameterIndex = [];
@@ -101,52 +104,55 @@ abstract class AbstractSqlRenderer
         return null;
     }
 
-    public function resolveTable(
-        Select|string|TableIdentifier|null $table,
-        bool $withAlias = false,
-    ): string|null {
+    public function renderTableSource(
+        TableIdentifier|Select|ExpressionInterface|string|null $table,
+        ?string $alias = null,
+    ): ?string {
         if ($table === null || $table === '') {
-            return $table;
+            return null;
         }
 
-        if (! $table instanceof TableIdentifier) {
-            $table = new TableIdentifier($table);
+        if ($table instanceof TableIdentifier) {
+            $rendered = $this->platform->quoteIdentifier(
+                name: $table->table,
+                prefix: $table->schema,
+            );
+        } elseif ($table instanceof Select) {
+            $rendered = '(' . $this->processSubSelect($table) . ')';
+        } elseif (is_string($table)) {
+            $rendered = $this->platform->quoteIdentifier($table);
+        } else {
+            $pi       = 0;
+            $rendered = $table->toSql($this, '', $pi);
         }
 
-        $resolved = $this->resolveTableRef($table);
-
-        if ($withAlias && $table->getAlias() !== null) {
-            $resolved .= ' AS ' . $this->platform->quoteIdentifier($table->getAlias());
+        if ($alias !== null) {
+            $rendered .= ' AS ' . $this->platform->quoteIdentifier($alias);
         }
 
-        return $resolved;
+        return $rendered;
     }
 
-    public function tablePrefix(TableIdentifier $ref): string
-    {
-        return $this->tablePrefixCache[spl_object_id($ref)]
-            ??= $ref->getAlias() !== null
-                ? $this->platform->quoteIdentifier($ref->getAlias()) . $this->identifierSeparator
-                : $this->resolveTableRef($ref) . $this->identifierSeparator;
-    }
-
-    private function resolveTableRef(TableIdentifier $ref): string
-    {
-        $table = $ref->getTable();
-
-        if (is_string($table)) {
-            return $this->platform->quoteIdentifier(name: $table, prefix: $ref->getSchema());
+    public function renderResolvedTable(
+        TableIdentifier|Select|ExpressionInterface $table,
+        ?string $alias = null,
+    ): string {
+        if (isset($this->tablePrefixCache[$id = spl_object_id($table)])) {
+            return $this->tablePrefixCache[$id];
         }
 
-        if ($table instanceof Select) {
-            return '(' . $this->processSubSelect($table) . ')';
+        if ($table instanceof TableIdentifier) {
+            $prefix = $alias !== null
+                ? $this->platform->quoteIdentifier($alias)
+                : $this->platform->quoteIdentifier(name: $table->table, prefix: $table->schema);
+        } else {
+            $prefix = $this->platform->quoteIdentifier($alias);
         }
 
-        $pi = 0;
-        return $table->toSql($this, '', $pi);
+        return $this->tablePrefixCache[$id] = $prefix . $this->identifierSeparator;
     }
 
-    public function quoteIdentifiersIn(string $part): string
+    public function renderIdentifiersIn(string $part): string
     {
         $identifiers = preg_split(self::IDENTIFIER_PATTERN, $part, -1, PREG_SPLIT_DELIM_CAPTURE);
         $count       = count($identifiers);

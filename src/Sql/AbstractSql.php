@@ -12,14 +12,18 @@ use PhpDb\Sql\Platform\Sql92Renderer;
 
 abstract class AbstractSql implements SqlInterface
 {
+    private ?AbstractSqlRenderer $renderer = null;
+
     /**
      * {@inheritDoc}
      */
     #[Override]
     public function getSqlString(?PlatformInterface $adapterPlatform = null): string
     {
+        $this->renderer ??= new Sql92Renderer();
+
         return $this->buildSqlString(
-            (new Sql92Renderer())->init($adapterPlatform ?? new DefaultAdapterPlatform())
+            $this->renderer->init($adapterPlatform ?? new DefaultAdapterPlatform())
         );
     }
 

@@ -72,9 +72,8 @@ final class DeleteTest extends TestCase
     {
         // Set table with string
         $this->delete->from('foo');
-        self::assertEquals('foo', $this->delete->getRawState('table'));
+        self::assertEquals(new TableIdentifier('foo'), $this->delete->getRawState('table'));
 
-        // Set table with TableIdentifier
         $tableIdentifier = new TableIdentifier('foo', 'bar');
         $this->delete->from($tableIdentifier);
         self::assertEquals($tableIdentifier, $this->delete->getRawState('table'));
@@ -242,7 +241,7 @@ final class DeleteTest extends TestCase
         self::assertArrayHasKey('where', $rawState);
         self::assertArrayHasKey('emptyWhereProtection', $rawState);
 
-        self::assertEquals('foo', $rawState['table']);
+        self::assertEquals(new TableIdentifier('foo'), $rawState['table']);
         self::assertInstanceOf(Where::class, $rawState['where']);
         self::assertTrue($rawState['emptyWhereProtection']);
     }
@@ -251,7 +250,7 @@ final class DeleteTest extends TestCase
     {
         $this->delete->from('foo');
 
-        self::assertEquals('foo', $this->delete->getRawState('table'));
+        self::assertEquals(new TableIdentifier('foo'), $this->delete->getRawState('table'));
         self::assertInstanceOf(Where::class, $this->delete->getRawState('where'));
         self::assertTrue($this->delete->getRawState('emptyWhereProtection'));
     }
@@ -272,7 +271,7 @@ final class DeleteTest extends TestCase
     public function testConstructorWithTable(): void
     {
         $delete = new Delete('foo');
-        self::assertEquals('foo', $delete->getRawState('table'));
+        self::assertEquals(new TableIdentifier('foo'), $delete->getRawState('table'));
     }
 
     public function testConstructorWithTableIdentifier(): void

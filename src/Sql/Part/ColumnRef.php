@@ -18,22 +18,25 @@ final readonly class ColumnRef
 {
     public ArgumentInterface|ExpressionInterface|string $column;
     public bool $isStar;
-    public ?string $alias;
+    public ?string $columnAlias;
     public bool $containsAlias;
-    public ?TableIdentifier $table;
+    public TableIdentifier|Select|ExpressionInterface|null $table;
+    public ?string $tableAlias;
 
     public function __construct(
         int|string $key,
         ArgumentInterface|ExpressionInterface|string $column,
-        ?TableIdentifier $table = null,
+        TableIdentifier|Select|ExpressionInterface|null $table = null,
+        ?string $tableAlias = null,
         string $star = Select::SQL_STAR,
     ) {
-        $this->table  = $table;
-        $this->isStar = is_string($column) && $column === $star;
+        $this->table      = $table;
+        $this->tableAlias = $tableAlias;
+        $this->isStar     = is_string($column) && $column === $star;
 
         if ($this->isStar) {
             $this->column        = '';
-            $this->alias         = null;
+            $this->columnAlias   = null;
             $this->containsAlias = false;
             return;
         }
@@ -41,7 +44,7 @@ final readonly class ColumnRef
         $this->column = is_string($column) ? new Identifier($column) : $column;
 
         if (is_string($key)) {
-            $this->alias         = $key;
+            $this->columnAlias   = $key;
             $this->containsAlias = false;
             return;
         }
@@ -49,11 +52,11 @@ final readonly class ColumnRef
         if ($column instanceof ExpressionInterface) {
             $this->containsAlias = $column instanceof Expression
                 && stripos($column->getExpression(), ' as ') !== false;
-            $this->alias         = null;
+            $this->columnAlias   = null;
             return;
         }
 
-        $this->alias         = $column instanceof ArgumentInterface ? $column->getValue() : $column;
+        $this->columnAlias   = $column instanceof ArgumentInterface ? $column->getValue() : $column;
         $this->containsAlias = false;
     }
 }

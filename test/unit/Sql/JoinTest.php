@@ -94,7 +94,7 @@ class JoinTest extends TestCase
 
         $current = $join->current();
         self::assertInstanceOf(TableIdentifier::class, $current['name']);
-        self::assertEquals('baz', $current['name']->getTable());
+        self::assertEquals('baz', $current['name']->table);
         self::assertEquals($on, $current['on']);
         self::assertArrayNotHasKey('columns', $current);
         self::assertEquals(Join::JOIN_INNER, $current['type']);

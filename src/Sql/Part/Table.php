@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PhpDb\Sql\Part;
 
 use PhpDb\Sql\Exception\InvalidArgumentException;
+use PhpDb\Sql\ExpressionInterface;
 use PhpDb\Sql\Join;
 use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use PhpDb\Sql\Predicate\PredicateInterface;
@@ -13,6 +14,7 @@ use PhpDb\Sql\TableIdentifier;
 
 use function array_shift;
 use function count;
+use function current;
 use function is_array;
 use function is_string;
 use function key;
@@ -37,7 +39,7 @@ class Table
         return $this;
     }
 
-    public function getFrom(): string|array|TableIdentifier|Select|null
+    public function getFrom(): TableIdentifier|Select|ExpressionInterface|null
     {
         return $this->from->get();
     }
@@ -89,7 +91,7 @@ class Table
     ): static {
         $spec = self::createJoinSpec($name, $on, $columns, $type);
         $this->join->add($spec);
-        $this->columns->addJoinRefs(self::buildColumnRefs($columns, $spec->table));
+        $this->columns->addJoinRefs(self::buildColumnRefs($columns, $spec->table, $spec->alias));
         return $this;
     }
 
@@ -109,21 +111,30 @@ class Table
             $columns = [$columns];
         }
 
-        $table = $name instanceof TableIdentifier ? $name : new TableIdentifier($name);
+        $alias = null;
+        if (is_array($name)) {
+            $alias = key($name);
+            $name  = current($name);
+        }
 
-        return new JoinSpec($table, $on, $type);
+        $table = $name instanceof TableIdentifier ? $name : (is_string($name) ? new TableIdentifier($name) : $name);
+
+        return new JoinSpec($table, $alias, $on, $type);
     }
 
     /** @return ColumnRef[] */
-    private static function buildColumnRefs(array|string $columns, TableIdentifier $table): array
-    {
+    private static function buildColumnRefs(
+        array|string $columns,
+        TableIdentifier|Select|ExpressionInterface $table,
+        ?string $alias,
+    ): array {
         if (! is_array($columns)) {
             $columns = [$columns];
         }
 
         $refs = [];
         foreach ($columns as $key => $column) {
-            $refs[] = new ColumnRef($key, $column, $table);
+            $refs[] = new ColumnRef($key, $column, $table, $alias);
         }
         return $refs;
     }

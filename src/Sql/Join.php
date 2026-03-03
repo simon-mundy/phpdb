@@ -125,10 +125,10 @@ class Join extends AbstractPart implements Iterator, Countable
         $joinSqlParts = [];
 
         foreach ($this->specs as $j => $spec) {
-            $table = $renderer->resolveTable($spec->table, withAlias: true);
+            $table = $renderer->renderTableSource($spec->table, $spec->alias);
 
             if (! $spec->isExpressionOn) {
-                $onClause = $renderer->quoteIdentifiersIn($spec->on);
+                $onClause = $renderer->renderIdentifiersIn($spec->on);
             } else {
                 $onClause = $renderer->render($spec->on, 'join' . ($j + 1) . 'part');
             }

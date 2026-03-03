@@ -160,7 +160,7 @@ final class TableGatewayTest extends TestCase
      */
     #[DataProvider('aliasedTables')]
     #[Group('7311')]
-    public function testInsertShouldResetTableToUnaliasedTable(
+    public function testInsertWithAliasedTable(
         array $tableValue,
         string|TableIdentifier $expected
     ): void {
@@ -179,10 +179,11 @@ final class TableGatewayTest extends TestCase
             ->method('execute')
             ->willReturn($result);
 
-        $statementExpectation = function (Insert $insert) use ($expected, $statement): MockObject&StatementInterface {
+        $expectedTable = $expected instanceof TableIdentifier ? $expected : new TableIdentifier($expected);
+        $statementExpectation = function (Insert $insert) use ($expectedTable, $statement): MockObject&StatementInterface {
             $state = $insert->getRawState();
             $this->assertIsArray($state);
-            self::assertSame($expected, $state['table']);
+            self::assertEquals($expectedTable, $state['table']);
             return $statement;
         };
 
@@ -211,21 +212,13 @@ final class TableGatewayTest extends TestCase
         $table->insert([
             'foo' => 'FOO',
         ]);
-
-        $state = $insert->getRawState();
-        $this->assertIsArray($state);
-        $this->assertIsArray($state['table']);
-        $this->assertEquals(
-            $tableValue,
-            $state['table']
-        );
     }
 
     /**
      * @param AliasedTable           $tableValue
      */
     #[DataProvider('aliasedTables')]
-    public function testUpdateShouldResetTableToUnaliasedTable(
+    public function testUpdateWithAliasedTable(
         array $tableValue,
         string|TableIdentifier $expected
     ): void {
@@ -244,10 +237,11 @@ final class TableGatewayTest extends TestCase
             ->method('execute')
             ->willReturn($result);
 
-        $statementExpectation = function (Update $update) use ($expected, $statement): MockObject&StatementInterface {
+        $expectedTable = $expected instanceof TableIdentifier ? $expected : new TableIdentifier($expected);
+        $statementExpectation = function (Update $update) use ($expectedTable, $statement): MockObject&StatementInterface {
             $state = $update->getRawState();
             $this->assertIsArray($state);
-            $this->assertSame($expected, $state['table']);
+            self::assertEquals($expectedTable, $state['table']);
             return $statement;
         };
 
@@ -278,21 +272,13 @@ final class TableGatewayTest extends TestCase
         ], [
             'bar' => 'BAR',
         ]);
-
-        $state = $update->getRawState();
-        $this->assertIsArray($state);
-        $this->assertIsArray($state['table']);
-        $this->assertEquals(
-            $tableValue,
-            $state['table']
-        );
     }
 
     /**
      * @param AliasedTable           $tableValue
      */
     #[DataProvider('aliasedTables')]
-    public function testDeleteShouldResetTableToUnaliasedTable(
+    public function testDeleteWithAliasedTable(
         array $tableValue,
         string|TableIdentifier $expected
     ): void {
@@ -311,10 +297,11 @@ final class TableGatewayTest extends TestCase
             ->method('execute')
             ->willReturn($result);
 
-        $statementExpectation = function (Delete $delete) use ($expected, $statement): MockObject&StatementInterface {
+        $expectedTable = $expected instanceof TableIdentifier ? $expected : new TableIdentifier($expected);
+        $statementExpectation = function (Delete $delete) use ($expectedTable, $statement): MockObject&StatementInterface {
             $state = $delete->getRawState();
             $this->assertIsArray($state);
-            $this->assertSame($expected, $state['table']);
+            self::assertEquals($expectedTable, $state['table']);
             return $statement;
         };
 
@@ -343,15 +330,6 @@ final class TableGatewayTest extends TestCase
         $table->delete([
             'foo' => 'FOO',
         ]);
-
-        $state = $delete->getRawState();
-
-        $this->assertIsArray($state);
-        $this->assertIsArray($state['table']);
-        $this->assertEquals(
-            $tableValue,
-            $state['table']
-        );
     }
 
     public function testConstructorThrowsExceptionWhenSqlTableDoesNotMatch(): void

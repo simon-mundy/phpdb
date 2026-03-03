@@ -49,7 +49,9 @@ class Columns extends AbstractPart
         $allRefs     = $this->joinRefs !== [] ? array_merge($refs, $this->joinRefs) : $refs;
 
         foreach ($allRefs as $ref) {
-            $prefix = $ref->table !== null ? $renderer->tablePrefix($ref->table) : $fromPrefix;
+            $prefix = $ref->table !== null
+                ? $renderer->renderResolvedTable($ref->table, $ref->tableAlias)
+                : $fromPrefix;
 
             if ($ref->isStar) {
                 $fragments[] = $prefix . '*';
@@ -63,11 +65,11 @@ class Columns extends AbstractPart
             } elseif ($column instanceof ArgumentInterface) {
                 $columnSql = $prefix . $renderer->renderArgument($column, '', $pi);
             } else {
-                $columnSql = $renderer->render($column, $ref->alias ?? 'column');
+                $columnSql = $renderer->render($column, $ref->columnAlias ?? 'column');
             }
 
-            if ($ref->alias !== null) {
-                $fragments[] = $columnSql . ' AS ' . $platform->quoteIdentifier($ref->alias);
+            if ($ref->columnAlias !== null) {
+                $fragments[] = $columnSql . ' AS ' . $platform->quoteIdentifier($ref->columnAlias);
             } elseif ($ref->containsAlias) {
                 $fragments[] = $columnSql;
             } else {
