@@ -18,10 +18,8 @@ use function implode;
 /**
  * Aggregate JOIN specifications.
  * Each specification is an array with the following keys:
- * - name: the JOIN name
- * - on: the table on which the JOIN occurs
- * - columns: the columns to include with the JOIN operation; defaults to
- *   `Select::SQL_STAR`.
+ * - name: the JOIN table (TableIdentifier)
+ * - on: the JOIN condition
  * - type: the type of JOIN being performed; see the `JOIN_*` constants;
  *   defaults to `JOIN_INNER`
  */
@@ -57,7 +55,8 @@ class Join extends AbstractPart implements Iterator, Countable
     #[ReturnTypeWillChange]
     public function current(): array
     {
-        return $this->specs[$this->position]->raw;
+        $spec = $this->specs[$this->position];
+        return ['name' => $spec->table, 'on' => $spec->on, 'type' => $spec->type];
     }
 
     #[Override]
@@ -83,11 +82,15 @@ class Join extends AbstractPart implements Iterator, Countable
 
     public function getJoins(): array
     {
-        $raw = [];
+        $result = [];
         foreach ($this->specs as $spec) {
-            $raw[] = $spec->raw;
+            $result[] = [
+                'name' => $spec->table,
+                'on'   => $spec->on,
+                'type' => $spec->type,
+            ];
         }
-        return $raw;
+        return $result;
     }
 
     public function add(JoinSpec $spec): static

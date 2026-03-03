@@ -89,7 +89,7 @@ class Table
     ): static {
         $spec = self::createJoinSpec($name, $on, $columns, $type);
         $this->join->add($spec);
-        $this->columns->addJoinSpec($spec);
+        $this->columns->addJoinRefs(self::buildColumnRefs($columns, $spec->table));
         return $this;
     }
 
@@ -109,10 +109,23 @@ class Table
             $columns = [$columns];
         }
 
-        $raw   = ['name' => $name, 'on' => $on, 'columns' => $columns, 'type' => $type];
         $table = $name instanceof TableIdentifier ? $name : new TableIdentifier($name);
 
-        return new JoinSpec($table, $on, $type, $raw, $columns);
+        return new JoinSpec($table, $on, $type);
+    }
+
+    /** @return ColumnRef[] */
+    private static function buildColumnRefs(array|string $columns, TableIdentifier $table): array
+    {
+        if (! is_array($columns)) {
+            $columns = [$columns];
+        }
+
+        $refs = [];
+        foreach ($columns as $key => $column) {
+            $refs[] = new ColumnRef($key, $column, $table);
+        }
+        return $refs;
     }
 
     public function hasJoins(): bool
@@ -123,7 +136,7 @@ class Table
     public function resetJoins(): static
     {
         $this->join->reset();
-        $this->columns->setJoinSpecs([]);
+        $this->columns->setJoinRefs([]);
         return $this;
     }
 

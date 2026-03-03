@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace PhpDb\Sql\Part;
 
+use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\Platform\AbstractSqlRenderer;
 
 use function implode;
 use function is_array;
-use function is_string;
 
 class GroupBy extends AbstractPart
 {
@@ -21,14 +21,14 @@ class GroupBy extends AbstractPart
             return null;
         }
 
-        $platform = $renderer->platform;
-        $groups   = [];
+        $groups = [];
+        $pi     = 0;
 
         foreach ($this->group as $ref) {
             $column = $ref->column;
 
-            if (is_string($column)) {
-                $groups[] = $platform->quoteIdentifier($column);
+            if ($column instanceof ArgumentInterface) {
+                $groups[] = $column->render($renderer, '', $pi);
             } else {
                 $groups[] = $renderer->render($column);
             }
@@ -62,7 +62,9 @@ class GroupBy extends AbstractPart
 
         $result = [];
         foreach ($this->group as $ref) {
-            $result[] = $ref->column;
+            $result[] = $ref->column instanceof ArgumentInterface
+                ? $ref->column->getValue()
+                : $ref->column;
         }
         return $result;
     }

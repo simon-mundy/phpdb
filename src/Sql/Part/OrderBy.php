@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpDb\Sql\Part;
 
+use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ExpressionInterface;
 use PhpDb\Sql\Platform\AbstractSqlRenderer;
 
@@ -28,14 +29,14 @@ class OrderBy extends AbstractPart
             return null;
         }
 
-        $platform = $renderer->platform;
-        $orders   = [];
+        $orders = [];
+        $pi     = 0;
 
         foreach ($this->order as $spec) {
             $column = $spec->column;
 
-            if (is_string($column)) {
-                $orders[] = $platform->quoteIdentifier($column)
+            if ($column instanceof ArgumentInterface) {
+                $orders[] = $column->render($renderer, '', $pi)
                            . ' ' . $spec->direction;
             } else {
                 $orders[] = $renderer->render($column);
@@ -50,8 +51,13 @@ class OrderBy extends AbstractPart
         return $this->order === [];
     }
 
-    public function add(ExpressionInterface|array|string $order): static
+    public function add(ArgumentInterface|ExpressionInterface|array|string $order): static
     {
+        if ($order instanceof ArgumentInterface) {
+            $this->order[] = new OrderSpec($order);
+            return $this;
+        }
+
         if (is_string($order)) {
             $order = str_contains($order, ',') ? preg_split('#,\s+#', $order) : (array) $order;
         } elseif (! is_array($order)) {
@@ -80,7 +86,7 @@ class OrderBy extends AbstractPart
             if ($spec->column instanceof ExpressionInterface) {
                 $result[] = $spec->column;
             } else {
-                $result[] = $spec->column . ' ' . $spec->direction;
+                $result[] = $spec->column->getValue() . ' ' . $spec->direction;
             }
         }
         return $result;

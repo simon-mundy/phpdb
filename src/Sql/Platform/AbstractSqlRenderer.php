@@ -17,6 +17,7 @@ use function count;
 use function implode;
 use function is_string;
 use function preg_split;
+use function spl_object_id;
 use function str_replace;
 
 use const PREG_SPLIT_DELIM_CAPTURE;
@@ -37,6 +38,9 @@ abstract class AbstractSqlRenderer
 
     private string $identifierSeparator = '.';
 
+    /** @var array<int, string> */
+    private array $tablePrefixCache = [];
+
     private string $paramPrefix = '';
 
     private int $subselectCount = 0;
@@ -55,6 +59,7 @@ abstract class AbstractSqlRenderer
         $this->driver                 = $driver;
         $this->parameterContainer     = $parameterContainer;
         $this->identifierSeparator    = $platform->getIdentifierSeparator();
+        $this->tablePrefixCache       = [];
         $this->paramPrefix            = '';
         $this->subselectCount         = 0;
         $this->instanceParameterIndex = [];
@@ -111,12 +116,10 @@ abstract class AbstractSqlRenderer
 
     public function tablePrefix(TableIdentifier $ref): string
     {
-        if ($ref->getAlias() !== null) {
-            return $this->platform->quoteIdentifier($ref->getAlias())
-                . $this->identifierSeparator;
-        }
-
-        return $this->resolveTableRef($ref) . $this->identifierSeparator;
+        return $this->tablePrefixCache[spl_object_id($ref)]
+            ??= $ref->getAlias() !== null
+                ? $this->platform->quoteIdentifier($ref->getAlias()) . $this->identifierSeparator
+                : $this->resolveTableRef($ref) . $this->identifierSeparator;
     }
 
     private function resolveTableRef(TableIdentifier $ref): string

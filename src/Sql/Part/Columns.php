@@ -4,16 +4,17 @@ declare(strict_types=1);
 
 namespace PhpDb\Sql\Part;
 
+use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ExpressionInterface;
 use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use PhpDb\Sql\Select;
 
+use function array_merge;
 use function count;
 use function current;
 use function implode;
 use function is_array;
 use function is_numeric;
-use function is_string;
 use function key;
 
 class Columns extends AbstractPart
@@ -23,8 +24,8 @@ class Columns extends AbstractPart
     private array $rawColumns            = [Select::SQL_STAR];
     private bool $prefixColumnsWithTable = true;
     private string $fromTablePrefix      = '';
-    /** @var JoinSpec[] */
-    private array $joinSpecs = [];
+    /** @var ColumnRef[] */
+    private array $joinRefs = [];
 
     public function __construct()
     {
@@ -36,24 +37,28 @@ class Columns extends AbstractPart
         $refs       = $this->columnRefs;
         $fromPrefix = $this->fromTablePrefix;
 
-        if (isset($refs[0]) && ! isset($refs[1]) && $refs[0]->isStar && $this->joinSpecs === []) {
+        if (isset($refs[0]) && ! isset($refs[1]) && $refs[0]->isStar && $this->joinRefs === []) {
             return $fromPrefix . '*';
         }
 
         $fragments   = [];
         $exprCounter = 1;
+        $pi          = 0;
         $platform    = $renderer->platform;
+        $allRefs     = $this->joinRefs !== [] ? array_merge($refs, $this->joinRefs) : $refs;
 
-        foreach ($refs as $ref) {
+        foreach ($allRefs as $ref) {
+            $prefix = $ref->table !== null ? $renderer->tablePrefix($ref->table) : $fromPrefix;
+
             if ($ref->isStar) {
-                $fragments[] = $fromPrefix . '*';
+                $fragments[] = $prefix . '*';
                 continue;
             }
 
             $column = $ref->column;
 
-            if (is_string($column)) {
-                $columnSql = $fromPrefix . $platform->quoteIdentifier($column);
+            if ($column instanceof ArgumentInterface) {
+                $columnSql = $prefix . $column->render($renderer, '', $pi);
             } else {
                 $columnSql = $renderer->render($column, $ref->alias ?? 'column');
             }
@@ -64,37 +69,6 @@ class Columns extends AbstractPart
                 $fragments[] = $columnSql;
             } else {
                 $fragments[] = $columnSql . ' AS Expression' . $exprCounter++;
-            }
-        }
-
-        if ($this->joinSpecs !== []) {
-            foreach ($this->joinSpecs as $spec) {
-                if ($spec->columnRefs === []) {
-                    continue;
-                }
-                $joinPrefix = $renderer->tablePrefix($spec->table);
-                foreach ($spec->columnRefs as $ref) {
-                    if ($ref->isStar) {
-                        $fragments[] = $joinPrefix . '*';
-                        continue;
-                    }
-
-                    $column = $ref->column;
-
-                    if (is_string($column)) {
-                        $columnSql = $joinPrefix . $platform->quoteIdentifier($column);
-                    } else {
-                        $columnSql = $renderer->render($column, $ref->alias ?? 'column');
-                    }
-
-                    if ($ref->alias !== null) {
-                        $fragments[] = $columnSql . ' AS ' . $platform->quoteIdentifier($ref->alias);
-                    } elseif ($ref->containsAlias) {
-                        $fragments[] = $columnSql;
-                    } else {
-                        $fragments[] = $columnSql . ' AS Expression' . $exprCounter++;
-                    }
-                }
             }
         }
 
@@ -113,7 +87,7 @@ class Columns extends AbstractPart
         return $this;
     }
 
-    public function add(array|ExpressionInterface|string $column, ?string $alias = null): static
+    public function add(array|ArgumentInterface|ExpressionInterface|string $column, ?string $alias = null): static
     {
         if (is_array($column)) {
             $key    = key($column);
@@ -153,16 +127,19 @@ class Columns extends AbstractPart
         return $this;
     }
 
-    public function addJoinSpec(JoinSpec $spec): static
+    /** @param ColumnRef[] $refs */
+    public function addJoinRefs(array $refs): static
     {
-        $this->joinSpecs[] = $spec;
+        foreach ($refs as $ref) {
+            $this->joinRefs[] = $ref;
+        }
         return $this;
     }
 
-    /** @param JoinSpec[] $specs */
-    public function setJoinSpecs(array $specs): static
+    /** @param ColumnRef[] $refs */
+    public function setJoinRefs(array $refs): static
     {
-        $this->joinSpecs = $specs;
+        $this->joinRefs = $refs;
         return $this;
     }
 

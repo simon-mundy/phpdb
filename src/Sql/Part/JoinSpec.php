@@ -12,22 +12,11 @@ final readonly class JoinSpec
 {
     public bool $isExpressionOn;
 
-    /** @var ColumnRef[] */
-    public array $columnRefs;
-
     public function __construct(
         public TableIdentifier $table,
         public PredicateInterface|string $on,
         public string $type,
-        public array $raw,
-        array $columns,
     ) {
         $this->isExpressionOn = $on instanceof ExpressionInterface;
-
-        $refs = [];
-        foreach ($columns as $key => $column) {
-            $refs[] = new ColumnRef($key, $column);
-        }
-        $this->columnRefs = $refs;
     }
 }
