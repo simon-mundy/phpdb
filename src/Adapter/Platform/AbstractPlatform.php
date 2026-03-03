@@ -39,6 +39,12 @@ abstract class AbstractPlatform implements PlatformInterface
     #[Override]
     public function quoteIdentifier(string $name, ?string $prefix = null): string
     {
+        $cacheKey = $prefix !== null ? $prefix . '.' . $name : $name;
+
+        if (isset($this->identifierCache[$cacheKey])) {
+            return $this->identifierCache[$cacheKey];
+        }
+
         if ($prefix === null && str_contains($name, '.')) {
             [$prefix, $name] = explode('.', $name, 2);
         }
@@ -50,9 +56,8 @@ abstract class AbstractPlatform implements PlatformInterface
         }
 
         if ($prefix !== null) {
-            $key                                  = $prefix . '.' . $name;
-            return $this->identifierCache[$key]
-                ??= $this->quoteIdentifier[0]
+            return $this->identifierCache[$cacheKey]
+                = $this->quoteIdentifier[0]
                     . str_replace($this->quoteIdentifier[0], $this->quoteIdentifierTo, $prefix)
                     . $this->quoteIdentifier[1]
                     . $this->identifierSeparator
@@ -61,8 +66,8 @@ abstract class AbstractPlatform implements PlatformInterface
                     . $this->quoteIdentifier[1];
         }
 
-        return $this->identifierCache[$name]
-            ??= $this->quoteIdentifier[0]
+        return $this->identifierCache[$cacheKey]
+            = $this->quoteIdentifier[0]
                 . str_replace($this->quoteIdentifier[0], $this->quoteIdentifierTo, $name)
                 . $this->quoteIdentifier[1];
     }
