@@ -13,7 +13,6 @@ use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use PhpDb\Sql\Predicate\PredicateInterface;
 
 use function array_key_exists;
-use function implode;
 use function strtolower;
 
 /**
@@ -128,22 +127,22 @@ class Update extends AbstractPreparableSql
     {
         $renderer->getTypeDecorator($this)?->prepare($this, $renderer);
 
-        $parts = [$this->getStatementKeyword()];
+        $sql = $this->getStatementKeyword();
 
         if (($part = $this->table->renderTable($renderer)) !== null) {
-            $parts[] = $part;
+            $sql .= " $part";
         }
         if (($part = $this->joins?->toSql($renderer)) !== null) {
-            $parts[] = $part;
+            $sql .= " $part";
         }
         if (($part = $this->set->toSql($renderer)) !== null) {
-            $parts[] = $part;
+            $sql .= " $part";
         }
         if (($part = $this->where?->toSql($renderer)) !== null) {
-            $parts[] = $part;
+            $sql .= " $part";
         }
 
-        return implode(' ', $parts);
+        return $sql;
     }
 
     /**

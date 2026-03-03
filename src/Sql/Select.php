@@ -19,7 +19,6 @@ use PhpDb\Sql\Predicate\PredicateInterface;
 use function array_key_exists;
 use function count;
 use function gettype;
-use function implode;
 use function is_array;
 use function is_numeric;
 use function is_string;
@@ -379,45 +378,45 @@ class Select extends AbstractPreparableSql
     {
         $renderer->getTypeDecorator($this)?->prepare($this, $renderer);
 
-        $parts = ['SELECT'];
+        $sql = 'SELECT';
 
         if (($part = $this->quantifier?->toSql($renderer)) !== null) {
-            $parts[] = $part;
+            $sql .= " $part";
         }
 
-        $parts[] = $this->table->columns()->toSql($renderer);
+        $sql .= ' ' . $this->table->columns()->toSql($renderer);
 
         if (($part = $this->table->from()->toSql($renderer)) !== null) {
-            $parts[] = $part;
+            $sql .= " $part";
         }
         if (($part = $this->table->joins()?->toSql($renderer)) !== null) {
-            $parts[] = $part;
+            $sql .= " $part";
         }
         if (($part = $this->where?->toSql($renderer)) !== null) {
-            $parts[] = $part;
+            $sql .= " $part";
         }
         if (($part = $this->groupBy?->toSql($renderer)) !== null) {
-            $parts[] = $part;
+            $sql .= " $part";
         }
         if (($part = $this->having?->toSql($renderer)) !== null) {
-            $parts[] = $part;
+            $sql .= " $part";
         }
         if (($part = $this->orderBy?->toSql($renderer)) !== null) {
-            $parts[] = $part;
+            $sql .= " $part";
         }
         if (($part = $this->limit?->toSql($renderer)) !== null) {
-            $parts[] = $part;
+            $sql .= " $part";
         }
         if (($part = $this->offset?->toSql($renderer)) !== null) {
-            $parts[] = $part;
+            $sql .= " $part";
         }
 
         $combine = $this->combine?->toSql($renderer);
         if ($combine !== null) {
-            return '( ' . implode(' ', $parts) . ' ) ' . $combine;
+            return "( $sql ) $combine";
         }
 
-        return implode(' ', $parts);
+        return $sql;
     }
 
     /**
