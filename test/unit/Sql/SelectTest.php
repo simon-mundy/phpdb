@@ -158,34 +158,25 @@ final class SelectTest extends TestCase
     {
         $select = new Select();
 
-        // First mutation
         $result = $select->join('foo', 'x = y');
 
-        // Verify fluent interface
         self::assertSame($select, $result);
 
-        // Verify the first mutation occurred
         $joins = $select->getRawState('joins');
         self::assertInstanceOf(Join::class, $joins);
-        self::assertEquals(
-            [
-                [
-                    'name'    => 'foo',
-                    'on'      => 'x = y',
-                    'columns' => [Select::SQL_STAR],
-                    'type'    => Select::JOIN_INNER,
-                ],
-            ],
-            $joins->getJoins()
-        );
+        $joinList = $joins->getJoins();
+        self::assertCount(1, $joinList);
+        self::assertInstanceOf(TableIdentifier::class, $joinList[0]['name']);
+        self::assertEquals('foo', $joinList[0]['name']->getTable());
+        self::assertEquals('x = y', $joinList[0]['on']);
+        self::assertEquals(Select::JOIN_INNER, $joinList[0]['type']);
 
-        // Second mutation to verify mutability (joins accumulate)
         $select->join('bar', 'a = b');
 
-        // Verify the instance was actually mutated
         $joins2 = $select->getRawState('joins');
         self::assertCount(2, $joins2->getJoins());
-        self::assertEquals('bar', $joins2->getJoins()[1]['name']);
+        self::assertInstanceOf(TableIdentifier::class, $joins2->getJoins()[1]['name']);
+        self::assertEquals('bar', $joins2->getJoins()[1]['name']->getTable());
     }
 
     #[TestDox('unit test: Test join() exception with bad join')]
@@ -631,10 +622,12 @@ final class SelectTest extends TestCase
         $select->join('foo', 'id = boo');
         $joins = $select->getRawState(Select::JOINS);
         self::assertInstanceOf(Join::class, $joins);
-        self::assertEquals(
-            [['name' => 'foo', 'on' => 'id = boo', 'columns' => ['*'], 'type' => 'INNER']],
-            $joins->getJoins()
-        );
+        $joinList = $joins->getJoins();
+        self::assertCount(1, $joinList);
+        self::assertInstanceOf(TableIdentifier::class, $joinList[0]['name']);
+        self::assertEquals('foo', $joinList[0]['name']->getTable());
+        self::assertEquals('id = boo', $joinList[0]['on']);
+        self::assertEquals('INNER', $joinList[0]['type']);
         $select->reset(Select::JOINS);
         $emptyJoins = $select->getRawState(Select::JOINS);
         self::assertInstanceOf(Join::class, $emptyJoins);

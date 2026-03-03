@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpDb\Sql\Part;
 
+use PhpDb\Sql\Argument\Identifier;
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ExpressionInterface;
 use PhpDb\Sql\Platform\AbstractSqlRenderer;
@@ -29,13 +30,17 @@ class OrderBy extends AbstractPart
             return null;
         }
 
-        $orders = [];
-        $pi     = 0;
+        $platform = $renderer->platform;
+        $orders   = [];
 
         foreach ($this->order as $spec) {
             $column = $spec->column;
 
-            if ($column instanceof ArgumentInterface) {
+            if ($column instanceof Identifier) {
+                $orders[] = $platform->quoteIdentifier($column->identifier)
+                           . ' ' . $spec->direction;
+            } elseif ($column instanceof ArgumentInterface) {
+                $pi       = 0;
                 $orders[] = $column->render($renderer, '', $pi)
                            . ' ' . $spec->direction;
             } else {

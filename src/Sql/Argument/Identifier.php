@@ -11,7 +11,7 @@ use PhpDb\Sql\Platform\AbstractSqlRenderer;
 final readonly class Identifier implements ArgumentInterface
 {
     public function __construct(
-        private string $identifier
+        public string $identifier
     ) {
     }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpDb\Sql\Part;
 
+use PhpDb\Sql\Argument\Identifier;
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ExpressionInterface;
 use PhpDb\Sql\Platform\AbstractSqlRenderer;
@@ -57,7 +58,9 @@ class Columns extends AbstractPart
 
             $column = $ref->column;
 
-            if ($column instanceof ArgumentInterface) {
+            if ($column instanceof Identifier) {
+                $columnSql = $prefix . $platform->quoteIdentifier($column->identifier);
+            } elseif ($column instanceof ArgumentInterface) {
                 $columnSql = $prefix . $column->render($renderer, '', $pi);
             } else {
                 $columnSql = $renderer->render($column, $ref->alias ?? 'column');

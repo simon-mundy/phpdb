@@ -7,7 +7,7 @@ namespace PhpDbTest\Sql;
 use PhpDb\Sql\Join;
 use PhpDb\Sql\Part\JoinSpec;
 use PhpDb\Sql\Part\Table;
-use PhpDb\Sql\Select;
+use PhpDb\Sql\TableIdentifier;
 use PhpDbTest\DeprecatedAssertionsTrait;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\Attributes\IgnoreDeprecations;
@@ -92,14 +92,12 @@ class JoinTest extends TestCase
         $join = new Join();
         $join->add(Table::createJoinSpec($name, $on));
 
-        $expectedSpecification = [
-            'name'    => $name,
-            'on'      => $on,
-            'columns' => [Select::SQL_STAR],
-            'type'    => Join::JOIN_INNER,
-        ];
-
-        self::assertEquals($expectedSpecification, $join->current());
+        $current = $join->current();
+        self::assertInstanceOf(TableIdentifier::class, $current['name']);
+        self::assertEquals('baz', $current['name']->getTable());
+        self::assertEquals($on, $current['on']);
+        self::assertArrayNotHasKey('columns', $current);
+        self::assertEquals(Join::JOIN_INNER, $current['type']);
     }
 
     public function testValidReturnsTrueIfTheIteratorIsAtAValidPositionAndFalseIfNot(): void

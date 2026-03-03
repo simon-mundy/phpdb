@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpDb\Sql\Part;
 
+use PhpDb\Sql\Argument\Identifier;
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\Platform\AbstractSqlRenderer;
 
@@ -21,13 +22,16 @@ class GroupBy extends AbstractPart
             return null;
         }
 
-        $groups = [];
-        $pi     = 0;
+        $platform = $renderer->platform;
+        $groups   = [];
 
         foreach ($this->group as $ref) {
             $column = $ref->column;
 
-            if ($column instanceof ArgumentInterface) {
+            if ($column instanceof Identifier) {
+                $groups[] = $platform->quoteIdentifier($column->identifier);
+            } elseif ($column instanceof ArgumentInterface) {
+                $pi       = 0;
                 $groups[] = $column->render($renderer, '', $pi);
             } else {
                 $groups[] = $renderer->render($column);
