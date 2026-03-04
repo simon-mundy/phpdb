@@ -10,8 +10,6 @@ use PhpDb\Adapter\Platform\Sql92 as DefaultAdapterPlatform;
 use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use PhpDb\Sql\Platform\Sql92Renderer;
 
-use function strtr;
-
 abstract class AbstractSql implements SqlInterface
 {
     private ?AbstractSqlRenderer $renderer = null;
@@ -24,12 +22,8 @@ abstract class AbstractSql implements SqlInterface
     {
         $this->renderer ??= new Sql92Renderer();
 
-        $renderer = $this->renderer->init($adapterPlatform ?? new DefaultAdapterPlatform());
-
-        return strtr(
-            $this->buildSqlString($renderer),
-            AbstractSqlRenderer::QI_PAIR,
-            $renderer->quoteChars
+        return $this->buildSqlString(
+            $this->renderer->init($adapterPlatform ?? new DefaultAdapterPlatform())
         );
     }
 

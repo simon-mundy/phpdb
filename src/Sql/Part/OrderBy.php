@@ -16,6 +16,7 @@ use function is_string;
 use function ltrim;
 use function preg_split;
 use function str_contains;
+use function str_replace;
 
 class OrderBy extends AbstractPart
 {
@@ -37,7 +38,9 @@ class OrderBy extends AbstractPart
             $column = $spec->column;
 
             if ($column instanceof Identifier) {
-                $orders[] = $column->qi . ' ' . $spec->direction;
+                $orders[] = $renderer->qo
+                    . str_replace('.', $renderer->qs, $column->identifier)
+                    . $renderer->qc . ' ' . $spec->direction;
             } elseif ($column instanceof ArgumentInterface) {
                 $pi       = 0;
                 $orders[] = $renderer->renderArgument($column, '', $pi)

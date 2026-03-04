@@ -34,7 +34,7 @@ class InsertSelect extends AbstractPart
 
         $columns = [];
         foreach (array_keys($this->columns) as $name) {
-            $columns[] = AbstractSqlRenderer::QI_OPEN . $name . AbstractSqlRenderer::QI_CLOSE;
+            $columns[] = $renderer->qo . $name . $renderer->qc;
         }
         $columnsSql = implode(', ', $columns);
 

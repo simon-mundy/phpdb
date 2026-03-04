@@ -10,6 +10,7 @@ use PhpDb\Sql\Platform\AbstractSqlRenderer;
 
 use function implode;
 use function is_array;
+use function str_replace;
 
 class GroupBy extends AbstractPart
 {
@@ -28,7 +29,7 @@ class GroupBy extends AbstractPart
             $column = $ref->column;
 
             if ($column instanceof Identifier) {
-                $groups[] = $column->qi;
+                $groups[] = $renderer->qo . str_replace('.', $renderer->qs, $column->identifier) . $renderer->qc;
             } elseif ($column instanceof ArgumentInterface) {
                 $pi       = 0;
                 $groups[] = $renderer->renderArgument($column, '', $pi);

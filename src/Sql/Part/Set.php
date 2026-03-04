@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace PhpDb\Sql\Part;
 
 use PhpDb\Adapter\Driver\PdoDriverInterface;
-use PhpDb\Sql\Argument\Identifier;
 use PhpDb\Sql\Argument\NullValue;
 use PhpDb\Sql\Argument\Parameter;
 use PhpDb\Sql\Argument\Select as SelectArgument;
@@ -18,14 +17,12 @@ use PhpDb\Sql\Select;
 
 use function implode;
 use function is_string;
+use function str_replace;
 
 class Set extends AbstractPart
 {
     /** @var array<string, ArgumentInterface>|null */
     public ?array $model = null;
-
-    /** @var array<string, Identifier> */
-    private array $columnIds = [];
 
     public function toSql(AbstractSqlRenderer $renderer, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
@@ -39,7 +36,7 @@ class Set extends AbstractPart
         $isPdoDriver = $renderer->driver instanceof PdoDriverInterface;
 
         foreach ($this->model as $column => $arg) {
-            $prefix = $this->columnIds[$column]->qi . ' = ';
+            $prefix = $renderer->qo . str_replace('.', $renderer->qs, $column) . $renderer->qc . ' = ';
 
             $setSql[] = $prefix . match ($arg->getType()) {
                 ArgumentType::Parameter => $renderer->bindParameter(
@@ -67,8 +64,7 @@ class Set extends AbstractPart
         $this->model ??= [];
 
         if ($flag === 'set') {
-            $this->model     = [];
-            $this->columnIds = [];
+            $this->model = [];
         }
 
         foreach ($values as $k => $v) {
@@ -76,8 +72,7 @@ class Set extends AbstractPart
                 throw new Exception\InvalidArgumentException('set() expects a string for the value key');
             }
 
-            $this->model[$k]     = $this->normalizeValue($k, $v);
-            $this->columnIds[$k] = new Identifier($k);
+            $this->model[$k] = $this->normalizeValue($k, $v);
         }
         return $this;
     }

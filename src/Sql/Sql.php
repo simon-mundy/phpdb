@@ -9,7 +9,6 @@ use PhpDb\Adapter\Driver\StatementInterface;
 use PhpDb\Adapter\ParameterContainer;
 
 use function sprintf;
-use function strtr;
 
 class Sql
 {
@@ -121,13 +120,7 @@ class Sql
         }
 
         $this->sqlRenderer->init($adapter->getPlatform(), $adapter->getDriver(), $parameterContainer);
-        $statement->setSql(
-            strtr(
-                $sqlObject->buildSqlString($this->sqlRenderer),
-                Platform\AbstractSqlRenderer::QI_PAIR,
-                $this->sqlRenderer->quoteChars
-            )
-        );
+        $statement->setSql($sqlObject->buildSqlString($this->sqlRenderer));
 
         return $statement;
     }
@@ -139,10 +132,6 @@ class Sql
     {
         $this->sqlRenderer->init(($adapter ?? $this->adapter)->getPlatform());
 
-        return strtr(
-            $sqlObject->buildSqlString($this->sqlRenderer),
-            Platform\AbstractSqlRenderer::QI_PAIR,
-            $this->sqlRenderer->quoteChars
-        );
+        return $sqlObject->buildSqlString($this->sqlRenderer);
     }
 }

@@ -17,6 +17,7 @@ use function implode;
 use function is_array;
 use function is_numeric;
 use function key;
+use function str_replace;
 
 class Columns extends AbstractPart
 {
@@ -79,7 +80,8 @@ class Columns extends AbstractPart
                 $column = $ref->column;
 
                 if ($column instanceof Identifier) {
-                    $columnSql = $prefix . $column->qi;
+                    $columnSql = $prefix
+                        . $renderer->qo . str_replace('.', $renderer->qs, $column->identifier) . $renderer->qc;
                 } elseif ($column instanceof ArgumentInterface) {
                     $columnSql = $prefix . $renderer->renderArgument($column, '', $pi);
                 } else {
@@ -88,7 +90,7 @@ class Columns extends AbstractPart
 
                 if ($ref->columnAlias !== null) {
                     $fragments[] = $columnSql . ' AS '
-                        . AbstractSqlRenderer::QI_OPEN . $ref->columnAlias . AbstractSqlRenderer::QI_CLOSE;
+                        . $renderer->qo . $ref->columnAlias . $renderer->qc;
                 } elseif ($ref->containsAlias) {
                     $fragments[] = $columnSql;
                 } else {

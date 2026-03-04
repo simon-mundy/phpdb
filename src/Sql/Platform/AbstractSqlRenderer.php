@@ -27,17 +27,11 @@ use function is_string;
 use function preg_split;
 use function spl_object_id;
 use function str_replace;
-use function strtr;
 
 use const PREG_SPLIT_DELIM_CAPTURE;
 
 abstract class AbstractSqlRenderer
 {
-    public const QI_OPEN  = "\x01";
-    public const QI_CLOSE = "\x02";
-    public const QI_SEP   = "\x02.\x01";
-    public const QI_PAIR  = "\x01\x02";
-
     private const IDENTIFIER_PATTERN
         = '/\b(?!(?:AS|AND|OR|BETWEEN)\b)([a-zA-Z_]\w*+(?:\.[a-zA-Z_]\w*+)*)(?!\s*\()/i';
 
@@ -46,7 +40,11 @@ abstract class AbstractSqlRenderer
 
     public PlatformInterface $platform;
 
-    public string $quoteChars = '""';
+    public string $qo = '"';
+
+    public string $qc = '"';
+
+    public string $qs = '"."';
 
     public ?DriverInterface $driver = null;
 
@@ -75,7 +73,9 @@ abstract class AbstractSqlRenderer
             $this->platform            = $platform;
             $this->identifierSeparator = $platform->getIdentifierSeparator();
             $qi                        = $platform->quoteIdentifier('x');
-            $this->quoteChars          = $qi[0] . $qi[-1];
+            $this->qo                  = $qi[0];
+            $this->qc                  = $qi[-1];
+            $this->qs                  = $qi[-1] . '.' . $qi[0];
             $this->tablePrefixCache    = [];
         }
 
@@ -128,19 +128,19 @@ abstract class AbstractSqlRenderer
 
         if ($table instanceof TableIdentifier) {
             $rendered = $table->schema === null
-                ? self::QI_OPEN . $table->table . self::QI_CLOSE
-                : self::QI_OPEN . $table->schema . self::QI_SEP . $table->table . self::QI_CLOSE;
+                ? $this->qo . $table->table . $this->qc
+                : $this->qo . $table->schema . $this->qs . $table->table . $this->qc;
         } elseif ($table instanceof Select) {
             $rendered = '(' . $this->processSubSelect($table) . ')';
         } elseif (is_string($table)) {
-            $rendered = self::QI_OPEN . str_replace('.', self::QI_SEP, $table) . self::QI_CLOSE;
+            $rendered = $this->qo . str_replace('.', $this->qs, $table) . $this->qc;
         } else {
             $pi       = 0;
             $rendered = $table->toSql($this, '', $pi);
         }
 
         if ($alias !== null) {
-            $rendered .= ' AS ' . self::QI_OPEN . $alias . self::QI_CLOSE;
+            $rendered .= ' AS ' . $this->qo . $alias . $this->qc;
         }
 
         return $rendered;
@@ -156,12 +156,12 @@ abstract class AbstractSqlRenderer
 
         if ($table instanceof TableIdentifier) {
             $prefix = $alias !== null
-                ? self::QI_OPEN . $alias . self::QI_CLOSE
+                ? $this->qo . $alias . $this->qc
                 : ($table->schema !== null
-                    ? self::QI_OPEN . $table->schema . self::QI_SEP . $table->table . self::QI_CLOSE
-                    : self::QI_OPEN . $table->table . self::QI_CLOSE);
+                    ? $this->qo . $table->schema . $this->qs . $table->table . $this->qc
+                    : $this->qo . $table->table . $this->qc);
         } else {
-            $prefix = self::QI_OPEN . $alias . self::QI_CLOSE;
+            $prefix = $this->qo . $alias . $this->qc;
         }
 
         return $this->tablePrefixCache[$id] = $prefix . $this->identifierSeparator;
@@ -173,9 +173,9 @@ abstract class AbstractSqlRenderer
         $count       = count($identifiers);
 
         for ($idx = 1; $idx < $count; $idx += 2) {
-            $identifiers[$idx] = self::QI_OPEN
-                . str_replace('.', self::QI_SEP, $identifiers[$idx])
-                . self::QI_CLOSE;
+            $identifiers[$idx] = $this->qo
+                . str_replace('.', $this->qs, $identifiers[$idx])
+                . $this->qc;
         }
 
         return implode('', $identifiers);
@@ -186,21 +186,13 @@ abstract class AbstractSqlRenderer
         if ($this->parameterContainer === null) {
             $paramIndex = 0;
 
-            return strtr(
-                $expression->toSql($this, '', $paramIndex),
-                self::QI_PAIR,
-                $this->quoteChars
-            );
+            return $expression->toSql($this, '', $paramIndex);
         }
 
         $paramPrefix = $this->resolveParamPrefix($paramPrefix);
         $paramIndex  = &$this->instanceParameterIndex[$paramPrefix];
 
-        return strtr(
-            $expression->toSql($this, $paramPrefix, $paramIndex),
-            self::QI_PAIR,
-            $this->quoteChars
-        );
+        return $expression->toSql($this, $paramPrefix, $paramIndex);
     }
 
     public function renderArgument(
@@ -209,7 +201,9 @@ abstract class AbstractSqlRenderer
         int &$paramIndex,
     ): string {
         return match (true) {
-            $argument instanceof Identifier    => strtr($argument->qi, self::QI_PAIR, $this->quoteChars),
+            $argument instanceof Identifier => $this->qo
+                . str_replace('.', $this->qs, $argument->identifier)
+                . $this->qc,
             $argument instanceof Literal       => $argument->literal,
             $argument instanceof NullValue     => 'NULL',
             $argument instanceof Parameter     => $this->bindParameter($argument),
@@ -256,13 +250,13 @@ abstract class AbstractSqlRenderer
             $this->subselectCount++;
             $this->paramPrefix = 'subselect' . $this->subselectCount;
 
-            $sql = strtr($subselect->buildSqlString($this), self::QI_PAIR, $this->quoteChars);
+            $sql = $subselect->buildSqlString($this);
 
             $this->paramPrefix = $savedPrefix;
             return $sql;
         }
 
-        return strtr($subselect->buildSqlString($this), self::QI_PAIR, $this->quoteChars);
+        return $subselect->buildSqlString($this);
     }
 
     /** @param list<Identifier> $identifiers */
@@ -270,7 +264,7 @@ abstract class AbstractSqlRenderer
     {
         $quoted = [];
         foreach ($identifiers as $id) {
-            $quoted[] = strtr($id->qi, self::QI_PAIR, $this->quoteChars);
+            $quoted[] = $this->qo . str_replace('.', $this->qs, $id->identifier) . $this->qc;
         }
         return implode(', ', $quoted);
     }
