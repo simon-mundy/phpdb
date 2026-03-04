@@ -25,14 +25,10 @@ final class SqlFragment
         return $this;
     }
 
-    public function wrap(?string $suffix = null): self
+    public function wrap(?string $suffix): self
     {
-        if ($this->parts === []) {
-            return $this;
-        }
-        $this->parts = ['( ' . implode(' ', $this->parts) . ' )'];
         if ($suffix !== null) {
-            $this->parts[] = $suffix;
+            $this->parts = ['( ' . implode(' ', $this->parts) . ' )', $suffix];
         }
         return $this;
     }

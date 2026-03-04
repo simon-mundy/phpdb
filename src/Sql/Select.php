@@ -6,13 +6,14 @@ namespace PhpDb\Sql;
 
 use Closure;
 use Override;
-use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Sql\Argument\Literal;
 use PhpDb\Sql\Argument\Select as SelectArgument;
-use PhpDb\Sql\Argument\Value;
 use PhpDb\Sql\Part\Combine as CombinePart;
 use PhpDb\Sql\Part\GroupBy;
+use PhpDb\Sql\Part\Limit;
+use PhpDb\Sql\Part\Offset;
 use PhpDb\Sql\Part\OrderBy;
+use PhpDb\Sql\Part\SqlFragment;
 use PhpDb\Sql\Part\Table;
 use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use PhpDb\Sql\Predicate\PredicateInterface;
@@ -107,9 +108,9 @@ class Select extends AbstractPreparableSql
 
     protected ?OrderBy $orderBy = null;
 
-    protected ?Value $limitValue = null;
+    protected ?Limit $limit = null;
 
-    protected ?Value $offsetValue = null;
+    protected ?Offset $offset = null;
 
     protected ?CombinePart $combine = null;
 
@@ -259,7 +260,7 @@ class Select extends AbstractPreparableSql
             ));
         }
 
-        $this->limitValue = new Value($limit, ParameterContainer::TYPE_INTEGER);
+        ($this->limit ??= new Limit())->set($limit);
         return $this;
     }
 
@@ -276,7 +277,7 @@ class Select extends AbstractPreparableSql
             ));
         }
 
-        $this->offsetValue = new Value($offset, ParameterContainer::TYPE_INTEGER);
+        ($this->offset ??= new Offset())->set($offset);
         return $this;
     }
 
@@ -329,10 +330,10 @@ class Select extends AbstractPreparableSql
                 $this->having = null;
                 break;
             case self::LIMIT:
-                $this->limitValue = null;
+                $this->limit = null;
                 break;
             case self::OFFSET:
-                $this->offsetValue = null;
+                $this->offset = null;
                 break;
             case self::ORDER:
                 $this->orderBy = null;
@@ -356,8 +357,8 @@ class Select extends AbstractPreparableSql
             self::ORDER      => $this->orderBy?->get() ?? [],
             self::GROUP      => $this->groupBy?->get() ?? [],
             self::HAVING     => $this->having ??= new Having(),
-            self::LIMIT      => $this->limitValue?->value,
-            self::OFFSET     => $this->offsetValue?->value,
+            self::LIMIT      => $this->limit?->get(),
+            self::OFFSET     => $this->offset?->get(),
             self::COMBINE    => $this->combine?->get() ?? [],
         ];
         return $key !== null && array_key_exists($key, $rawState) ? $rawState[$key] : $rawState;
@@ -381,57 +382,26 @@ class Select extends AbstractPreparableSql
     {
         $renderer->getTypeDecorator($this)?->prepare($this, $renderer);
 
-        $sql = 'SELECT';
+        $quantifierSql = $this->quantifier !== null
+            ? ($this->quantifier instanceof Literal
+                ? $this->quantifier->literal
+                : $renderer->render($this->quantifier->getValue(), 'quantifier'))
+            : null;
 
-        if ($this->quantifier !== null) {
-            $sql .= $this->quantifier instanceof Literal
-                ? ' ' . $this->quantifier->literal
-                : ' ' . $renderer->render($this->quantifier->getValue(), 'quantifier');
-        }
+        $fragment = SqlFragment::of('SELECT')
+            ->part($quantifierSql)
+            ->part($this->table->columns()->toSql($renderer))
+            ->part($this->table->from()->toSql($renderer))
+            ->part($this->table->joins()?->toSql($renderer))
+            ->part($this->where?->toSql($renderer))
+            ->part($this->groupBy?->toSql($renderer))
+            ->part($this->having?->toSql($renderer))
+            ->part($this->orderBy?->toSql($renderer))
+            ->part($this->limit?->toSql($renderer))
+            ->part($this->offset?->toSql($renderer))
+            ->wrap($this->combine?->toSql($renderer));
 
-        $sql .= ' ' . $this->table->columns()->toSql($renderer);
-
-        if (($part = $this->table->from()->toSql($renderer)) !== null) {
-            $sql .= " $part";
-        }
-        if (($part = $this->table->joins()?->toSql($renderer)) !== null) {
-            $sql .= " $part";
-        }
-        if (($part = $this->where?->toSql($renderer)) !== null) {
-            $sql .= " $part";
-        }
-        if (($part = $this->groupBy?->toSql($renderer)) !== null) {
-            $sql .= " $part";
-        }
-        if (($part = $this->having?->toSql($renderer)) !== null) {
-            $sql .= " $part";
-        }
-        if (($part = $this->orderBy?->toSql($renderer)) !== null) {
-            $sql .= " $part";
-        }
-        if ($this->limitValue !== null) {
-            $pi   = 0;
-            $sql .= ' LIMIT ' . $renderer->renderArgument(
-                $this->limitValue,
-                $renderer->getParamPrefix() . 'limit',
-                $pi,
-            );
-        }
-        if ($this->offsetValue !== null) {
-            $pi   = 0;
-            $sql .= ' OFFSET ' . $renderer->renderArgument(
-                $this->offsetValue,
-                $renderer->getParamPrefix() . 'offset',
-                $pi,
-            );
-        }
-
-        $combine = $this->combine?->toSql($renderer);
-        if ($combine !== null) {
-            return "( $sql ) $combine";
-        }
-
-        return $sql;
+        return (string) $fragment;
     }
 
     /**
