@@ -13,6 +13,7 @@ use function explode;
 use function implode;
 use function is_array;
 use function is_string;
+use function ltrim;
 use function preg_split;
 use function str_contains;
 
@@ -77,7 +78,7 @@ class OrderBy extends AbstractPart
                 $this->order[] = new OrderSpec($k, $v);
             } elseif (str_contains($v, ' ')) {
                 [$col, $dir]   = explode(' ', $v, 2);
-                $this->order[] = new OrderSpec($col, $dir);
+                $this->order[] = new OrderSpec($col, ltrim($dir));
             } else {
                 $this->order[] = new OrderSpec($v);
             }

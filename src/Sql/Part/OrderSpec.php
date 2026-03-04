@@ -10,7 +10,6 @@ use PhpDb\Sql\ExpressionInterface;
 
 use function is_string;
 use function strcasecmp;
-use function trim;
 
 final readonly class OrderSpec
 {
@@ -25,7 +24,7 @@ final readonly class OrderSpec
         string $direction = self::ORDER_ASCENDING,
     ) {
         $this->column    = is_string($column) ? new Identifier($column) : $column;
-        $this->direction = strcasecmp(trim($direction), self::ORDER_DESCENDING) === 0
+        $this->direction = strcasecmp($direction, self::ORDER_DESCENDING) === 0
             ? self::ORDER_DESCENDING
             : self::ORDER_ASCENDING;
     }

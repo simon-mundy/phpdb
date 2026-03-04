@@ -10,6 +10,7 @@ use PhpDb\Sql\ExpressionInterface;
 use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use PhpDb\Sql\Select;
 
+use function array_push;
 use function count;
 use function current;
 use function implode;
@@ -23,6 +24,7 @@ class Columns extends AbstractPart
     private array $columnRefs            = [];
     private array $rawColumns            = [Select::SQL_STAR];
     private bool $prefixColumnsWithTable = true;
+    private bool $isNormalized           = false;
     private ?From $from                  = null;
     /** @var ColumnRef[] */
     private array $joinRefs = [];
@@ -30,7 +32,6 @@ class Columns extends AbstractPart
     public function __construct(?From $from = null)
     {
         $this->from = $from;
-        $this->normalizeColumns();
     }
 
     public function setFrom(?From $from): void
@@ -40,6 +41,11 @@ class Columns extends AbstractPart
 
     public function toSql(AbstractSqlRenderer $renderer, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
+        if (! $this->isNormalized) {
+            $this->normalizeColumns();
+            $this->isNormalized = true;
+        }
+
         $refs       = $this->columnRefs;
         $fromPrefix = $this->prefixColumnsWithTable && $this->from !== null && $this->from->table !== null
             ? $renderer->renderResolvedTable($this->from->table, $this->from->alias)
@@ -100,13 +106,18 @@ class Columns extends AbstractPart
 
     public function set(array $columns): static
     {
-        $this->rawColumns = $columns;
-        $this->normalizeColumns();
+        $this->rawColumns   = $columns;
+        $this->isNormalized = false;
         return $this;
     }
 
     public function add(array|ArgumentInterface|ExpressionInterface|string $column, ?string $alias = null): static
     {
+        if (! $this->isNormalized) {
+            $this->normalizeColumns();
+            $this->isNormalized = true;
+        }
+
         if (is_array($column)) {
             $key    = key($column);
             $alias  = ! is_numeric($key) ? $key : null;
@@ -142,9 +153,7 @@ class Columns extends AbstractPart
     /** @param ColumnRef[] $refs */
     public function addJoinRefs(array $refs): static
     {
-        foreach ($refs as $ref) {
-            $this->joinRefs[] = $ref;
-        }
+        array_push($this->joinRefs, ...$refs);
         return $this;
     }
 

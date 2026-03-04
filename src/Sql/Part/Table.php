@@ -90,7 +90,19 @@ class Table
     ): static {
         $spec = self::createJoinSpec($name, $on, $columns, $type);
         $this->join->add($spec);
-        $this->columns->addJoinRefs(self::buildColumnRefs($columns, $spec->table, $spec->alias));
+
+        if (! is_array($columns)) {
+            $columns = [$columns];
+        }
+
+        if ($columns !== []) {
+            $refs = [];
+            foreach ($columns as $key => $column) {
+                $refs[] = new ColumnRef($key, $column, $spec->table, $spec->alias);
+            }
+            $this->columns->addJoinRefs($refs);
+        }
+
         return $this;
     }
 
@@ -119,23 +131,6 @@ class Table
         $table = $name instanceof TableIdentifier ? $name : (is_string($name) ? new TableIdentifier($name) : $name);
 
         return new JoinSpec($table, $alias, $on, $type);
-    }
-
-    /** @return ColumnRef[] */
-    private static function buildColumnRefs(
-        array|string $columns,
-        TableIdentifier|Select|ExpressionInterface $table,
-        ?string $alias,
-    ): array {
-        if (! is_array($columns)) {
-            $columns = [$columns];
-        }
-
-        $refs = [];
-        foreach ($columns as $key => $column) {
-            $refs[] = new ColumnRef($key, $column, $table, $alias);
-        }
-        return $refs;
     }
 
     public function hasJoins(): bool
