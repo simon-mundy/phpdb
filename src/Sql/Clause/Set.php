@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace PhpDb\Sql\Part;
+namespace PhpDb\Sql\Clause;
 
 use PhpDb\Adapter\Driver\PdoDriverInterface;
 use PhpDb\Sql\Argument\NullValue;
@@ -19,7 +19,7 @@ use function implode;
 use function is_string;
 use function str_replace;
 
-class Set extends AbstractPart
+class Set extends AbstractClause
 {
     /** @var array<string, ArgumentInterface>|null */
     public ?array $model = null;

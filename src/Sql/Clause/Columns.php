@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-namespace PhpDb\Sql\Part;
+namespace PhpDb\Sql\Clause;
 
 use PhpDb\Sql\Argument\Identifier;
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ExpressionInterface;
+use PhpDb\Sql\Part\ColumnRef;
 use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use PhpDb\Sql\Select;
 
@@ -19,7 +20,7 @@ use function is_numeric;
 use function key;
 use function str_replace;
 
-class Columns extends AbstractPart
+class Columns extends AbstractClause
 {
     /** @var ColumnRef[] */
     private array $columnRefs            = [];

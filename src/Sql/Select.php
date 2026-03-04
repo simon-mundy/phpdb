@@ -6,13 +6,13 @@ namespace PhpDb\Sql;
 
 use Closure;
 use Override;
-use PhpDb\Sql\Part\Combine as CombinePart;
-use PhpDb\Sql\Part\GroupBy;
-use PhpDb\Sql\Part\Limit;
-use PhpDb\Sql\Part\Offset;
-use PhpDb\Sql\Part\OrderBy;
-use PhpDb\Sql\Part\Quantifier;
-use PhpDb\Sql\Part\Table;
+use PhpDb\Sql\Clause\Combine as CombinePart;
+use PhpDb\Sql\Clause\GroupBy;
+use PhpDb\Sql\Clause\Limit;
+use PhpDb\Sql\Clause\Offset;
+use PhpDb\Sql\Clause\OrderBy;
+use PhpDb\Sql\Clause\Quantifier;
+use PhpDb\Sql\Clause\Table;
 use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use PhpDb\Sql\Predicate\PredicateInterface;
 

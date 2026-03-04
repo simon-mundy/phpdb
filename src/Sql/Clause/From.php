@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace PhpDb\Sql\Part;
+namespace PhpDb\Sql\Clause;
 
 use PhpDb\Sql\ExpressionInterface;
 use PhpDb\Sql\Platform\AbstractSqlRenderer;
@@ -14,7 +14,7 @@ use function is_array;
 use function is_string;
 use function key;
 
-class From extends AbstractPart
+class From extends AbstractClause
 {
     public TableIdentifier|Select|ExpressionInterface|null $table = null;
 

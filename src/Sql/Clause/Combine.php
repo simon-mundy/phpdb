@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace PhpDb\Sql\Part;
+namespace PhpDb\Sql\Clause;
 
 use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use PhpDb\Sql\Select;
 
-class Combine extends AbstractPart
+class Combine extends AbstractClause
 {
     private array $combine = [];
 

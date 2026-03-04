@@ -7,7 +7,7 @@ namespace PhpDb\Sql;
 use Override;
 use PhpDb\Adapter\Driver\PdoDriverInterface;
 use PhpDb\Adapter\ParameterContainer;
-use PhpDb\Sql\Part\From;
+use PhpDb\Sql\Clause\From;
 use PhpDb\Sql\Platform\AbstractSqlRenderer;
 
 use function array_flip;

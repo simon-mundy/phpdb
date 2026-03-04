@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace PhpDb\Sql\Part;
+namespace PhpDb\Sql\Clause;
 
 use PhpDb\Adapter\Platform\Sql92;
 use PhpDb\Sql\Platform\Sql92Renderer;
 
-abstract class AbstractPart implements PartInterface
+abstract class AbstractClause implements ClauseInterface
 {
     public function __toString(): string
     {

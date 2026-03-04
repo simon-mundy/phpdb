@@ -6,7 +6,7 @@ namespace PhpDbTest\Sql;
 
 use PhpDb\Sql\Join;
 use PhpDb\Sql\Part\JoinSpec;
-use PhpDb\Sql\Part\Table;
+use PhpDb\Sql\Clause\Table;
 use PhpDb\Sql\TableIdentifier;
 use PhpDbTest\DeprecatedAssertionsTrait;
 use PHPUnit\Framework\Attributes\CoversMethod;

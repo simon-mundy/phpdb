@@ -7,7 +7,7 @@ namespace PhpDb\Sql;
 use Countable;
 use Iterator;
 use Override;
-use PhpDb\Sql\Part\AbstractPart;
+use PhpDb\Sql\Clause\AbstractClause;
 use PhpDb\Sql\Part\JoinSpec;
 use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use ReturnTypeWillChange;
@@ -23,7 +23,7 @@ use function implode;
  * - type: the type of JOIN being performed; see the `JOIN_*` constants;
  *   defaults to `JOIN_INNER`
  */
-class Join extends AbstractPart implements Iterator, Countable
+class Join extends AbstractClause implements Iterator, Countable
 {
     final public const JOIN_INNER = 'INNER';
 

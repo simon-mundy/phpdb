@@ -6,11 +6,11 @@ namespace PhpDb\Sql;
 
 use Override;
 use PhpDb\Adapter\Platform\Sql92;
-use PhpDb\Sql\Part\PartInterface;
+use PhpDb\Sql\Clause\ClauseInterface;
 use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use PhpDb\Sql\Platform\Sql92Renderer;
 
-class Where extends Predicate\Predicate implements PartInterface
+class Where extends Predicate\Predicate implements ClauseInterface
 {
     #[Override]
     public function toSql(AbstractSqlRenderer $renderer, string $paramPrefix = '', int &$paramIndex = 0): ?string

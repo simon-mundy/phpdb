@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace PhpDb\Sql\Part;
+namespace PhpDb\Sql\Clause;
 
 use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Sql\Argument\Value;
 use PhpDb\Sql\Platform\AbstractSqlRenderer;
 
-class Limit extends AbstractPart
+class Limit extends AbstractClause
 {
     private ?Value $limit = null;
 

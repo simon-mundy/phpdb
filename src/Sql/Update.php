@@ -6,9 +6,9 @@ namespace PhpDb\Sql;
 
 use Closure;
 use Override;
-use PhpDb\Sql\Part\From;
-use PhpDb\Sql\Part\Set as SetPart;
-use PhpDb\Sql\Part\Table;
+use PhpDb\Sql\Clause\From;
+use PhpDb\Sql\Clause\Set as SetPart;
+use PhpDb\Sql\Clause\Table;
 use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use PhpDb\Sql\Predicate\PredicateInterface;
 

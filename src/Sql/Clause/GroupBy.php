@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace PhpDb\Sql\Part;
+namespace PhpDb\Sql\Clause;
 
 use PhpDb\Sql\Argument\Identifier;
 use PhpDb\Sql\ArgumentInterface;
@@ -14,7 +14,7 @@ use function is_array;
 use function is_string;
 use function str_replace;
 
-class GroupBy extends AbstractPart
+class GroupBy extends AbstractClause
 {
     /** @var list<ArgumentInterface|ExpressionInterface>|null */
     private ?array $group = null;

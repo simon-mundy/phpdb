@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace PhpDb\Sql\Part;
+namespace PhpDb\Sql\Clause;
 
 use PhpDb\Sql\ExpressionInterface;
 use Stringable;
 
-interface PartInterface extends ExpressionInterface, Stringable
+interface ClauseInterface extends ExpressionInterface, Stringable
 {
     public function isEmpty(): bool;
 }

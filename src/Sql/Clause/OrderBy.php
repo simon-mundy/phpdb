@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-namespace PhpDb\Sql\Part;
+namespace PhpDb\Sql\Clause;
 
 use PhpDb\Sql\Argument\Identifier;
 use PhpDb\Sql\ArgumentInterface;
 use PhpDb\Sql\ExpressionInterface;
+use PhpDb\Sql\Part\OrderSpec;
 use PhpDb\Sql\Platform\AbstractSqlRenderer;
 
 use function explode;
@@ -18,7 +19,7 @@ use function preg_split;
 use function str_contains;
 use function str_replace;
 
-class OrderBy extends AbstractPart
+class OrderBy extends AbstractClause
 {
     final public const ORDER_ASCENDING  = 'ASC';
     final public const ORDER_DESCENDING = 'DESC';
