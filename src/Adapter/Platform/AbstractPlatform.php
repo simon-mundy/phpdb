@@ -11,9 +11,7 @@ use PhpDb\Adapter\Exception\VunerablePlatformQuoteException;
 
 use function addcslashes;
 use function array_map;
-use function explode;
 use function implode;
-use function str_contains;
 use function str_replace;
 
 /**
@@ -26,50 +24,21 @@ abstract class AbstractPlatform implements PlatformInterface
 
     protected string $quoteIdentifierTo = '\'';
 
-    protected string $identifierSeparator = '.';
-
     protected bool $quoteIdentifiers = true;
-
-    /** @var array<string, string> */
-    private array $identifierCache = [];
 
     /**
      * {@inheritDoc}
      */
     #[Override]
-    public function quoteIdentifier(string $name, ?string $prefix = null): string
+    public function quoteIdentifier(string $identifier): string
     {
-        $cacheKey = $prefix !== null ? $prefix . '.' . $name : $name;
-
-        if (isset($this->identifierCache[$cacheKey])) {
-            return $this->identifierCache[$cacheKey];
-        }
-
-        if ($prefix === null && str_contains($name, '.')) {
-            [$prefix, $name] = explode('.', $name, 2);
-        }
-
         if (! $this->quoteIdentifiers) {
-            return $prefix !== null
-                ? $prefix . $this->identifierSeparator . $name
-                : $name;
+            return $identifier;
         }
 
-        if ($prefix !== null) {
-            return $this->identifierCache[$cacheKey]
-                = $this->quoteIdentifier[0]
-                    . str_replace($this->quoteIdentifier[0], $this->quoteIdentifierTo, $prefix)
-                    . $this->quoteIdentifier[1]
-                    . $this->identifierSeparator
-                    . $this->quoteIdentifier[0]
-                    . str_replace($this->quoteIdentifier[0], $this->quoteIdentifierTo, $name)
-                    . $this->quoteIdentifier[1];
-        }
-
-        return $this->identifierCache[$cacheKey]
-            = $this->quoteIdentifier[0]
-                . str_replace($this->quoteIdentifier[0], $this->quoteIdentifierTo, $name)
-                . $this->quoteIdentifier[1];
+        return $this->quoteIdentifier[0]
+            . str_replace($this->quoteIdentifier[0], $this->quoteIdentifierTo, $identifier)
+            . $this->quoteIdentifier[1];
     }
 
     /**
@@ -138,6 +107,6 @@ abstract class AbstractPlatform implements PlatformInterface
     #[Override]
     public function getIdentifierSeparator(): string
     {
-        return $this->identifierSeparator;
+        return '.';
     }
 }
