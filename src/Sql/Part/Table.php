@@ -21,9 +21,9 @@ use function sprintf;
 
 class Table
 {
-    private From $from;
-    private Columns $columns;
-    private ?Join $join = null;
+    public From $from;
+    public Columns $columns;
+    public ?Join $join = null;
 
     public function __construct()
     {
@@ -142,21 +142,6 @@ class Table
         $this->join = null;
         $this->columns->setJoinRefs([]);
         return $this;
-    }
-
-    public function from(): From
-    {
-        return $this->from;
-    }
-
-    public function columns(): Columns
-    {
-        return $this->columns;
-    }
-
-    public function joins(): ?Join
-    {
-        return $this->join;
     }
 
     public function __clone()

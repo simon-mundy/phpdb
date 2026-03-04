@@ -350,7 +350,7 @@ class Select extends AbstractPreparableSql
             self::TABLE      => $this->table->getFrom(),
             self::QUANTIFIER => $this->quantifier?->get(),
             self::COLUMNS    => $this->table->getColumns(),
-            self::JOINS      => $this->table->joins() ?? new Join(),
+            self::JOINS      => $this->table->join ?? new Join(),
             self::WHERE      => $this->where  ??= new Where(),
             self::ORDER      => $this->orderBy?->get() ?? [],
             self::GROUP      => $this->groupBy?->get() ?? [],
@@ -380,12 +380,13 @@ class Select extends AbstractPreparableSql
     {
         $renderer->getTypeDecorator($this)?->prepare($this, $renderer);
 
+        $combine = $this->combine?->toSql($renderer);
+
         $sql = implode(' ', array_filter([
-            'SELECT',
             $this->quantifier?->toSql($renderer),
-            $this->table->columns()->toSql($renderer),
-            $this->table->from()->toSql($renderer),
-            $this->table->joins()?->toSql($renderer),
+            $this->table->columns->toSql($renderer),
+            $this->table->from->toSql($renderer),
+            $this->table->join?->toSql($renderer),
             $this->where?->toSql($renderer),
             $this->groupBy?->toSql($renderer),
             $this->having?->toSql($renderer),
@@ -394,9 +395,9 @@ class Select extends AbstractPreparableSql
             $this->offset?->toSql($renderer),
         ]));
 
-        $combine = $this->combine?->toSql($renderer);
-
-        return $combine !== null ? "( $sql ) $combine" : $sql;
+        return $combine !== null
+            ? "( SELECT $sql ) $combine"
+            : "SELECT $sql";
     }
 
     /**
@@ -412,7 +413,7 @@ class Select extends AbstractPreparableSql
             case 'having':
                 return $this->having ??= new Having();
             case 'joins':
-                return $this->table->joins() ?? new Join();
+                return $this->table->join ?? new Join();
             default:
                 throw new Exception\InvalidArgumentException('Not a valid magic property for this object');
         }
