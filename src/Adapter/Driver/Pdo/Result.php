@@ -81,7 +81,7 @@ class Result implements Iterator, ResultInterface
     /** @var string|int|false|null */
     protected $generatedValue;
 
-    protected Closure|int|null $rowCount = null;
+    protected Closure|int $rowCount;
 
     /**
      * Initialize
@@ -91,7 +91,7 @@ class Result implements Iterator, ResultInterface
     public function initialize(
         PDOStatement $resource,
         $generatedValue,
-        Closure|int|null $rowCount = null
+        Closure|int $rowCount = 0
     ): ResultInterface&Result {
         $this->resource       = $resource;
         $this->generatedValue = $generatedValue;
@@ -250,6 +250,7 @@ class Result implements Iterator, ResultInterface
         if (is_int($this->rowCount)) {
             return $this->rowCount;
         }
+        /** @phpstan-ignore instanceof.alwaysTrue */
         if ($this->rowCount instanceof Closure) {
             $this->rowCount = (int) ($this->rowCount)();
         } else {

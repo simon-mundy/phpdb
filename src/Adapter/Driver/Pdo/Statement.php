@@ -22,8 +22,6 @@ use function implode;
 use function is_array;
 use function is_int;
 use function ltrim;
-use function preg_match;
-use function sprintf;
 
 class Statement implements StatementInterface, PdoDriverAwareInterface, ProfilerAwareInterface
 {
@@ -225,19 +223,8 @@ class Statement implements StatementInterface, PdoDriverAwareInterface, Profiler
                 };
             }
 
-            if (is_int($name)) {
-                $parameter = $name + 1;
-            } else {
-                if (! preg_match('/^:?[a-zA-Z0-9_]+$/', $name)) {
-                    throw new Exception\RuntimeException(sprintf(
-                        'The PDO param "%s" contains invalid characters.'
-                        . ' Only alphabetic characters, digits, and underscores (_) are allowed.',
-                        $name
-                    ));
-                }
-                $parameter = ':' . ltrim($name, ':');
-            }
-
+            // parameter is named or positional, value is reference
+            $parameter = is_int($name) ? $name + 1 : ':' . ltrim($name, ':');
             $this->resource->bindParam($parameter, $value, $type);
         }
 
