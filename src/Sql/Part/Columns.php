@@ -41,15 +41,20 @@ class Columns extends AbstractPart
 
     public function toSql(AbstractSqlRenderer $renderer, string $paramPrefix = '', int &$paramIndex = 0): ?string
     {
+        $fromPrefix = $this->prefixColumnsWithTable && $this->from !== null && $this->from->table !== null
+            ? $renderer->renderResolvedTable($this->from->table, $this->from->alias)
+            : '';
+
+        if (! $this->isNormalized && $this->rawColumns === [Select::SQL_STAR] && $this->joinRefs === []) {
+            return $fromPrefix . '*';
+        }
+
         if (! $this->isNormalized) {
             $this->normalizeColumns();
             $this->isNormalized = true;
         }
 
-        $refs       = $this->columnRefs;
-        $fromPrefix = $this->prefixColumnsWithTable && $this->from !== null && $this->from->table !== null
-            ? $renderer->renderResolvedTable($this->from->table, $this->from->alias)
-            : '';
+        $refs = $this->columnRefs;
 
         if (isset($refs[0]) && ! isset($refs[1]) && $refs[0]->isStar && $this->joinRefs === []) {
             return $fromPrefix . '*';

@@ -23,13 +23,12 @@ class Table
 {
     private From $from;
     private Columns $columns;
-    private Join $join;
+    private ?Join $join = null;
 
     public function __construct()
     {
         $this->from    = new From();
         $this->columns = new Columns($this->from);
-        $this->join    = new Join();
     }
 
     public function setFrom(string|array|TableIdentifier|Select|null $table): static
@@ -89,7 +88,7 @@ class Table
         string $type = Join::JOIN_INNER,
     ): static {
         $spec = self::createJoinSpec($name, $on, $columns, $type);
-        $this->join->add($spec);
+        ($this->join ??= new Join())->add($spec);
 
         if (! is_array($columns)) {
             $columns = [$columns];
@@ -135,12 +134,12 @@ class Table
 
     public function hasJoins(): bool
     {
-        return $this->join->isEmpty();
+        return $this->join !== null && ! $this->join->isEmpty();
     }
 
     public function resetJoins(): static
     {
-        $this->join->reset();
+        $this->join = null;
         $this->columns->setJoinRefs([]);
         return $this;
     }
@@ -165,6 +164,8 @@ class Table
         $this->from    = clone $this->from;
         $this->columns = clone $this->columns;
         $this->columns->setFrom($this->from);
-        $this->join = clone $this->join;
+        if ($this->join !== null) {
+            $this->join = clone $this->join;
+        }
     }
 }
