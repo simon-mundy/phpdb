@@ -10,7 +10,9 @@ use PhpDb\Sql\Part\From;
 use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use PhpDb\Sql\Predicate\PredicateInterface;
 
+use function array_filter;
 use function array_key_exists;
+use function implode;
 use function strtolower;
 
 /**
@@ -82,16 +84,12 @@ class Delete extends AbstractPreparableSql
     {
         $renderer->getTypeDecorator($this)?->prepare($this, $renderer);
 
-        $sql = $this->getStatementKeyword();
+        $sql = implode(' ', array_filter([
+            $this->table->toSql($renderer),
+            $this->where?->toSql($renderer),
+        ]));
 
-        if (($part = $this->table->toSql($renderer)) !== null) {
-            $sql .= " $part";
-        }
-        if (($part = $this->where?->toSql($renderer)) !== null) {
-            $sql .= " $part";
-        }
-
-        return $sql;
+        return $this->getStatementKeyword() . " $sql";
     }
 
     /**
