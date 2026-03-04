@@ -6,21 +6,21 @@ namespace PhpDb\Sql;
 
 use Closure;
 use Override;
-use PhpDb\Sql\Argument\Literal;
-use PhpDb\Sql\Argument\Select as SelectArgument;
 use PhpDb\Sql\Part\Combine as CombinePart;
 use PhpDb\Sql\Part\GroupBy;
 use PhpDb\Sql\Part\Limit;
 use PhpDb\Sql\Part\Offset;
 use PhpDb\Sql\Part\OrderBy;
-use PhpDb\Sql\Part\SqlFragment;
+use PhpDb\Sql\Part\Quantifier;
 use PhpDb\Sql\Part\Table;
 use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use PhpDb\Sql\Predicate\PredicateInterface;
 
+use function array_filter;
 use function array_key_exists;
 use function count;
 use function gettype;
+use function implode;
 use function is_array;
 use function is_numeric;
 use function is_string;
@@ -98,7 +98,7 @@ class Select extends AbstractPreparableSql
 
     protected Table $table;
 
-    protected Literal|SelectArgument|null $quantifier = null;
+    protected ?Quantifier $quantifier = null;
 
     protected ?Where $where = null;
 
@@ -156,9 +156,7 @@ class Select extends AbstractPreparableSql
      */
     public function quantifier(ExpressionInterface|string $quantifier): static
     {
-        $this->quantifier = $quantifier instanceof ExpressionInterface
-            ? new SelectArgument($quantifier)
-            : new Literal($quantifier);
+        ($this->quantifier ??= new Quantifier())->set($quantifier);
         return $this;
     }
 
@@ -350,7 +348,7 @@ class Select extends AbstractPreparableSql
     {
         $rawState = [
             self::TABLE      => $this->table->getFrom(),
-            self::QUANTIFIER => $this->quantifier?->getValue(),
+            self::QUANTIFIER => $this->quantifier?->get(),
             self::COLUMNS    => $this->table->getColumns(),
             self::JOINS      => $this->table->joins() ?? new Join(),
             self::WHERE      => $this->where  ??= new Where(),
@@ -382,26 +380,23 @@ class Select extends AbstractPreparableSql
     {
         $renderer->getTypeDecorator($this)?->prepare($this, $renderer);
 
-        $quantifierSql = $this->quantifier !== null
-            ? ($this->quantifier instanceof Literal
-                ? $this->quantifier->literal
-                : $renderer->render($this->quantifier->getValue(), 'quantifier'))
-            : null;
+        $sql = implode(' ', array_filter([
+            'SELECT',
+            $this->quantifier?->toSql($renderer),
+            $this->table->columns()->toSql($renderer),
+            $this->table->from()->toSql($renderer),
+            $this->table->joins()?->toSql($renderer),
+            $this->where?->toSql($renderer),
+            $this->groupBy?->toSql($renderer),
+            $this->having?->toSql($renderer),
+            $this->orderBy?->toSql($renderer),
+            $this->limit?->toSql($renderer),
+            $this->offset?->toSql($renderer),
+        ]));
 
-        $fragment = SqlFragment::of('SELECT')
-            ->part($quantifierSql)
-            ->part($this->table->columns()->toSql($renderer))
-            ->part($this->table->from()->toSql($renderer))
-            ->part($this->table->joins()?->toSql($renderer))
-            ->part($this->where?->toSql($renderer))
-            ->part($this->groupBy?->toSql($renderer))
-            ->part($this->having?->toSql($renderer))
-            ->part($this->orderBy?->toSql($renderer))
-            ->part($this->limit?->toSql($renderer))
-            ->part($this->offset?->toSql($renderer))
-            ->wrap($this->combine?->toSql($renderer));
+        $combine = $this->combine?->toSql($renderer);
 
-        return (string) $fragment;
+        return $combine !== null ? "( $sql ) $combine" : $sql;
     }
 
     /**
@@ -433,6 +428,9 @@ class Select extends AbstractPreparableSql
     public function __clone()
     {
         $this->table = clone $this->table;
+        if ($this->quantifier !== null) {
+            $this->quantifier = clone $this->quantifier;
+        }
         if ($this->where !== null) {
             $this->where = clone $this->where;
         }
