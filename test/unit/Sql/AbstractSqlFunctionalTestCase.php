@@ -48,7 +48,7 @@ abstract class AbstractSqlFunctionalTestCase extends TestCase
                     'sql92' => [
                         'string'     => 'SELECT "foo".* FROM "foo" OFFSET \'10\'',
                         'prepare'    => 'SELECT "foo".* FROM "foo" OFFSET ?',
-                        'parameters' => ['offset' => 10],
+                        'parameters' => ['offset0' => 10],
                     ],
                 ],
             ],
@@ -58,7 +58,7 @@ abstract class AbstractSqlFunctionalTestCase extends TestCase
                     'sql92' => [
                         'string'     => 'SELECT "foo".* FROM "foo" LIMIT \'10\'',
                         'prepare'    => 'SELECT "foo".* FROM "foo" LIMIT ?',
-                        'parameters' => ['limit' => 10],
+                        'parameters' => ['limit0' => 10],
                     ],
                 ],
             ],
@@ -68,7 +68,7 @@ abstract class AbstractSqlFunctionalTestCase extends TestCase
                     'sql92' => [
                         'string'     => 'SELECT "foo".* FROM "foo" LIMIT \'10\' OFFSET \'5\'',
                         'prepare'    => 'SELECT "foo".* FROM "foo" LIMIT ? OFFSET ?',
-                        'parameters' => ['limit' => 10, 'offset' => 5],
+                        'parameters' => ['limit0' => 10, 'offset0' => 5],
                     ],
                 ],
             ],

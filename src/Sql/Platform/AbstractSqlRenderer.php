@@ -208,7 +208,7 @@ abstract class AbstractSqlRenderer
             $argument instanceof NullValue     => 'NULL',
             $argument instanceof Parameter     => $this->bindParameter($argument),
             $argument instanceof Value         => $this->parameterContainer !== null
-                ? $this->bindValue($argument->value, $paramPrefix, $paramIndex)
+                ? $this->bindValue($argument->value, $paramPrefix, $paramIndex, $argument->typeHint)
                 : $this->platform->quoteValue((string) $argument->value),
             $argument instanceof SelectArgument => $argument->select instanceof Select
                 ? '(' . $this->processSubSelect($argument->select) . ')'
@@ -235,9 +235,10 @@ abstract class AbstractSqlRenderer
         int|float|string|bool $value,
         string $paramPrefix,
         int &$paramIndex,
+        ?string $typeHint = null,
     ): string {
         $name = $paramPrefix . $paramIndex++;
-        $this->parameterContainer->offsetSet($name, $value);
+        $this->parameterContainer->offsetSet($name, $value, $typeHint);
 
         return $this->driver->formatParameterName($name);
     }

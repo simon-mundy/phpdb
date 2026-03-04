@@ -941,14 +941,14 @@ final class SelectTest extends TestCase
         $select26->from('foo')->limit(5);
         $sqlPrep26 = 'SELECT "foo".* FROM "foo" LIMIT ?';
         $sqlStr26  = 'SELECT "foo".* FROM "foo" LIMIT \'5\'';
-        $params26  = ['limit' => 5];
+        $params26  = ['limit0' => 5];
 
         // limit with offset
         $select27 = new Select();
         $select27->from('foo')->limit(5)->offset(10);
         $sqlPrep27 = 'SELECT "foo".* FROM "foo" LIMIT ? OFFSET ?';
         $sqlStr27  = 'SELECT "foo".* FROM "foo" LIMIT \'5\' OFFSET \'10\'';
-        $params27  = ['limit' => 5, 'offset' => 10];
+        $params27  = ['limit0' => 5, 'offset0' => 10];
 
         // joins with a few keywords in the on clause
         $select28 = new Select();
@@ -1089,7 +1089,7 @@ final class SelectTest extends TestCase
         $select45->from('foo')->limit("5")->offset("10");
         $sqlPrep45 = 'SELECT "foo".* FROM "foo" LIMIT ? OFFSET ?';
         $sqlStr45  = 'SELECT "foo".* FROM "foo" LIMIT \'5\' OFFSET \'10\'';
-        $params45  = ['limit' => 5, 'offset' => 10];
+        $params45  = ['limit0' => '5', 'offset0' => '10'];
 
         // functions without table
         $select46 = new Select();
@@ -1106,7 +1106,7 @@ final class SelectTest extends TestCase
         $select47->from('foo')->limit("10000000000000000000")->offset("10000000000000000000");
         $sqlPrep47 = 'SELECT "foo".* FROM "foo" LIMIT ? OFFSET ?';
         $sqlStr47  = 'SELECT "foo".* FROM "foo" LIMIT \'10000000000000000000\' OFFSET \'10000000000000000000\'';
-        $params47  = ['limit' => 10000000000000000000, 'offset' => 10000000000000000000];
+        $params47  = ['limit0' => '10000000000000000000', 'offset0' => '10000000000000000000'];
 
         //combine and union with order at the end
         $select48 = new Select();
@@ -1161,8 +1161,8 @@ final class SelectTest extends TestCase
         $subSelect53->from('bar')->columns(['id'])->limit(10)->offset(9);
         $select53 = new Select();
         $select53->from('foo')->where(new In('bar_id', $subSelect53))->limit(11)->offset(12);
-        $params53  = ['limit' => 11, 'offset' => 12, 'subselect1limit' => 10, 'subselect1offset' => 9];
-        $sqlPrep53 = 'SELECT "foo".* FROM "foo" WHERE "bar_id" IN (SELECT "bar"."id" AS "id" FROM "bar" LIMIT :subselect1limit OFFSET :subselect1offset) LIMIT :limit OFFSET :offset';
+        $params53  = ['limit0' => 11, 'offset0' => 12, 'subselect1limit0' => 10, 'subselect1offset0' => 9];
+        $sqlPrep53 = 'SELECT "foo".* FROM "foo" WHERE "bar_id" IN (SELECT "bar"."id" AS "id" FROM "bar" LIMIT :subselect1limit0 OFFSET :subselect1offset0) LIMIT :limit0 OFFSET :offset0';
         $sqlStr53  = 'SELECT "foo".* FROM "foo" WHERE "bar_id" IN (SELECT "bar"."id" AS "id" FROM "bar" LIMIT \'10\' OFFSET \'9\') LIMIT \'11\' OFFSET \'12\'';
 
         // join with alternate type full outer

@@ -6,15 +6,17 @@ namespace PhpDb\Sql\Part;
 
 use PhpDb\Sql\Argument\Identifier;
 use PhpDb\Sql\ArgumentInterface;
+use PhpDb\Sql\ExpressionInterface;
 use PhpDb\Sql\Platform\AbstractSqlRenderer;
 
 use function implode;
 use function is_array;
+use function is_string;
 use function str_replace;
 
 class GroupBy extends AbstractPart
 {
-    /** @var ColumnRef[]|null */
+    /** @var list<ArgumentInterface|ExpressionInterface>|null */
     private ?array $group = null;
 
     public function toSql(AbstractSqlRenderer $renderer, string $paramPrefix = '', int &$paramIndex = 0): ?string
@@ -25,9 +27,7 @@ class GroupBy extends AbstractPart
 
         $groups = [];
 
-        foreach ($this->group as $ref) {
-            $column = $ref->column;
-
+        foreach ($this->group as $column) {
             if ($column instanceof Identifier) {
                 $groups[] = $renderer->qo . str_replace('.', $renderer->qs, $column->identifier) . $renderer->qc;
             } elseif ($column instanceof ArgumentInterface) {
@@ -50,10 +50,10 @@ class GroupBy extends AbstractPart
     {
         if (is_array($group)) {
             foreach ($group as $g) {
-                $this->group[] = new ColumnRef(0, $g);
+                $this->group[] = is_string($g) ? new Identifier($g) : $g;
             }
         } else {
-            $this->group[] = new ColumnRef(0, $group);
+            $this->group[] = is_string($group) ? new Identifier($group) : $group;
         }
         return $this;
     }
@@ -65,10 +65,10 @@ class GroupBy extends AbstractPart
         }
 
         $result = [];
-        foreach ($this->group as $ref) {
-            $result[] = $ref->column instanceof ArgumentInterface
-                ? $ref->column->getValue()
-                : $ref->column;
+        foreach ($this->group as $column) {
+            $result[] = $column instanceof ArgumentInterface
+                ? $column->getValue()
+                : $column;
         }
         return $result;
     }

@@ -13,7 +13,8 @@ final readonly class Value implements ArgumentInterface
      * @param null|string|int|float|bool $value Scalar value, or null
      */
     public function __construct(
-        public null|string|int|float|bool $value
+        public null|string|int|float|bool $value,
+        public ?string $typeHint = null,
     ) {
     }
 

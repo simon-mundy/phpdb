@@ -6,12 +6,13 @@ namespace PhpDb\Sql;
 
 use Closure;
 use Override;
+use PhpDb\Adapter\ParameterContainer;
+use PhpDb\Sql\Argument\Literal;
+use PhpDb\Sql\Argument\Select as SelectArgument;
+use PhpDb\Sql\Argument\Value;
 use PhpDb\Sql\Part\Combine as CombinePart;
 use PhpDb\Sql\Part\GroupBy;
-use PhpDb\Sql\Part\Limit;
-use PhpDb\Sql\Part\Offset;
 use PhpDb\Sql\Part\OrderBy;
-use PhpDb\Sql\Part\Quantifier;
 use PhpDb\Sql\Part\Table;
 use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use PhpDb\Sql\Predicate\PredicateInterface;
@@ -96,7 +97,7 @@ class Select extends AbstractPreparableSql
 
     protected Table $table;
 
-    protected ?Quantifier $quantifier = null;
+    protected Literal|SelectArgument|null $quantifier = null;
 
     protected ?Where $where = null;
 
@@ -106,9 +107,9 @@ class Select extends AbstractPreparableSql
 
     protected ?OrderBy $orderBy = null;
 
-    protected ?Limit $limit = null;
+    protected ?Value $limitValue = null;
 
-    protected ?Offset $offset = null;
+    protected ?Value $offsetValue = null;
 
     protected ?CombinePart $combine = null;
 
@@ -154,7 +155,9 @@ class Select extends AbstractPreparableSql
      */
     public function quantifier(ExpressionInterface|string $quantifier): static
     {
-        ($this->quantifier ??= new Quantifier())->set($quantifier);
+        $this->quantifier = $quantifier instanceof ExpressionInterface
+            ? new SelectArgument($quantifier)
+            : new Literal($quantifier);
         return $this;
     }
 
@@ -256,7 +259,7 @@ class Select extends AbstractPreparableSql
             ));
         }
 
-        ($this->limit ??= new Limit())->set($limit);
+        $this->limitValue = new Value($limit, ParameterContainer::TYPE_INTEGER);
         return $this;
     }
 
@@ -273,7 +276,7 @@ class Select extends AbstractPreparableSql
             ));
         }
 
-        ($this->offset ??= new Offset())->set($offset);
+        $this->offsetValue = new Value($offset, ParameterContainer::TYPE_INTEGER);
         return $this;
     }
 
@@ -326,10 +329,10 @@ class Select extends AbstractPreparableSql
                 $this->having = null;
                 break;
             case self::LIMIT:
-                $this->limit = null;
+                $this->limitValue = null;
                 break;
             case self::OFFSET:
-                $this->offset = null;
+                $this->offsetValue = null;
                 break;
             case self::ORDER:
                 $this->orderBy = null;
@@ -346,15 +349,15 @@ class Select extends AbstractPreparableSql
     {
         $rawState = [
             self::TABLE      => $this->table->getFrom(),
-            self::QUANTIFIER => $this->quantifier?->get(),
+            self::QUANTIFIER => $this->quantifier?->getValue(),
             self::COLUMNS    => $this->table->getColumns(),
             self::JOINS      => $this->table->joins() ?? new Join(),
             self::WHERE      => $this->where  ??= new Where(),
             self::ORDER      => $this->orderBy?->get() ?? [],
             self::GROUP      => $this->groupBy?->get() ?? [],
             self::HAVING     => $this->having ??= new Having(),
-            self::LIMIT      => $this->limit?->get(),
-            self::OFFSET     => $this->offset?->get(),
+            self::LIMIT      => $this->limitValue?->value,
+            self::OFFSET     => $this->offsetValue?->value,
             self::COMBINE    => $this->combine?->get() ?? [],
         ];
         return $key !== null && array_key_exists($key, $rawState) ? $rawState[$key] : $rawState;
@@ -380,8 +383,10 @@ class Select extends AbstractPreparableSql
 
         $sql = 'SELECT';
 
-        if (($part = $this->quantifier?->toSql($renderer)) !== null) {
-            $sql .= " $part";
+        if ($this->quantifier !== null) {
+            $sql .= $this->quantifier instanceof Literal
+                ? ' ' . $this->quantifier->literal
+                : ' ' . $renderer->render($this->quantifier->getValue(), 'quantifier');
         }
 
         $sql .= ' ' . $this->table->columns()->toSql($renderer);
@@ -404,11 +409,21 @@ class Select extends AbstractPreparableSql
         if (($part = $this->orderBy?->toSql($renderer)) !== null) {
             $sql .= " $part";
         }
-        if (($part = $this->limit?->toSql($renderer)) !== null) {
-            $sql .= " $part";
+        if ($this->limitValue !== null) {
+            $pi   = 0;
+            $sql .= ' LIMIT ' . $renderer->renderArgument(
+                $this->limitValue,
+                $renderer->getParamPrefix() . 'limit',
+                $pi,
+            );
         }
-        if (($part = $this->offset?->toSql($renderer)) !== null) {
-            $sql .= " $part";
+        if ($this->offsetValue !== null) {
+            $pi   = 0;
+            $sql .= ' OFFSET ' . $renderer->renderArgument(
+                $this->offsetValue,
+                $renderer->getParamPrefix() . 'offset',
+                $pi,
+            );
         }
 
         $combine = $this->combine?->toSql($renderer);
@@ -448,9 +463,6 @@ class Select extends AbstractPreparableSql
     public function __clone()
     {
         $this->table = clone $this->table;
-        if ($this->quantifier !== null) {
-            $this->quantifier = clone $this->quantifier;
-        }
         if ($this->where !== null) {
             $this->where = clone $this->where;
         }
@@ -462,12 +474,6 @@ class Select extends AbstractPreparableSql
         }
         if ($this->orderBy !== null) {
             $this->orderBy = clone $this->orderBy;
-        }
-        if ($this->limit !== null) {
-            $this->limit = clone $this->limit;
-        }
-        if ($this->offset !== null) {
-            $this->offset = clone $this->offset;
         }
         if ($this->combine !== null) {
             $this->combine = clone $this->combine;
