@@ -64,16 +64,6 @@ class Delete extends AbstractPreparableSql
         return $this;
     }
 
-    public function getRawState(?string $key = null): mixed
-    {
-        $rawState = [
-            'emptyWhereProtection' => $this->emptyWhereProtection,
-            'table'                => $this->table->get(),
-            'where'                => $this->where ??= new Where(),
-        ];
-        return $key !== null && array_key_exists($key, $rawState) ? $rawState[$key] : $rawState;
-    }
-
     protected function getStatementKeyword(): string
     {
         return 'DELETE';
@@ -90,6 +80,16 @@ class Delete extends AbstractPreparableSql
         ]));
 
         return $this->getStatementKeyword() . " $sql";
+    }
+
+    public function getRawState(?string $key = null): mixed
+    {
+        $rawState = [
+            'emptyWhereProtection' => $this->emptyWhereProtection,
+            'table'                => $this->table->get(),
+            'where'                => $this->where ??= new Where(),
+        ];
+        return $key !== null && array_key_exists($key, $rawState) ? $rawState[$key] : $rawState;
     }
 
     /**

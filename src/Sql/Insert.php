@@ -107,34 +107,11 @@ class Insert extends AbstractPreparableSql
     }
 
     /**
-     * Simple test for an associative array
-     *
-     * @link http://stackoverflow.com/questions/173400/how-to-check-if-php-array-is-associative-or-sequential
-     */
-    private function isAssocativeArray(array $array): bool
-    {
-        return array_keys($array) !== range(0, count($array) - 1);
-    }
-
-    /**
      * Create INTO SELECT clause
      */
     public function select(Select $select): static
     {
         return $this->values($select);
-    }
-
-    /**
-     * Get raw state
-     */
-    public function getRawState(?string $key = null): TableIdentifier|string|array
-    {
-        $rawState = [
-            'table'   => $this->table->get(),
-            'columns' => array_keys($this->columns),
-            'values'  => array_values($this->columns),
-        ];
-        return $key !== null && array_key_exists($key, $rawState) ? $rawState[$key] : $rawState;
     }
 
     /**
@@ -216,6 +193,29 @@ class Insert extends AbstractPreparableSql
         return $keyword . ' ' . $tableSql
             . ' (' . implode(', ', $columns) . ')'
             . ' VALUES (' . implode(', ', $values) . ')';
+    }
+
+    /**
+     * Simple test for an associative array
+     *
+     * @link http://stackoverflow.com/questions/173400/how-to-check-if-php-array-is-associative-or-sequential
+     */
+    private function isAssocativeArray(array $array): bool
+    {
+        return array_keys($array) !== range(0, count($array) - 1);
+    }
+
+    /**
+     * Get raw state
+     */
+    public function getRawState(?string $key = null): TableIdentifier|string|array
+    {
+        $rawState = [
+            'table'   => $this->table->get(),
+            'columns' => array_keys($this->columns),
+            'values'  => array_values($this->columns),
+        ];
+        return $key !== null && array_key_exists($key, $rawState) ? $rawState[$key] : $rawState;
     }
 
     /**

@@ -96,33 +96,6 @@ class Combine extends AbstractPreparableSql
         return $this->combine($select, self::COMBINE_INTERSECT, $modifier);
     }
 
-    /**
-     * Build sql string
-     */
-    #[Override]
-    public function buildSqlString(AbstractSqlRenderer $renderer): string
-    {
-        if (! $this->combine) {
-            return '';
-        }
-
-        $parts = [];
-        foreach ($this->combine as $i => $combine) {
-            $select = $renderer->processSubSelect($combine['select']);
-
-            if ($i === 0) {
-                $parts[] = "({$select})";
-            } else {
-                $type    = $combine['modifier']
-                    ? "{$combine['type']} {$combine['modifier']}"
-                    : $combine['type'];
-                $parts[] = "{$type} ({$select})";
-            }
-        }
-
-        return implode(' ', $parts);
-    }
-
     public function alignColumns(): static
     {
         if (! $this->combine) {
@@ -148,6 +121,30 @@ class Combine extends AbstractPreparableSql
         }
 
         return $this;
+    }
+
+    #[Override]
+    public function buildSqlString(AbstractSqlRenderer $renderer): string
+    {
+        if (! $this->combine) {
+            return '';
+        }
+
+        $parts = [];
+        foreach ($this->combine as $i => $combine) {
+            $select = $renderer->processSubSelect($combine['select']);
+
+            if ($i === 0) {
+                $parts[] = "({$select})";
+            } else {
+                $type    = $combine['modifier']
+                    ? "{$combine['type']} {$combine['modifier']}"
+                    : $combine['type'];
+                $parts[] = "{$type} ({$select})";
+            }
+        }
+
+        return implode(' ', $parts);
     }
 
     /**

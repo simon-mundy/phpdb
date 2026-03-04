@@ -127,22 +127,6 @@ class AlterTable extends AbstractDdl
         return $this->options;
     }
 
-    public function getRawState(?string $key = null): array|string
-    {
-        $rawState = [
-            self::TABLE            => $this->table,
-            self::ADD_COLUMNS      => $this->addColumns,
-            self::DROP_COLUMNS     => $this->dropColumns,
-            self::CHANGE_COLUMNS   => $this->changeColumns,
-            self::ADD_CONSTRAINTS  => $this->addConstraints,
-            self::DROP_CONSTRAINTS => $this->dropConstraints,
-            self::DROP_INDEXES     => $this->dropIndexes,
-            self::TABLE_OPTIONS    => $this->options,
-        ];
-
-        return isset($key) && array_key_exists($key, $rawState) ? $rawState[$key] : $rawState;
-    }
-
     #[Override]
     public function buildSqlString(AbstractSqlRenderer $renderer): string
     {
@@ -202,5 +186,21 @@ class AlterTable extends AbstractDdl
         }
 
         return implode(', ', $parts);
+    }
+
+    public function getRawState(?string $key = null): array|string
+    {
+        $rawState = [
+            self::TABLE            => $this->table,
+            self::ADD_COLUMNS      => $this->addColumns,
+            self::DROP_COLUMNS     => $this->dropColumns,
+            self::CHANGE_COLUMNS   => $this->changeColumns,
+            self::ADD_CONSTRAINTS  => $this->addConstraints,
+            self::DROP_CONSTRAINTS => $this->dropConstraints,
+            self::DROP_INDEXES     => $this->dropIndexes,
+            self::TABLE_OPTIONS    => $this->options,
+        ];
+
+        return isset($key) && array_key_exists($key, $rawState) ? $rawState[$key] : $rawState;
     }
 }

@@ -101,22 +101,6 @@ class CreateTable extends AbstractDdl
         return $this->options;
     }
 
-    /**
-     * @return ((Column\ColumnInterface|string)[]|Column\ColumnInterface|string)[]|string
-     * @psalm-return array<Column\ColumnInterface|array<Column\ColumnInterface|string>|string>|string
-     */
-    public function getRawState(?string $key = null): array|string
-    {
-        $rawState = [
-            self::COLUMNS       => $this->columns,
-            self::CONSTRAINTS   => $this->constraints,
-            self::TABLE         => $this->table,
-            self::TABLE_OPTIONS => $this->options,
-        ];
-
-        return isset($key) && array_key_exists($key, $rawState) ? $rawState[$key] : $rawState;
-    }
-
     #[Override]
     public function buildSqlString(AbstractSqlRenderer $renderer): string
     {
@@ -173,5 +157,21 @@ class CreateTable extends AbstractDdl
         }
 
         return implode(' ', $parts);
+    }
+
+    /**
+     * @return ((Column\ColumnInterface|string)[]|Column\ColumnInterface|string)[]|string
+     * @psalm-return array<Column\ColumnInterface|array<Column\ColumnInterface|string>|string>|string
+     */
+    public function getRawState(?string $key = null): array|string
+    {
+        $rawState = [
+            self::COLUMNS       => $this->columns,
+            self::CONSTRAINTS   => $this->constraints,
+            self::TABLE         => $this->table,
+            self::TABLE_OPTIONS => $this->options,
+        ];
+
+        return isset($key) && array_key_exists($key, $rawState) ? $rawState[$key] : $rawState;
     }
 }

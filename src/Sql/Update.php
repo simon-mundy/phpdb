@@ -103,18 +103,6 @@ class Update extends AbstractPreparableSql
         return $this;
     }
 
-    public function getRawState(?string $key = null): mixed
-    {
-        $rawState = [
-            'emptyWhereProtection' => $this->emptyWhereProtection,
-            'table'                => $this->table->get(),
-            'set'                  => $this->set->toArray(),
-            'where'                => $this->where ??= new Where(),
-            'joins'                => $this->joins ?? new Join(),
-        ];
-        return $key !== null && array_key_exists($key, $rawState) ? $rawState[$key] : $rawState;
-    }
-
     /**
      * Get the statement keyword (e.g. "UPDATE").
      * Override in subclasses for variants like "UPDATE IGNORE".
@@ -137,6 +125,18 @@ class Update extends AbstractPreparableSql
         ]));
 
         return $this->getStatementKeyword() . " $sql";
+    }
+
+    public function getRawState(?string $key = null): mixed
+    {
+        $rawState = [
+            'emptyWhereProtection' => $this->emptyWhereProtection,
+            'table'                => $this->table->get(),
+            'set'                  => $this->set->toArray(),
+            'where'                => $this->where ??= new Where(),
+            'joins'                => $this->joins ?? new Join(),
+        ];
+        return $key !== null && array_key_exists($key, $rawState) ? $rawState[$key] : $rawState;
     }
 
     /**

@@ -294,6 +294,31 @@ class Select extends AbstractPreparableSql
         return $this;
     }
 
+    #[Override]
+    public function buildSqlString(AbstractSqlRenderer $renderer): string
+    {
+        $renderer->getTypeDecorator($this)?->prepare($this, $renderer);
+
+        $combine = $this->combine?->toSql($renderer);
+
+        $sql = implode(' ', array_filter([
+            $this->quantifier?->toSql($renderer),
+            $this->table->columns->toSql($renderer),
+            $this->table->from->toSql($renderer),
+            $this->table->join?->toSql($renderer),
+            $this->where?->toSql($renderer),
+            $this->groupBy?->toSql($renderer),
+            $this->having?->toSql($renderer),
+            $this->orderBy?->toSql($renderer),
+            $this->limit?->toSql($renderer),
+            $this->offset?->toSql($renderer),
+        ]));
+
+        return $combine !== null
+            ? "( SELECT $sql ) $combine"
+            : "SELECT $sql";
+    }
+
     /**
      * @throws Exception\InvalidArgumentException
      */
@@ -373,31 +398,6 @@ class Select extends AbstractPreparableSql
     public function tablePart(): Table
     {
         return $this->table;
-    }
-
-    #[Override]
-    public function buildSqlString(AbstractSqlRenderer $renderer): string
-    {
-        $renderer->getTypeDecorator($this)?->prepare($this, $renderer);
-
-        $combine = $this->combine?->toSql($renderer);
-
-        $sql = implode(' ', array_filter([
-            $this->quantifier?->toSql($renderer),
-            $this->table->columns->toSql($renderer),
-            $this->table->from->toSql($renderer),
-            $this->table->join?->toSql($renderer),
-            $this->where?->toSql($renderer),
-            $this->groupBy?->toSql($renderer),
-            $this->having?->toSql($renderer),
-            $this->orderBy?->toSql($renderer),
-            $this->limit?->toSql($renderer),
-            $this->offset?->toSql($renderer),
-        ]));
-
-        return $combine !== null
-            ? "( SELECT $sql ) $combine"
-            : "SELECT $sql";
     }
 
     /**
