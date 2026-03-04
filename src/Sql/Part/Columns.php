@@ -63,7 +63,6 @@ class Columns extends AbstractPart
         $fragments   = [];
         $exprCounter = 1;
         $pi          = 0;
-        $platform    = $renderer->platform;
         $refSets     = $this->joinRefs !== [] ? [$refs, $this->joinRefs] : [$refs];
 
         foreach ($refSets as $currentRefs) {
@@ -80,9 +79,7 @@ class Columns extends AbstractPart
                 $column = $ref->column;
 
                 if ($column instanceof Identifier) {
-                    $columnSql = $prefix
-                        . ($renderer->identifier[$column->identifier]
-                            ??= $platform->quoteIdentifier($column->identifier));
+                    $columnSql = $prefix . $column->qi;
                 } elseif ($column instanceof ArgumentInterface) {
                     $columnSql = $prefix . $renderer->renderArgument($column, '', $pi);
                 } else {
@@ -91,8 +88,7 @@ class Columns extends AbstractPart
 
                 if ($ref->columnAlias !== null) {
                     $fragments[] = $columnSql . ' AS '
-                        . ($renderer->identifier[$ref->columnAlias]
-                            ??= $platform->quoteIdentifier($ref->columnAlias));
+                        . AbstractSqlRenderer::QI_OPEN . $ref->columnAlias . AbstractSqlRenderer::QI_CLOSE;
                 } elseif ($ref->containsAlias) {
                     $fragments[] = $columnSql;
                 } else {

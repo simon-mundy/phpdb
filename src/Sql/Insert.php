@@ -158,7 +158,7 @@ class Insert extends AbstractPreparableSql
             if ($columnNames !== []) {
                 $columns = [];
                 foreach ($columnNames as $col) {
-                    $columns[] = $renderer->identifier[$col] ??= $renderer->platform->quoteIdentifier($col);
+                    $columns[] = AbstractSqlRenderer::QI_OPEN . $col . AbstractSqlRenderer::QI_CLOSE;
                 }
                 return $keyword . ' ' . $tableSql
                     . ' (' . implode(', ', $columns) . ') ' . $selectSql;
@@ -178,7 +178,7 @@ class Insert extends AbstractPreparableSql
         $hasParamContainer = $renderer->parameterContainer instanceof ParameterContainer;
 
         foreach ($this->columns as $column => $value) {
-            $columns[] = $renderer->identifier[$column] ??= $renderer->platform->quoteIdentifier($column);
+            $columns[] = AbstractSqlRenderer::QI_OPEN . $column . AbstractSqlRenderer::QI_CLOSE;
 
             if ($value === null) {
                 $values[] = 'NULL';

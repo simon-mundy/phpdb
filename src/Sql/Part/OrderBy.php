@@ -31,16 +31,13 @@ class OrderBy extends AbstractPart
             return null;
         }
 
-        $platform = $renderer->platform;
-        $orders   = [];
+        $orders = [];
 
         foreach ($this->order as $spec) {
             $column = $spec->column;
 
             if ($column instanceof Identifier) {
-                $orders[] = ($renderer->identifier[$column->identifier]
-                    ??= $platform->quoteIdentifier($column->identifier))
-                    . ' ' . $spec->direction;
+                $orders[] = $column->qi . ' ' . $spec->direction;
             } elseif ($column instanceof ArgumentInterface) {
                 $pi       = 0;
                 $orders[] = $renderer->renderArgument($column, '', $pi)

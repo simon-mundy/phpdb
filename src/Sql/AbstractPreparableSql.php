@@ -8,7 +8,10 @@ use Override;
 use PhpDb\Adapter\AdapterInterface;
 use PhpDb\Adapter\ParameterContainer;
 use PhpDb\Adapter\StatementContainerInterface;
+use PhpDb\Sql\Platform\AbstractSqlRenderer;
 use PhpDb\Sql\Platform\Sql92Renderer;
+
+use function strtr;
 
 abstract class AbstractPreparableSql extends AbstractSql implements PreparableSqlInterface
 {
@@ -25,9 +28,17 @@ abstract class AbstractPreparableSql extends AbstractSql implements PreparableSq
             $statementContainer->setParameterContainer($parameterContainer);
         }
 
+        $renderer = (new Sql92Renderer())->init(
+            $adapter->getPlatform(),
+            $adapter->getDriver(),
+            $parameterContainer
+        );
+
         $statementContainer->setSql(
-            $this->buildSqlString(
-                (new Sql92Renderer())->init($adapter->getPlatform(), $adapter->getDriver(), $parameterContainer)
+            strtr(
+                $this->buildSqlString($renderer),
+                AbstractSqlRenderer::QI_PAIR,
+                $renderer->quoteChars
             )
         );
 

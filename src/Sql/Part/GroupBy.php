@@ -22,15 +22,13 @@ class GroupBy extends AbstractPart
             return null;
         }
 
-        $platform = $renderer->platform;
-        $groups   = [];
+        $groups = [];
 
         foreach ($this->group as $ref) {
             $column = $ref->column;
 
             if ($column instanceof Identifier) {
-                $id       = $column->identifier;
-                $groups[] = $renderer->identifier[$id] ??= $platform->quoteIdentifier($id);
+                $groups[] = $column->qi;
             } elseif ($column instanceof ArgumentInterface) {
                 $pi       = 0;
                 $groups[] = $renderer->renderArgument($column, '', $pi);
