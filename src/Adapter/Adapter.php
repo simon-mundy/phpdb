@@ -23,27 +23,65 @@ class Adapter implements AdapterInterface, Profiler\ProfilerAwareInterface, Sche
         protected Driver\DriverInterface $driver,
         protected Platform\PlatformInterface $platform,
         protected ResultSet\ResultSetInterface $queryResultSetPrototype = new ResultSet\ResultSet(),
-        protected ?Profiler\ProfilerInterface $profiler = null
+        protected ?Profiler\ProfilerInterface $profiler = null,
     ) {
         if ($profiler) {
             $this->setProfiler($profiler);
         }
     }
 
+    /**
+     * Create statement
+     */
     #[Override]
-    public function setProfiler(Profiler\ProfilerInterface $profiler): Profiler\ProfilerAwareInterface
-    {
-        $this->profiler = $profiler;
-        if ($this->driver instanceof Profiler\ProfilerAwareInterface) {
-            $this->driver->setProfiler($profiler);
+    public function createStatement(
+        ?string $initialSql = null,
+        ParameterContainer|array $initialParameters = [],
+    ): Driver\StatementInterface {
+        $statement = $this->driver->createStatement($initialSql);
+        if (
+            is_array($initialParameters)
+        ) {
+            $initialParameters = new ParameterContainer($initialParameters);
         }
-        return $this;
+        $statement->setParameterContainer($initialParameters);
+        return $statement;
+    }
+
+    #[Override]
+    public function getCurrentSchema(): string|false
+    {
+        return $this->driver->getConnection()->getCurrentSchema();
     }
 
     #[Override]
     public function getDriver(): Driver\DriverInterface
     {
         return $this->driver;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getHelpers()
+    {
+        $functions = [];
+        $platform  = $this->platform;
+        foreach (func_get_args() as $arg) {
+            switch ($arg) {
+                case self::FUNCTION_QUOTE_IDENTIFIER:
+                    $functions[] = static function ($value) use ($platform) {
+                        return $platform->quoteIdentifier($value);
+                    };
+                    break;
+                case self::FUNCTION_QUOTE_VALUE:
+                    $functions[] = static function ($value) use ($platform) {
+                        return $platform->quoteValue($value);
+                    };
+                    break;
+            }
+        }
+        return $functions;
     }
 
     #[Override]
@@ -64,12 +102,6 @@ class Adapter implements AdapterInterface, Profiler\ProfilerAwareInterface, Sche
         return $this->queryResultSetPrototype;
     }
 
-    #[Override]
-    public function getCurrentSchema(): string|false
-    {
-        return $this->driver->getConnection()->getCurrentSchema();
-    }
-
     /**
      * query() is a convenience function
      *
@@ -80,11 +112,11 @@ class Adapter implements AdapterInterface, Profiler\ProfilerAwareInterface, Sche
     public function query(
         string $sql,
         ParameterContainer|array|string $parametersOrQueryMode = self::QUERY_MODE_PREPARE,
-        ?ResultSet\ResultSetInterface $resultPrototype = null
+        ?ResultSet\ResultSetInterface $resultPrototype = null,
     ): Driver\StatementInterface|ResultSet\ResultSetInterface|Driver\ResultInterface {
         if (
             is_string($parametersOrQueryMode)
-            && in_array($parametersOrQueryMode, [self::QUERY_MODE_PREPARE, self::QUERY_MODE_EXECUTE])
+                && in_array($parametersOrQueryMode, [self::QUERY_MODE_PREPARE, self::QUERY_MODE_EXECUTE])
         ) {
             $mode       = $parametersOrQueryMode;
             $parameters = null;
@@ -93,11 +125,11 @@ class Adapter implements AdapterInterface, Profiler\ProfilerAwareInterface, Sche
             $parameters = $parametersOrQueryMode;
         } else {
             throw new Exception\InvalidArgumentException(
-                'Parameter 2 to this method must be a flag, an array, or ParameterContainer'
+                'Parameter 2 to this method must be a flag, an array, or ParameterContainer',
             );
         }
 
-        if ($mode === self::QUERY_MODE_PREPARE) {
+        if (self::QUERY_MODE_PREPARE === $mode) {
             $lastPreparedStatement = $this->driver->createStatement($sql);
             $lastPreparedStatement->prepare();
             if (is_array($parameters) || $parameters instanceof ParameterContainer) {
@@ -126,46 +158,14 @@ class Adapter implements AdapterInterface, Profiler\ProfilerAwareInterface, Sche
         return $result;
     }
 
-    /**
-     * Create statement
-     */
     #[Override]
-    public function createStatement(
-        ?string $initialSql = null,
-        ParameterContainer|array $initialParameters = []
-    ): Driver\StatementInterface {
-        $statement = $this->driver->createStatement($initialSql);
-        if (
-            is_array($initialParameters)
-        ) {
-            $initialParameters = new ParameterContainer($initialParameters);
-        }
-        $statement->setParameterContainer($initialParameters);
-        return $statement;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getHelpers()
+    public function setProfiler(Profiler\ProfilerInterface $profiler): Profiler\ProfilerAwareInterface
     {
-        $functions = [];
-        $platform  = $this->platform;
-        foreach (func_get_args() as $arg) {
-            switch ($arg) {
-                case self::FUNCTION_QUOTE_IDENTIFIER:
-                    $functions[] = function ($value) use ($platform) {
-                        return $platform->quoteIdentifier($value);
-                    };
-                    break;
-                case self::FUNCTION_QUOTE_VALUE:
-                    $functions[] = function ($value) use ($platform) {
-                        return $platform->quoteValue($value);
-                    };
-                    break;
-            }
+        $this->profiler = $profiler;
+        if ($this->driver instanceof Profiler\ProfilerAwareInterface) {
+            $this->driver->setProfiler($profiler);
         }
-        return $functions;
+        return $this;
     }
 
     /** @throws Exception\InvalidArgumentException */

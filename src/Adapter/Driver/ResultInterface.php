@@ -7,9 +7,7 @@ namespace PhpDb\Adapter\Driver;
 use Countable;
 use Iterator;
 
-interface ResultInterface extends
-    Countable,
-    Iterator
+interface ResultInterface extends Countable, Iterator
 {
     /**
      * Force buffering
@@ -17,19 +15,14 @@ interface ResultInterface extends
     public function buffer(): void;
 
     /**
-     * Check if is buffered
-     */
-    public function isBuffered(): ?bool;
-
-    /**
-     * Is query result?
-     */
-    public function isQueryResult(): bool;
-
-    /**
      * Get affected rows
      */
     public function getAffectedRows(): int;
+
+    /**
+     * Get field count
+     */
+    public function getFieldCount(): int;
 
     /**
      * Get generated value
@@ -42,7 +35,12 @@ interface ResultInterface extends
     public function getResource(): mixed;
 
     /**
-     * Get field count
+     * Check if is buffered
      */
-    public function getFieldCount(): int;
+    public function isBuffered(): ?bool;
+
+    /**
+     * Is query result?
+     */
+    public function isQueryResult(): bool;
 }
