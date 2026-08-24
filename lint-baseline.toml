@@ -601,24 +601,6 @@ message = "Literal argument `'%%'` should be passed as a named argument for clar
 count = 1
 
 [[issues]]
-file = "src/Sql/Platform/Platform.php"
-code = "literal-named-argument"
-message = "Literal argument `''` should be passed as a named argument for clarity."
-count = 1
-
-[[issues]]
-file = "src/Sql/Platform/Platform.php"
-code = "literal-named-argument"
-message = "Literal argument `true` should be passed as a named argument for clarity."
-count = 1
-
-[[issues]]
-file = "src/Sql/Platform/Platform.php"
-code = "no-isset"
-message = "Use of the `isset` construct."
-count = 2
-
-[[issues]]
 file = "src/Sql/Predicate/In.php"
 code = "halstead"
 message = "Method has a high halstead difficulty"
@@ -4633,162 +4615,6 @@ message = "Use strict assertions in PHPUnit tests."
 count = 5
 
 [[issues]]
-file = "test/unit/Sql/Platform/AbstractPlatformTest.php"
-code = "assertion-style"
-message = "Inconsistent assertions style."
-count = 9
-
-[[issues]]
-file = "test/unit/Sql/Platform/AbstractPlatformTest.php"
-code = "prefer-test-attribute"
-message = "Use `#[Test]` attribute instead of `test` prefix on method `testGetSqlStringDelegatesToDecoratorSubject`."
-count = 1
-
-[[issues]]
-file = "test/unit/Sql/Platform/AbstractPlatformTest.php"
-code = "prefer-test-attribute"
-message = "Use `#[Test]` attribute instead of `test` prefix on method `testGetSqlStringThrowsWhenSubjectNotSqlInterface`."
-count = 1
-
-[[issues]]
-file = "test/unit/Sql/Platform/AbstractPlatformTest.php"
-code = "prefer-test-attribute"
-message = "Use `#[Test]` attribute instead of `test` prefix on method `testGetTypeDecoratorLoopMatchesByInstanceof`."
-count = 1
-
-[[issues]]
-file = "test/unit/Sql/Platform/AbstractPlatformTest.php"
-code = "prefer-test-attribute"
-message = "Use `#[Test]` attribute instead of `test` prefix on method `testGetTypeDecoratorReturnsSubjectWhenNoMatch`."
-count = 1
-
-[[issues]]
-file = "test/unit/Sql/Platform/AbstractPlatformTest.php"
-code = "prefer-test-attribute"
-message = "Use `#[Test]` attribute instead of `test` prefix on method `testPrepareStatementDelegatesToDecoratorSubject`."
-count = 1
-
-[[issues]]
-file = "test/unit/Sql/Platform/AbstractPlatformTest.php"
-code = "prefer-test-attribute"
-message = "Use `#[Test]` attribute instead of `test` prefix on method `testPrepareStatementThrowsWhenSubjectNotPreparable`."
-count = 1
-
-[[issues]]
-file = "test/unit/Sql/Platform/AbstractPlatformTest.php"
-code = "prefer-test-attribute"
-message = "Use `#[Test]` attribute instead of `test` prefix on method `testSetAndGetTypeDecorator`."
-count = 1
-
-[[issues]]
-file = "test/unit/Sql/Platform/AbstractPlatformTest.php"
-code = "prefer-test-attribute"
-message = "Use `#[Test]` attribute instead of `test` prefix on method `testSetSubjectReturnsStatic`."
-count = 1
-
-[[issues]]
-file = "test/unit/Sql/Platform/AbstractPlatformTest.php"
-code = "string-style"
-message = "String concatenation can be replaced with interpolation."
-count = 2
-
-[[issues]]
-file = "test/unit/Sql/Platform/PlatformTest.php"
-code = "assertion-style"
-message = "Inconsistent assertions style."
-count = 18
-
-[[issues]]
-file = "test/unit/Sql/Platform/PlatformTest.php"
-code = "prefer-test-attribute"
-message = "Use `#[Test]` attribute instead of `test` prefix on method `testGetDefaultPlatformReturnsInstance`."
-count = 1
-
-[[issues]]
-file = "test/unit/Sql/Platform/PlatformTest.php"
-code = "prefer-test-attribute"
-message = "Use `#[Test]` attribute instead of `test` prefix on method `testGetSqlStringDelegatesToTypeDecorator`."
-count = 1
-
-[[issues]]
-file = "test/unit/Sql/Platform/PlatformTest.php"
-code = "prefer-test-attribute"
-message = "Use `#[Test]` attribute instead of `test` prefix on method `testGetSqlStringThrowsWhenSubjectNotSqlInterface`."
-count = 1
-
-[[issues]]
-file = "test/unit/Sql/Platform/PlatformTest.php"
-code = "prefer-test-attribute"
-message = "Use `#[Test]` attribute instead of `test` prefix on method `testGetTypeDecoratorFallsThroughWhenNoMatch`."
-count = 1
-
-[[issues]]
-file = "test/unit/Sql/Platform/PlatformTest.php"
-code = "prefer-test-attribute"
-message = "Use `#[Test]` attribute instead of `test` prefix on method `testGetTypeDecoratorMatchesByInstanceofLoop`."
-count = 1
-
-[[issues]]
-file = "test/unit/Sql/Platform/PlatformTest.php"
-code = "prefer-test-attribute"
-message = "Use `#[Test]` attribute instead of `test` prefix on method `testGetTypeDecoratorMatchesExactClass`."
-count = 1
-
-[[issues]]
-file = "test/unit/Sql/Platform/PlatformTest.php"
-code = "prefer-test-attribute"
-message = "Use `#[Test]` attribute instead of `test` prefix on method `testGetTypeDecoratorReturnsSubjectWhenNoDecoratorRegistered`."
-count = 1
-
-[[issues]]
-file = "test/unit/Sql/Platform/PlatformTest.php"
-code = "prefer-test-attribute"
-message = "Use `#[Test]` attribute instead of `test` prefix on method `testPrepareStatementThrowsWhenSubjectNotPreparable`."
-count = 1
-
-[[issues]]
-file = "test/unit/Sql/Platform/PlatformTest.php"
-code = "prefer-test-attribute"
-message = "Use `#[Test]` attribute instead of `test` prefix on method `testResolveDefaultPlatform`."
-count = 1
-
-[[issues]]
-file = "test/unit/Sql/Platform/PlatformTest.php"
-code = "prefer-test-attribute"
-message = "Use `#[Test]` attribute instead of `test` prefix on method `testResolvePlatformNameCachesResult`."
-count = 1
-
-[[issues]]
-file = "test/unit/Sql/Platform/PlatformTest.php"
-code = "prefer-test-attribute"
-message = "Use `#[Test]` attribute instead of `test` prefix on method `testResolvePlatformName`."
-count = 1
-
-[[issues]]
-file = "test/unit/Sql/Platform/PlatformTest.php"
-code = "prefer-test-attribute"
-message = "Use `#[Test]` attribute instead of `test` prefix on method `testResolvePlatformWithAdapterInterface`."
-count = 1
-
-[[issues]]
-file = "test/unit/Sql/Platform/PlatformTest.php"
-code = "prefer-test-attribute"
-message = "Use `#[Test]` attribute instead of `test` prefix on method `testResolvePlatformWithPlatformInterface`."
-count = 1
-
-[[issues]]
-file = "test/unit/Sql/Platform/PlatformTest.php"
-code = "prefer-test-attribute"
-message = "Use `#[Test]` attribute instead of `test` prefix on method `testSetTypeDecoratorRegistersDecorator`."
-count = 1
-
-[[issues]]
-file = "test/unit/Sql/Platform/PlatformTest.php"
-code = "strict-assertions"
-message = "Use strict assertions in PHPUnit tests."
-count = 5
-
-[[issues]]
 file = "test/unit/Sql/Predicate/BetweenTest.php"
 code = "assertion-style"
 message = "Inconsistent assertions style."
@@ -7157,3 +6983,21 @@ file = "src/Sql/Ddl/Column/AbstractPrecisionColumn.php"
 code = "excessive-parameter-list"
 message = 'Parameter list is too long.'
 count = 1
+
+[[issues]]
+file = "src/Sql/Platform/Platform.php"
+code = "literal-named-argument"
+message = "Literal argument `''` should be passed as a named argument for clarity."
+count = 1
+
+[[issues]]
+file = "src/Sql/Platform/Platform.php"
+code = "literal-named-argument"
+message = 'Literal argument `true` should be passed as a named argument for clarity.'
+count = 1
+
+[[issues]]
+file = "src/Sql/Platform/Platform.php"
+code = "no-isset"
+message = 'Use of the `isset` construct.'
+count = 2

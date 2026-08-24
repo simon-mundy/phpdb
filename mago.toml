@@ -17,4 +17,5 @@ class-initializers = [
     "PhpDb\\ResultSet\\AbstractResultSet::initialize",
     "PhpDb\\TableGateway\\Feature\\AbstractFeature::setTableGateway",
     "PhpDb\\RowGateway\\Feature\\AbstractFeature::setRowGateway",
+    "PhpDb\\Sql\\Platform\\AbstractPlatform::setSubject",
 ]
