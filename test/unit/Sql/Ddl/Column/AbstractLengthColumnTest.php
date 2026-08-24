@@ -8,6 +8,7 @@ use PhpDb\Sql\Argument\Identifier;
 use PhpDb\Sql\Argument\Literal;
 use PhpDb\Sql\Ddl\Column\AbstractLengthColumn;
 use PHPUnit\Framework\Attributes\CoversMethod;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\Exception;
 use PHPUnit\Framework\TestCase;
 
@@ -19,7 +20,8 @@ final class AbstractLengthColumnTest extends TestCase
     /**
      * @throws Exception
      */
-    public function testGetExpressionData(): void
+    #[Test]
+    public function getExpressionData(): void
     {
         $column = $this->getMockBuilder(AbstractLengthColumn::class)
             ->setConstructorArgs(['foo', 4])
@@ -28,8 +30,8 @@ final class AbstractLengthColumnTest extends TestCase
 
         $expressionData = $column->getExpressionData();
 
-        self::assertEquals('%s %s(%s) NOT NULL', $expressionData['spec']);
-        self::assertEquals(
+        static::assertSame('%s %s(%s) NOT NULL', $expressionData['spec']);
+        static::assertEquals(
             [
                 new Identifier('foo'),
                 new Literal('INTEGER'),
@@ -42,26 +44,28 @@ final class AbstractLengthColumnTest extends TestCase
     /**
      * @throws Exception
      */
-    public function testGetLength(): void
+    #[Test]
+    public function getLength(): void
     {
         $column = $this->getMockBuilder(AbstractLengthColumn::class)
             ->setConstructorArgs(['foo', 55])
             ->onlyMethods([])
             ->getMock();
-        self::assertEquals(55, $column->getLength());
+        static::assertSame(55, $column->getLength());
     }
 
     /**
      * @throws Exception
      */
-    public function testSetLength(): void
+    #[Test]
+    public function setLength(): void
     {
         $column = $this->getMockBuilder(AbstractLengthColumn::class)
             ->setConstructorArgs(['foo', 55])
             ->onlyMethods([])
             ->getMock();
-        self::assertEquals(55, $column->getLength());
-        self::assertSame($column, $column->setLength(20));
-        self::assertEquals(20, $column->getLength());
+        static::assertSame(55, $column->getLength());
+        static::assertSame($column, $column->setLength(20));
+        static::assertSame(20, $column->getLength());
     }
 }

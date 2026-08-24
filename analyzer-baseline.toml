@@ -4860,3 +4860,15 @@ file = "src/TableGateway/AbstractTableGateway.php"
 code = "possibly-undefined-string-array-index"
 message = "Possibly undefined array key `string('table')` accessed on `array<array-key, mixed>`."
 count = 3
+
+[[issues]]
+file = "src/Sql/Ddl/AlterTable.php"
+code = "invalid-property-default-value"
+message = 'Default value for property `PhpDb\Sql\Ddl\AlterTable::$specifications` is not assignable to its declared type.'
+count = 1
+
+[[issues]]
+file = "src/Sql/Ddl/CreateTable.php"
+code = "invalid-property-default-value"
+message = 'Default value for property `PhpDb\Sql\Ddl\CreateTable::$specifications` is not assignable to its declared type.'
+count = 1

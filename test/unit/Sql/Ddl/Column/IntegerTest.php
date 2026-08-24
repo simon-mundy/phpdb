@@ -10,6 +10,7 @@ use PhpDb\Sql\Ddl\Column\Integer;
 use PhpDb\Sql\Ddl\Constraint\PrimaryKey;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 #[CoversMethod(Integer::class, '__construct')]
@@ -18,14 +19,15 @@ use PHPUnit\Framework\TestCase;
 #[Group('unit')]
 final class IntegerTest extends TestCase
 {
-    public function testGetExpressionData(): void
+    #[Test]
+    public function getExpressionData(): void
     {
         $column = new Integer('foo');
 
         $expressionData = $column->getExpressionData();
 
-        self::assertEquals('%s %s NOT NULL', $expressionData['spec']);
-        self::assertEquals(
+        static::assertSame('%s %s NOT NULL', $expressionData['spec']);
+        static::assertEquals(
             [
                 Argument::identifier('foo'),
                 Argument::literal('INTEGER'),
@@ -38,8 +40,8 @@ final class IntegerTest extends TestCase
 
         $expressionData = $column->getExpressionData();
 
-        self::assertEquals('%s %s NOT NULL PRIMARY KEY', $expressionData['spec']);
-        self::assertEquals(
+        static::assertSame('%s %s NOT NULL PRIMARY KEY', $expressionData['spec']);
+        static::assertEquals(
             [
                 Argument::identifier('foo'),
                 Argument::literal('INTEGER'),
@@ -48,28 +50,31 @@ final class IntegerTest extends TestCase
         );
     }
 
-    public function testGetExpressionDataExcludesLengthWhenNotSet(): void
+    #[Test]
+    public function getExpressionDataExcludesLengthWhenNotSet(): void
     {
         $column = new Integer('id');
 
         $expressionData = $column->getExpressionData();
 
-        self::assertStringNotContainsString('(', $expressionData['spec']);
+        static::assertStringNotContainsString('(', $expressionData['spec']);
     }
 
-    public function testGetExpressionDataIncludesLengthWhenOptionSet(): void
+    #[Test]
+    public function getExpressionDataIncludesLengthWhenOptionSet(): void
     {
         $column = new Integer('id');
         $column->setOption('length', '11');
 
         $expressionData = $column->getExpressionData();
 
-        self::assertStringContainsString('(11)', $expressionData['spec']);
+        static::assertStringContainsString('(11)', $expressionData['spec']);
     }
 
-    public function testObjectConstruction(): void
+    #[Test]
+    public function objectConstruction(): void
     {
         $integer = new Integer('foo');
-        self::assertEquals('foo', $integer->getName());
+        static::assertSame('foo', $integer->getName());
     }
 }

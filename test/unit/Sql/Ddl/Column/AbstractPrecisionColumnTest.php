@@ -7,6 +7,7 @@ namespace PhpDbTest\Sql\Ddl\Column;
 use PhpDb\Sql\Argument;
 use PhpDb\Sql\Ddl\Column\AbstractPrecisionColumn;
 use PHPUnit\Framework\Attributes\CoversMethod;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\Exception;
 use PHPUnit\Framework\TestCase;
 
@@ -20,31 +21,34 @@ final class AbstractPrecisionColumnTest extends TestCase
     /**
      * @throws Exception
      */
-    public function testGetDecimal(): void
+    #[Test]
+    public function getDecimal(): void
     {
         $column = $this->getMockBuilder(AbstractPrecisionColumn::class)
             ->setConstructorArgs(['foo', 10, 5])
             ->onlyMethods([])
             ->getMock();
-        self::assertEquals(5, $column->getDecimal());
+        static::assertSame(5, $column->getDecimal());
     }
 
     /**
      * @throws Exception
      */
-    public function testGetDigits(): void
+    #[Test]
+    public function getDigits(): void
     {
         $column = $this->getMockBuilder(AbstractPrecisionColumn::class)
             ->setConstructorArgs(['foo', 10])
             ->onlyMethods([])
             ->getMock();
-        self::assertEquals(10, $column->getDigits());
+        static::assertSame(10, $column->getDigits());
     }
 
     /**
      * @throws Exception
      */
-    public function testGetExpressionData(): void
+    #[Test]
+    public function getExpressionData(): void
     {
         $column = $this->getMockBuilder(AbstractPrecisionColumn::class)
             ->setConstructorArgs(['foo', 10, 5])
@@ -53,8 +57,8 @@ final class AbstractPrecisionColumnTest extends TestCase
 
         $expressionData = $column->getExpressionData();
 
-        self::assertEquals('%s %s(%s) NOT NULL', $expressionData['spec']);
-        self::assertEquals(
+        static::assertSame('%s %s(%s) NOT NULL', $expressionData['spec']);
+        static::assertEquals(
             [
                 Argument::identifier('foo'),
                 Argument::literal('INTEGER'),
@@ -67,28 +71,30 @@ final class AbstractPrecisionColumnTest extends TestCase
     /**
      * @throws Exception
      */
-    public function testSetDecimal(): void
+    #[Test]
+    public function setDecimal(): void
     {
         $column = $this->getMockBuilder(AbstractPrecisionColumn::class)
             ->setConstructorArgs(['foo', 10, 5])
             ->onlyMethods([])
             ->getMock();
-        self::assertEquals(5, $column->getDecimal());
-        self::assertSame($column, $column->setDecimal(2));
-        self::assertEquals(2, $column->getDecimal());
+        static::assertSame(5, $column->getDecimal());
+        static::assertSame($column, $column->setDecimal(2));
+        static::assertSame(2, $column->getDecimal());
     }
 
     /**
      * @throws Exception
      */
-    public function testSetDigits(): void
+    #[Test]
+    public function setDigits(): void
     {
         $column = $this->getMockBuilder(AbstractPrecisionColumn::class)
             ->setConstructorArgs(['foo', 10])
             ->onlyMethods([])
             ->getMock();
-        self::assertEquals(10, $column->getDigits());
-        self::assertSame($column, $column->setDigits(12));
-        self::assertEquals(12, $column->getDigits());
+        static::assertSame(10, $column->getDigits());
+        static::assertSame($column, $column->setDigits(12));
+        static::assertSame(12, $column->getDigits());
     }
 }

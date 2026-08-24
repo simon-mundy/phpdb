@@ -8,6 +8,7 @@ use PhpDb\Sql\Argument;
 use PhpDb\Sql\Ddl\Column\AbstractLengthColumn;
 use PhpDb\Sql\Ddl\Column\Varchar;
 use PHPUnit\Framework\Attributes\CoversMethod;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 #[CoversMethod(Varchar::class, 'getExpressionData')]
@@ -18,14 +19,15 @@ use PHPUnit\Framework\TestCase;
 #[CoversMethod(AbstractLengthColumn::class, 'getExpressionData')]
 final class VarcharTest extends TestCase
 {
-    public function testGetExpressionData(): void
+    #[Test]
+    public function getExpressionData(): void
     {
         $column = new Varchar('foo', 20);
 
         $expressionData = $column->getExpressionData();
 
-        self::assertEquals('%s %s(%s) NOT NULL', $expressionData['spec']);
-        self::assertEquals(
+        static::assertSame('%s %s(%s) NOT NULL', $expressionData['spec']);
+        static::assertEquals(
             [
                 Argument::identifier('foo'),
                 Argument::literal('VARCHAR'),
@@ -38,8 +40,8 @@ final class VarcharTest extends TestCase
 
         $expressionData = $column->getExpressionData();
 
-        self::assertEquals('%s %s(%s) NOT NULL DEFAULT %s', $expressionData['spec']);
-        self::assertEquals(
+        static::assertSame('%s %s(%s) NOT NULL DEFAULT %s', $expressionData['spec']);
+        static::assertEquals(
             [
                 Argument::identifier('foo'),
                 Argument::literal('VARCHAR'),
@@ -50,7 +52,8 @@ final class VarcharTest extends TestCase
         );
     }
 
-    public function testGetExpressionDataWithNullLength(): void
+    #[Test]
+    public function getExpressionDataWithNullLength(): void
     {
         $column = new Varchar('name');
 
@@ -65,8 +68,8 @@ final class VarcharTest extends TestCase
 
         // The specification format is defined in AbstractLengthColumn as '%s %s(%s)'
         // But when length value is not added, we need to check if placeholder remains
-        self::assertEquals('%s %s(%s) NOT NULL', $spec);
-        self::assertEquals(
+        static::assertSame('%s %s(%s) NOT NULL', $spec);
+        static::assertEquals(
             [
                 Argument::identifier('name'),
                 Argument::literal('VARCHAR'),
@@ -75,18 +78,20 @@ final class VarcharTest extends TestCase
         );
     }
 
-    public function testInheritanceFromAbstractLengthColumn(): void
+    #[Test]
+    public function inheritanceFromAbstractLengthColumn(): void
     {
         $column = new Varchar('test');
-        self::assertInstanceOf(AbstractLengthColumn::class, $column);
+        static::assertInstanceOf(AbstractLengthColumn::class, $column);
     }
 
-    public function testSetLengthAndGetLength(): void
+    #[Test]
+    public function setLengthAndGetLength(): void
     {
         $column = new Varchar('name');
 
         $result = $column->setLength(100);
-        self::assertSame($column, $result); // Fluent interface
-        self::assertEquals(100, $column->getLength());
+        static::assertSame($column, $result); // Fluent interface
+        static::assertSame(100, $column->getLength());
     }
 }
