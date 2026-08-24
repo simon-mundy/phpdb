@@ -9,12 +9,16 @@ use PhpDb\Sql\Argument\Literal;
 
 use function array_splice;
 
+/**
+ * @api
+ */
 abstract class AbstractLengthColumn extends Column
 {
     protected string $specification = '%s %s(%s)';
 
     protected ?int $length = null;
 
+    /** @param array<string, mixed> $options */
     public function __construct(
         string $name,
         ?int $length = null,

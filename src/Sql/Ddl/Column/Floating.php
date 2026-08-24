@@ -9,6 +9,8 @@ namespace PhpDb\Sql\Ddl\Column;
  *
  * Cannot name a class "float" starting in PHP 7, as it's a reserved keyword;
  * hence, "floating", with a type of "FLOAT".
+ *
+ * @api
  */
 class Floating extends AbstractPrecisionColumn
 {

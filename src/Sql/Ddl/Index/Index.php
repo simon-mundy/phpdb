@@ -12,14 +12,22 @@ use function count;
 use function implode;
 use function str_replace;
 
+/**
+ * @api
+ */
 class Index extends AbstractIndex
 {
     protected string $specification = 'INDEX %s(...)';
 
+    /** @var int[] */
     protected array $lengths;
 
     protected ?string $type = null;
 
+    /**
+     * @param string[]|string|null $columns
+     * @param int[] $lengths
+     */
     public function __construct(array|string|null $columns, ?string $name = null, array $lengths = [])
     {
         parent::__construct($columns, $name);

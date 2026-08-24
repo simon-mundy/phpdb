@@ -12,6 +12,9 @@ use function count;
 use function implode;
 use function str_replace;
 
+/**
+ * @api
+ */
 abstract class AbstractConstraint implements ConstraintInterface
 {
     protected string $columnSpecification = '(%s)';
@@ -22,8 +25,10 @@ abstract class AbstractConstraint implements ConstraintInterface
 
     protected string $name = '';
 
+    /** @var string[] */
     protected array $columns = [];
 
+    /** @param string[]|string|null $columns */
     public function __construct(array|string|null $columns = null, ?string $name = null)
     {
         if (null !== $columns) {
@@ -42,6 +47,7 @@ abstract class AbstractConstraint implements ConstraintInterface
     }
 
     #[Override]
+    /** @inheritDoc */
     public function getColumns(): array
     {
         return $this->columns;
@@ -83,6 +89,7 @@ abstract class AbstractConstraint implements ConstraintInterface
         return $this->name;
     }
 
+    /** @param string[]|string $columns */
     public function setColumns(string|array $columns): static
     {
         $this->columns = (array) $columns;

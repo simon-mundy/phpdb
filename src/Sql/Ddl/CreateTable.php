@@ -6,6 +6,8 @@ namespace PhpDb\Sql\Ddl;
 
 use PhpDb\Adapter\Platform\PlatformInterface;
 use PhpDb\Sql\AbstractSql;
+use PhpDb\Sql\Ddl\Column\ColumnInterface;
+use PhpDb\Sql\Ddl\Constraint\ConstraintInterface;
 use PhpDb\Sql\Literal;
 use PhpDb\Sql\TableIdentifier;
 
@@ -15,24 +17,30 @@ use function is_bool;
 use function is_int;
 use function strtoupper;
 
+/**
+ * @api
+ */
 class CreateTable extends AbstractSql
 {
-    final public const COLUMNS = 'columns';
+    final public const string COLUMNS = 'columns';
 
-    final public const CONSTRAINTS = 'constraints';
+    final public const string CONSTRAINTS = 'constraints';
 
-    final public const TABLE = 'table';
+    final public const string TABLE = 'table';
 
-    final public const TABLE_OPTIONS = 'tableOptions';
+    final public const string TABLE_OPTIONS = 'tableOptions';
 
+    /** @var ColumnInterface[] */
     protected array $columns = [];
 
+    /** @var ConstraintInterface[] */
     protected array $constraints = [];
 
     protected bool $ifNotExists = false;
 
     protected bool $isTemporary = false;
 
+    /** @var array<string, Literal|bool|int|string> */
     protected array $options = [];
 
     /**
@@ -80,6 +88,7 @@ class CreateTable extends AbstractSql
         return $this->ifNotExists;
     }
 
+    /** @return array<string, Literal|bool|int|string> */
     public function getOptions(): array
     {
         return $this->options;
@@ -118,6 +127,7 @@ class CreateTable extends AbstractSql
         return $this;
     }
 
+    /** @param array<string, Literal|bool|int|string> $options */
     public function setOptions(array $options): static
     {
         $this->options = $options;

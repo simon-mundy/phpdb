@@ -9,6 +9,8 @@ use PhpDb\Sql\Argument\Literal;
 
 /**
  * @see doc section http://dev.mysql.com/doc/refman/5.6/en/timestamp-initialization.html
+ *
+ * @api
  */
 abstract class AbstractTimestampColumn extends Column
 {

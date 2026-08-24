@@ -6,6 +6,9 @@ namespace PhpDb\Sql\Ddl\Column;
 
 use Override;
 
+/**
+ * @api
+ */
 class Integer extends Column
 {
     /** @inheritDoc */

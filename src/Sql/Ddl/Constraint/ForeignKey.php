@@ -12,6 +12,9 @@ use function array_fill;
 use function count;
 use function implode;
 
+/**
+ * @api
+ */
 class ForeignKey extends AbstractConstraint
 {
     protected string $onDeleteRule = 'NO ACTION';
@@ -32,6 +35,7 @@ class ForeignKey extends AbstractConstraint
     ];
 
     /**
+     * @param string[]|string $columns
      * @param string[]|string|null $referenceColumn
      */
     public function __construct(
@@ -93,6 +97,7 @@ class ForeignKey extends AbstractConstraint
         return $this->onUpdateRule;
     }
 
+    /** @return string[] */
     public function getReferenceColumn(): array
     {
         return $this->referenceColumn;

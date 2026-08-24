@@ -13,6 +13,9 @@ use PhpDb\Sql\Ddl\Constraint\ConstraintInterface;
 
 use function implode;
 
+/**
+ * @api
+ */
 class Column implements ColumnInterface
 {
     protected string|int|float|bool|Literal|Value|null $default;
@@ -21,6 +24,7 @@ class Column implements ColumnInterface
 
     protected string $name = '';
 
+    /** @var array<string, mixed> */
     protected array $options = [];
 
     /** @var ConstraintInterface[] */
@@ -30,6 +34,7 @@ class Column implements ColumnInterface
 
     protected string $type = 'INTEGER';
 
+    /** @param array<string, mixed> $options */
     public function __construct(
         string $name = '',
         bool $nullable = false,
@@ -100,6 +105,7 @@ class Column implements ColumnInterface
         return $this->name;
     }
 
+    /** @inheritDoc */
     #[Override]
     public function getOptions(): array
     {
@@ -136,6 +142,7 @@ class Column implements ColumnInterface
         return $this;
     }
 
+    /** @param array<string, mixed> $options */
     public function setOptions(array $options): static
     {
         $this->options = $options;

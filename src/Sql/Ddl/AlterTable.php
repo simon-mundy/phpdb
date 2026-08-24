@@ -6,6 +6,8 @@ namespace PhpDb\Sql\Ddl;
 
 use PhpDb\Adapter\Platform\PlatformInterface;
 use PhpDb\Sql\AbstractSql;
+use PhpDb\Sql\Ddl\Column\ColumnInterface;
+use PhpDb\Sql\Ddl\Constraint\ConstraintInterface;
 use PhpDb\Sql\Literal;
 use PhpDb\Sql\TableIdentifier;
 
@@ -14,36 +16,46 @@ use function is_bool;
 use function is_int;
 use function strtoupper;
 
+/**
+ * @api
+ */
 class AlterTable extends AbstractSql
 {
-    final public const ADD_COLUMNS = 'addColumns';
+    final public const string ADD_COLUMNS = 'addColumns';
 
-    final public const ADD_CONSTRAINTS = 'addConstraints';
+    final public const string ADD_CONSTRAINTS = 'addConstraints';
 
-    final public const CHANGE_COLUMNS = 'changeColumns';
+    final public const string CHANGE_COLUMNS = 'changeColumns';
 
-    final public const DROP_COLUMNS = 'dropColumns';
+    final public const string DROP_COLUMNS = 'dropColumns';
 
-    final public const DROP_CONSTRAINTS = 'dropConstraints';
+    final public const string DROP_CONSTRAINTS = 'dropConstraints';
 
-    final public const DROP_INDEXES = 'dropIndexes';
+    final public const string DROP_INDEXES = 'dropIndexes';
 
-    final public const TABLE = 'table';
+    final public const string TABLE = 'table';
 
-    final public const TABLE_OPTIONS = 'tableOptions';
+    final public const string TABLE_OPTIONS = 'tableOptions';
 
+    /** @var ColumnInterface[] */
     protected array $addColumns = [];
 
+    /** @var ConstraintInterface[] */
     protected array $addConstraints = [];
 
+    /** @var array<string, ColumnInterface> */
     protected array $changeColumns = [];
 
+    /** @var string[] */
     protected array $dropColumns = [];
 
+    /** @var string[] */
     protected array $dropConstraints = [];
 
+    /** @var string[] */
     protected array $dropIndexes = [];
 
+    /** @var array<string, Literal|bool|int|string> */
     protected array $options = [];
 
     /**
@@ -142,6 +154,7 @@ class AlterTable extends AbstractSql
         return $this;
     }
 
+    /** @return array<string, Literal|bool|int|string> */
     public function getOptions(): array
     {
         return $this->options;
@@ -169,6 +182,7 @@ class AlterTable extends AbstractSql
         return $this;
     }
 
+    /** @param array<string, Literal|bool|int|string> $options */
     public function setOptions(array $options): static
     {
         $this->options = $options;
@@ -183,8 +197,7 @@ class AlterTable extends AbstractSql
     }
 
     /**
-     * @return string[][]
-     * @psalm-return list{list{0?: string,...}}
+     * @return array{0: list<string>}
      */
     protected function processAddColumns(?PlatformInterface $adapterPlatform = null): array
     {
@@ -197,8 +210,7 @@ class AlterTable extends AbstractSql
     }
 
     /**
-     * @return string[][]
-     * @psalm-return list{list{0?: string,...}}
+     * @return array{0: list<string>}
      */
     protected function processAddConstraints(?PlatformInterface $adapterPlatform = null): array
     {
@@ -211,8 +223,7 @@ class AlterTable extends AbstractSql
     }
 
     /**
-     * @return string[][][]
-     * @psalm-return list{list{0?: list{string, string},...}}
+     * @return array{0: list<array{0: string, 1: string}>}
      */
     protected function processChangeColumns(?PlatformInterface $adapterPlatform = null): array
     {
@@ -228,8 +239,7 @@ class AlterTable extends AbstractSql
     }
 
     /**
-     * @return string[][]
-     * @psalm-return list{list{0?: string,...}}
+     * @return array{0: list<string>}
      */
     protected function processDropColumns(?PlatformInterface $adapterPlatform = null): array
     {
@@ -242,8 +252,7 @@ class AlterTable extends AbstractSql
     }
 
     /**
-     * @return string[][]
-     * @psalm-return list{list{0?: string,...}}
+     * @return array{0: list<string>}
      */
     protected function processDropConstraints(?PlatformInterface $adapterPlatform = null): array
     {
@@ -256,8 +265,7 @@ class AlterTable extends AbstractSql
     }
 
     /**
-     * @return string[][]
-     * @psalm-return list{list{0?: string,...}}
+     * @return array{0: list<string>}
      */
     protected function processDropIndexes(?PlatformInterface $adapterPlatform = null): array
     {

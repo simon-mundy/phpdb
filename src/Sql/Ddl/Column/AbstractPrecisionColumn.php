@@ -6,10 +6,14 @@ namespace PhpDb\Sql\Ddl\Column;
 
 use Override;
 
+/**
+ * @api
+ */
 abstract class AbstractPrecisionColumn extends AbstractLengthColumn
 {
     protected ?int $decimal;
 
+    /** @param array<string, mixed> $options */
     public function __construct(
         string $name,
         ?int $digits = null,
