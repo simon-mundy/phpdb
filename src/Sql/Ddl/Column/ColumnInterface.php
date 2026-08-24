@@ -20,7 +20,6 @@ interface ColumnInterface extends ExpressionInterface
     public function getName(): string;
 
     /** @return array<string, mixed> */
-    /** @return array<string, mixed> */
     public function getOptions(): array;
 
     public function isNullable(): bool;

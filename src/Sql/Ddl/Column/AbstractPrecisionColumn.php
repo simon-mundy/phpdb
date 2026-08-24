@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace PhpDb\Sql\Ddl\Column;
 
 use Override;
+use PhpDb\Sql\Argument\Literal;
+use PhpDb\Sql\Argument\Value;
 
 /**
  * @api
@@ -19,7 +21,7 @@ abstract class AbstractPrecisionColumn extends AbstractLengthColumn
         ?int $digits = null,
         ?int $decimal = null,
         bool $nullable = false,
-        mixed $default = null,
+        string|int|float|bool|Literal|Value|null $default = null,
         array $options = [],
     ) {
         $this->setDecimal($decimal);

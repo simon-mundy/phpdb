@@ -160,7 +160,8 @@ class AlterTable extends AbstractSql
         return $this->options;
     }
 
-    public function getRawState(?string $key = null): array|string
+    /** @return array<array-key, mixed>|string|TableIdentifier */
+    public function getRawState(?string $key = null): array|string|TableIdentifier
     {
         $rawState = [
             self::TABLE            => $this->table,
@@ -173,7 +174,7 @@ class AlterTable extends AbstractSql
             self::TABLE_OPTIONS    => $this->options,
         ];
 
-        return isset($key) && array_key_exists($key, $rawState) ? $rawState[$key] : $rawState;
+        return null !== $key && array_key_exists($key, $rawState) ? $rawState[$key] : $rawState;
     }
 
     public function setOption(string $name, Literal|bool|int|string $value): static
@@ -199,7 +200,7 @@ class AlterTable extends AbstractSql
     /**
      * @return array{0: list<string>}
      */
-    protected function processAddColumns(?PlatformInterface $adapterPlatform = null): array
+    protected function processAddColumns(PlatformInterface $adapterPlatform): array
     {
         $sqls = [];
         foreach ($this->addColumns as $column) {
@@ -212,7 +213,7 @@ class AlterTable extends AbstractSql
     /**
      * @return array{0: list<string>}
      */
-    protected function processAddConstraints(?PlatformInterface $adapterPlatform = null): array
+    protected function processAddConstraints(PlatformInterface $adapterPlatform): array
     {
         $sqls = [];
         foreach ($this->addConstraints as $constraint) {
@@ -225,7 +226,7 @@ class AlterTable extends AbstractSql
     /**
      * @return array{0: list<array{0: string, 1: string}>}
      */
-    protected function processChangeColumns(?PlatformInterface $adapterPlatform = null): array
+    protected function processChangeColumns(PlatformInterface $adapterPlatform): array
     {
         $sqls = [];
         foreach ($this->changeColumns as $name => $column) {
@@ -241,7 +242,7 @@ class AlterTable extends AbstractSql
     /**
      * @return array{0: list<string>}
      */
-    protected function processDropColumns(?PlatformInterface $adapterPlatform = null): array
+    protected function processDropColumns(PlatformInterface $adapterPlatform): array
     {
         $sqls = [];
         foreach ($this->dropColumns as $column) {
@@ -254,7 +255,7 @@ class AlterTable extends AbstractSql
     /**
      * @return array{0: list<string>}
      */
-    protected function processDropConstraints(?PlatformInterface $adapterPlatform = null): array
+    protected function processDropConstraints(PlatformInterface $adapterPlatform): array
     {
         $sqls = [];
         foreach ($this->dropConstraints as $constraint) {
@@ -267,7 +268,7 @@ class AlterTable extends AbstractSql
     /**
      * @return array{0: list<string>}
      */
-    protected function processDropIndexes(?PlatformInterface $adapterPlatform = null): array
+    protected function processDropIndexes(PlatformInterface $adapterPlatform): array
     {
         $sqls = [];
         foreach ($this->dropIndexes as $index) {
@@ -277,8 +278,8 @@ class AlterTable extends AbstractSql
         return [$sqls];
     }
 
-    /** @return string[] */
-    protected function processTable(?PlatformInterface $adapterPlatform = null): array
+    /** @return list<string|array<array-key, mixed>|null> */
+    protected function processTable(PlatformInterface $adapterPlatform): array
     {
         return [$this->resolveTable($this->table, $adapterPlatform)];
     }
@@ -286,7 +287,7 @@ class AlterTable extends AbstractSql
     /**
      * @return string[][]|null
      */
-    protected function processTableOptions(?PlatformInterface $adapterPlatform = null): ?array
+    protected function processTableOptions(PlatformInterface $adapterPlatform): ?array
     {
         if (! $this->options) {
             return null;
@@ -294,16 +295,13 @@ class AlterTable extends AbstractSql
 
         $sqls = [];
         foreach ($this->options as $key => $value) {
-            $key = strtoupper($key);
-            if ($value instanceof Literal) {
-                $value = $value->getLiteral();
-            } elseif (is_bool($value)) {
-                $value = $value ? '1' : '0';
-            } elseif (is_int($value)) {
-                $value = (string) $value;
-            } else {
-                $value = $adapterPlatform->quoteTrustedValue($value);
-            }
+            $key   = strtoupper($key);
+            $value = match (true) {
+                $value instanceof Literal => $value->getLiteral(),
+                is_bool($value) => $value ? '1' : '0',
+                is_int($value)  => (string) $value,
+                default         => $adapterPlatform->quoteTrustedValue($value),
+            };
             $sqls[] = "{$key} = {$value}";
         }
 

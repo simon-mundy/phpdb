@@ -12,6 +12,5 @@ use PhpDb\Sql\ExpressionInterface;
 interface ConstraintInterface extends ExpressionInterface
 {
     /** @return string[] */
-    /** @return string[] */
     public function getColumns(): array;
 }

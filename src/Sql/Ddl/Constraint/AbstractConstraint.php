@@ -71,10 +71,14 @@ abstract class AbstractConstraint implements ConstraintInterface
 
         $columnCount = count($this->columns);
         if (0 !== $columnCount) {
-            $columnSpec  = array_fill(0, $columnCount, '%s');
+            $columnSpec = array_fill(
+                start_index: 0,
+                count: $columnCount,
+                value: '%s',
+            );
             $specParts[] = str_replace('%s', implode(', ', $columnSpec), $this->columnSpecification);
-            for ($i = 0; $i < $columnCount; $i++) {
-                $values[] = new Identifier($this->columns[$i]);
+            foreach ($this->columns as $column) {
+                $values[] = new Identifier($column);
             }
         }
 

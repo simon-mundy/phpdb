@@ -70,17 +70,24 @@ class ForeignKey extends AbstractConstraint
         $expressionData = parent::getExpressionData();
         $colCount       = count($this->referenceColumn);
 
-        $expressionData['spec']     .= " {$this->referenceSpecification[0]}";
+        $expressionData['spec']     .= ' ' . ($this->referenceSpecification[0] ?? '');
         $expressionData['values'][] = new Identifier($this->referenceTable);
 
         if (0 !== $colCount) {
-            $expressionData['spec'] .= ' (' . implode(', ', array_fill(0, $colCount, '%s')) . ')';
+            $expressionData['spec'] .=
+                ' ('
+                . implode(', ', array_fill(
+                    start_index: 0,
+                    count: $colCount,
+                    value: '%s',
+                ))
+                . ')';
             foreach ($this->referenceColumn as $column) {
                 $expressionData['values'][] = new Identifier($column);
             }
         }
 
-        $expressionData['spec']     .= " {$this->referenceSpecification[1]}";
+        $expressionData['spec']     .= ' ' . ($this->referenceSpecification[1] ?? '');
         $expressionData['values'][] = new Literal($this->onDeleteRule);
         $expressionData['values'][] = new Literal($this->onUpdateRule);
 

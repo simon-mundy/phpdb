@@ -6,6 +6,7 @@ namespace PhpDb\Sql\Ddl\Column;
 
 use Override;
 use PhpDb\Sql\Argument\Literal;
+use PhpDb\Sql\Argument\Value;
 
 use function array_splice;
 
@@ -23,7 +24,7 @@ abstract class AbstractLengthColumn extends Column
         string $name,
         ?int $length = null,
         bool $nullable = false,
-        mixed $default = null,
+        string|int|float|bool|Literal|Value|null $default = null,
         array $options = [],
     ) {
         $this->setLength($length);
@@ -38,7 +39,9 @@ abstract class AbstractLengthColumn extends Column
         $expressionData = parent::getExpressionData();
 
         if ($this->getLengthExpression() !== '' && $this->getLengthExpression() !== '0') {
-            array_splice($expressionData['values'], 2, 0, [new Literal($this->getLengthExpression())]);
+            array_splice($expressionData['values'], offset: 2, length: 0, replacement: [new Literal(
+                $this->getLengthExpression(),
+            )]);
         }
 
         return $expressionData;

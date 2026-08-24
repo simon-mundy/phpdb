@@ -15,6 +15,7 @@ use function array_key_exists;
 use function implode;
 use function is_bool;
 use function is_int;
+use function is_string;
 use function strtoupper;
 
 /**
@@ -95,10 +96,9 @@ class CreateTable extends AbstractSql
     }
 
     /**
-     * @return ((Column\ColumnInterface|string)[]|Column\ColumnInterface|string)[]|string
-     * @psalm-return array<Column\ColumnInterface|array<Column\ColumnInterface|string>|string>|string
+     * @return array<array-key, mixed>|string|TableIdentifier
      */
-    public function getRawState(?string $key = null): array|string
+    public function getRawState(?string $key = null): array|string|TableIdentifier
     {
         $rawState = [
             self::COLUMNS       => $this->columns,
@@ -107,7 +107,7 @@ class CreateTable extends AbstractSql
             self::TABLE_OPTIONS => $this->options,
         ];
 
-        return isset($key) && array_key_exists($key, $rawState) ? $rawState[$key] : $rawState;
+        return null !== $key && array_key_exists($key, $rawState) ? $rawState[$key] : $rawState;
     }
 
     public function ifNotExists(bool $ifNotExists = true): static
@@ -149,7 +149,7 @@ class CreateTable extends AbstractSql
     /**
      * @return string[][]|null
      */
-    protected function processColumns(?PlatformInterface $adapterPlatform = null): ?array
+    protected function processColumns(PlatformInterface $adapterPlatform): ?array
     {
         if (! $this->columns) {
             return null;
@@ -164,19 +164,24 @@ class CreateTable extends AbstractSql
         return [$sqls];
     }
 
-    protected function processCombinedby(?PlatformInterface $adapterPlatform = null): ?string
+    /**
+     * @mago-expect analysis:unused-parameter
+     */
+    protected function processCombinedby(PlatformInterface $adapterPlatform): ?string
     {
-        if ($this->constraints && $this->columns) {
-            return $this->specifications['combinedBy'];
+        if ([] === $this->constraints || [] === $this->columns) {
+            return null;
         }
 
-        return null;
+        $combinedBy = $this->specifications['combinedBy'] ?? null;
+
+        return is_string($combinedBy) ? $combinedBy : null;
     }
 
     /**
      * @return string[][]|null
      */
-    protected function processConstraints(?PlatformInterface $adapterPlatform = null): ?array
+    protected function processConstraints(PlatformInterface $adapterPlatform): ?array
     {
         if (! $this->constraints) {
             return null;
@@ -193,16 +198,16 @@ class CreateTable extends AbstractSql
 
     /**
      * @return string[]
+     *
+     * @mago-expect analysis:unused-parameter
      */
-    protected function processStatementEnd(?PlatformInterface $adapterPlatform = null): array
+    protected function processStatementEnd(PlatformInterface $adapterPlatform): array
     {
         return ["\n)"];
     }
 
-    /**
-     * @return string[]
-     */
-    protected function processTable(?PlatformInterface $adapterPlatform = null): array
+    /** @return list<string|array<array-key, mixed>|null> */
+    protected function processTable(PlatformInterface $adapterPlatform): array
     {
         return [
             $this->isTemporary ? 'TEMPORARY ' : '',
@@ -214,7 +219,7 @@ class CreateTable extends AbstractSql
     /**
      * @return string[]|null
      */
-    protected function processTableOptions(?PlatformInterface $adapterPlatform = null): ?array
+    protected function processTableOptions(PlatformInterface $adapterPlatform): ?array
     {
         if (! $this->options) {
             return null;
@@ -222,16 +227,13 @@ class CreateTable extends AbstractSql
 
         $parts = [];
         foreach ($this->options as $key => $value) {
-            $key = strtoupper($key);
-            if ($value instanceof Literal) {
-                $value = $value->getLiteral();
-            } elseif (is_bool($value)) {
-                $value = $value ? '1' : '0';
-            } elseif (is_int($value)) {
-                $value = (string) $value;
-            } else {
-                $value = $adapterPlatform->quoteTrustedValue($value);
-            }
+            $key   = strtoupper($key);
+            $value = match (true) {
+                $value instanceof Literal => $value->getLiteral(),
+                is_bool($value) => $value ? '1' : '0',
+                is_int($value)  => (string) $value,
+                default         => $adapterPlatform->quoteTrustedValue($value),
+            };
             $parts[] = "{$key} = {$value}";
         }
 

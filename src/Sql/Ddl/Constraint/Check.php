@@ -10,6 +10,8 @@ use PhpDb\Sql\Argument\Literal;
 use PhpDb\Sql\ExpressionInterface;
 
 use function implode;
+use function is_string;
+use function str_replace;
 
 /**
  * @api
@@ -20,10 +22,7 @@ class Check extends AbstractConstraint
 
     protected string $specification = 'CHECK (%s)';
 
-    /**
-     * @param string|ExpressionInterface $expression
-     */
-    public function __construct($expression, ?string $name)
+    public function __construct(string|ExpressionInterface $expression, ?string $name)
     {
         parent::__construct(null, $name);
 
@@ -42,7 +41,13 @@ class Check extends AbstractConstraint
             $values[]    = new Identifier($this->name);
         }
 
-        if ('' !== $this->expression) {
+        if ($this->expression instanceof ExpressionInterface) {
+            $expressionData = $this->expression->getExpressionData();
+            $specParts[]    = str_replace('%s', $expressionData['spec'], $this->specification);
+            $values         = [...$values, ...$expressionData['values']];
+        }
+
+        if (is_string($this->expression) && '' !== $this->expression) {
             $specParts[] = $this->specification;
             $values[]    = new Literal($this->expression);
         }

@@ -13,12 +13,9 @@ use PhpDb\Sql\Ddl\Constraint\ConstraintInterface;
 
 use function implode;
 
-/**
- * @api
- */
 class Column implements ColumnInterface
 {
-    protected string|int|float|bool|Literal|Value|null $default;
+    protected string|int|float|bool|Literal|Value|null $default = null;
 
     protected bool $isNullable = false;
 
@@ -38,7 +35,7 @@ class Column implements ColumnInterface
     public function __construct(
         string $name = '',
         bool $nullable = false,
-        mixed $default = null,
+        string|int|float|bool|Literal|Value|null $default = null,
         array $options = [],
     ) {
         $this->setName($name);
@@ -70,18 +67,16 @@ class Column implements ColumnInterface
             new Literal($this->type),
         ];
 
-        if (false === $this->isNullable) {
-            $specParts[] = 'NOT NULL';
-        } else {
-            $specParts[] = 'NULL';
-        }
+        $specParts[] = $this->isNullable ? 'NULL' : 'NOT NULL';
 
         if (null !== $this->default) {
             $specParts[] = 'DEFAULT %s';
             $values[]    = $this->default instanceof ArgumentInterface
                 ? $this->default
                 : new Value($this->default);
-        } elseif ($this->isNullable) {
+        }
+
+        if (null === $this->default && $this->isNullable) {
             $specParts[] = 'DEFAULT NULL';
         }
 
