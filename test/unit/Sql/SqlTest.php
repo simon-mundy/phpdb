@@ -10,10 +10,8 @@ use PhpDb\Adapter\Driver\ConnectionInterface;
 use PhpDb\Adapter\Driver\DriverInterface;
 use PhpDb\Adapter\Driver\ResultInterface;
 use PhpDb\Adapter\Driver\StatementInterface;
-use PhpDb\Adapter\Platform\PlatformInterface;
 use PhpDb\Sql\Delete;
 use PhpDb\Sql\Exception\InvalidArgumentException;
-use PhpDb\Sql\Exception\RuntimeException;
 use PhpDb\Sql\Insert;
 use PhpDb\Sql\Platform\PlatformDecoratorInterface;
 use PhpDb\Sql\Select;
@@ -71,27 +69,6 @@ final class SqlTest extends TestCase
         self::assertEquals('SELECT "foo".* FROM "foo" WHERE "bar" = \'baz\'', $sqlString);
     }
 
-    public function testBuildSqlStringThrowsWhenPlatformNotSqlInterface(): void
-    {
-        $decorator = $this->createMock(PlatformDecoratorInterface::class);
-        $platform  = $this->createMock(PlatformInterface::class);
-        $platform->method('getSqlPlatformDecorator')->willReturn($decorator);
-
-        $adapter = $this->getMockBuilder(Adapter::class)
-            ->setConstructorArgs([
-                $this->createMock(DriverInterface::class),
-                $platform,
-            ])
-            ->getMock();
-        $adapter->method('getPlatform')->willReturn($platform);
-
-        $sql = new Sql($adapter);
-
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('does not implement SqlInterface');
-        $sql->buildSqlString($this->sql->select());
-    }
-
     public function testDelete(): void
     {
         $delete = $this->sql->delete();
@@ -147,27 +124,6 @@ final class SqlTest extends TestCase
         $insert = $this->sql->insert()->columns(['foo'])->values(['foo' => 'bar']);
         $stmt   = $this->sql->prepareStatementForSqlObject($insert);
         self::assertInstanceOf(StatementInterface::class, $stmt);
-    }
-
-    public function testPrepareStatementThrowsWhenPlatformNotPreparable(): void
-    {
-        $decorator = $this->createMock(PlatformDecoratorInterface::class);
-        $platform  = $this->createMock(PlatformInterface::class);
-        $platform->method('getSqlPlatformDecorator')->willReturn($decorator);
-
-        $adapter = $this->getMockBuilder(Adapter::class)
-            ->setConstructorArgs([
-                $this->createMock(DriverInterface::class),
-                $platform,
-            ])
-            ->getMock();
-        $adapter->method('getPlatform')->willReturn($platform);
-
-        $sql = new Sql($adapter);
-
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('does not implement PreparableSqlInterface');
-        $sql->prepareStatementForSqlObject($this->sql->select());
     }
 
     public function testSelect(): void

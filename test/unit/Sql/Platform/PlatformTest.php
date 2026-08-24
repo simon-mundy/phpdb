@@ -36,7 +36,6 @@ use ReflectionMethod;
 #[CoversMethod(Platform::class, 'getDecorators')]
 #[CoversMethod(Platform::class, 'prepareStatement')]
 #[CoversMethod(Platform::class, 'getSqlString')]
-#[CoversMethod(Platform::class, 'resolvePlatformName')]
 #[CoversMethod(Platform::class, 'resolvePlatform')]
 #[CoversMethod(Platform::class, 'getDefaultPlatform')]
 class PlatformTest extends TestCase
@@ -140,6 +139,29 @@ class PlatformTest extends TestCase
     }
 
     #[Test]
+    public function prepareStatementDelegatesToTheDecorator(): void
+    {
+        $adapterPlatform = new TestAsset\TrustingSql92Platform();
+        $platform        = new Platform($adapterPlatform);
+
+        $adapter   = $this->resolveAdapter('sql92');
+        $statement = new StatementContainer();
+
+        $decorator = $this->createMock(PlatformDecoratorInterface::class);
+        $decorator->expects(static::once())
+            ->method('prepareStatement')
+            ->with($adapter, $statement);
+
+        $platform->setTypeDecorator(Insert::class, $decorator);
+
+        $insert = new Insert('foo');
+        $insert->values(['bar' => 'baz']);
+        $platform->setSubject($insert);
+
+        static::assertSame($statement, $platform->prepareStatement($adapter, $statement));
+    }
+
+    #[Test]
     public function prepareStatementThrowsWhenSubjectNotPreparable(): void
     {
         $adapterPlatform = new TestAsset\TrustingSql92Platform();
@@ -167,43 +189,6 @@ class PlatformTest extends TestCase
         $reflectionMethod = new ReflectionMethod($platform, 'resolvePlatform');
 
         static::assertEquals($adapter->getPlatform(), $reflectionMethod->invoke($platform, null));
-    }
-
-    /**
-     * @throws ReflectionException
-     */
-    #[Test]
-    public function resolvePlatformName(): void
-    {
-        $platform = new Platform($this->resolveAdapter('sql92')->getPlatform());
-
-        $reflectionMethod = new ReflectionMethod($platform, 'resolvePlatformName');
-
-        static::assertSame('mysql', $reflectionMethod->invoke($platform, new TestAsset\TrustingMysqlPlatform()));
-        static::assertSame('sqlserver', $reflectionMethod->invoke(
-            $platform,
-            new TestAsset\TrustingSqlServerPlatform(),
-        ));
-        static::assertSame('oracle', $reflectionMethod->invoke($platform, new TestAsset\TrustingOraclePlatform()));
-        static::assertSame('sql92', $reflectionMethod->invoke($platform, new TestAsset\TrustingSql92Platform()));
-    }
-
-    /**
-     * @throws ReflectionException
-     */
-    #[Test]
-    public function resolvePlatformNameCachesResult(): void
-    {
-        $adapterPlatform = new TestAsset\TrustingSql92Platform();
-        $platform        = new Platform($adapterPlatform);
-
-        $reflectionMethod = new ReflectionMethod($platform, 'resolvePlatformName');
-
-        $first  = $reflectionMethod->invoke($platform, null);
-        $second = $reflectionMethod->invoke($platform, null);
-
-        static::assertEquals($first, $second);
-        static::assertSame('sql92', $first);
     }
 
     #[Test]

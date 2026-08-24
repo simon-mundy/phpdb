@@ -16,10 +16,11 @@ class AbstractPlatform implements PlatformDecoratorInterface, PreparableSqlInter
 {
     protected SqlInterface|PreparableSqlInterface $subject;
 
+    /** @var array<class-string, PlatformDecoratorInterface> */
     protected array $decorators = [];
 
     /**
-     * @return array|PlatformDecoratorInterface[]
+     * @return array<class-string, PlatformDecoratorInterface>
      */
     public function getDecorators(): array
     {
@@ -44,6 +45,13 @@ class AbstractPlatform implements PlatformDecoratorInterface, PreparableSqlInter
         return $this->getTypeDecorator($this->subject)->getSqlString($adapterPlatform);
     }
 
+    /**
+     * @template TSubject of PreparableSqlInterface|SqlInterface
+     *
+     * @param TSubject $subject
+     *
+     * @return TSubject|PlatformDecoratorInterface
+     */
     public function getTypeDecorator(
         PreparableSqlInterface|SqlInterface $subject,
     ): PlatformDecoratorInterface|PreparableSqlInterface|SqlInterface {
@@ -84,7 +92,7 @@ class AbstractPlatform implements PlatformDecoratorInterface, PreparableSqlInter
      * {@inheritDoc}
      */
     #[Override]
-    public function setSubject($subject): static
+    public function setSubject(SqlInterface|PreparableSqlInterface $subject): static
     {
         $this->subject = $subject;
 

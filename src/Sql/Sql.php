@@ -31,12 +31,6 @@ class Sql
      */
     public function buildSqlString(SqlInterface $sqlObject, ?AdapterInterface $adapter = null): string
     {
-        if (! $this->sqlPlatform instanceof SqlInterface) {
-            throw new Exception\RuntimeException(
-                'The subject does not implement SqlInterface',
-            );
-        }
-
         $this->sqlPlatform->setSubject($sqlObject);
 
         return $this->sqlPlatform->getSqlString(
@@ -93,12 +87,6 @@ class Sql
         ?StatementInterface $statement = null,
         ?AdapterInterface $adapter = null,
     ): StatementInterface {
-        if (! $this->sqlPlatform instanceof PreparableSqlInterface) {
-            throw new Exception\RuntimeException(
-                'The subject does not implement PreparableSqlInterface',
-            );
-        }
-
         $adapter   ??= $this->adapter;
         $statement ??= $adapter->getDriver()->createStatement();
 

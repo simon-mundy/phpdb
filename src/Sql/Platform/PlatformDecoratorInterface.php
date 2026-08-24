@@ -10,9 +10,9 @@ use PhpDb\Sql\SqlInterface;
 /**
  * @api
  */
-interface PlatformDecoratorInterface
+interface PlatformDecoratorInterface extends SqlInterface, PreparableSqlInterface
 {
     public function setSubject(
-        SqlInterface|PreparableSqlInterface|null $subject,
+        SqlInterface|PreparableSqlInterface $subject,
     ): self;
 }
